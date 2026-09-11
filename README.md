@@ -36,15 +36,15 @@ npm install --prefix server
 
 ## Environment setup
 
-The backend uses SQLite and expects this database URL in `server/.env`:
+Copy `server/.env.example` to `server/.env`. The backend uses SQLite and expects this database URL:
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="file:./dev.db"
 ```
 
 This matches the Prisma SQLite configuration documented in the project context. [file:16]
 
-The frontend accepts an optional API base URL in `client/.env`:
+Copy `client/.env.example` to `client/.env` if the API is not running at the default URL:
 
 ```env
 VITE_API_BASE_URL="http://localhost:5000"
@@ -87,6 +87,14 @@ npm run seed --prefix server
 ```
 
 The seed includes 5 patients and 17 appointments in October 2026. [file:16]
+
+## Create the first administrator
+
+The server does not create users automatically. Create the first clinic administrator interactively:
+
+```bash
+npm run admin:create --prefix server
+```
 
 ## Build the frontend
 

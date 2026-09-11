@@ -233,7 +233,8 @@ export default function RescheduleAppointmentModal({
         const appointmentsResponse = await fetch(
           `${API_BASE_URL}/api/appointments/${appointment.id}/reschedule-options?date=${encodeURIComponent(
             inspectedDate
-          )}&duration=${encodeURIComponent(selectedDuration)}`
+          )}&duration=${encodeURIComponent(selectedDuration)}`,
+          { credentials: 'include' }
         );
 
         if (!appointmentsResponse.ok) {

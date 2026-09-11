@@ -143,6 +143,7 @@ export default function useAppointmentDetailForm({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(patientId),
           doctorId: Number(doctorId),
@@ -192,6 +193,7 @@ export default function useAppointmentDetailForm({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(patientId || appointment.patientId),
           doctorId: Number(doctorId || appointment.doctorId),
@@ -239,10 +241,11 @@ export default function useAppointmentDetailForm({
         `${API_BASE_URL}/api/appointments/${appointmentId}/conclude`,
         {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
             performedTreatment,
             completionNotes,
           }),

@@ -15,7 +15,9 @@ export default function useDoctorsData(searchTerm) {
         setIsLoading(true);
         setPageError('');
 
-        const response = await fetch(`${API_BASE_URL}/api/doctors`);
+        const response = await fetch(`${API_BASE_URL}/api/doctors`, {
+          credentials: 'include',
+        });
 
         if (!response.ok) {
           throw new Error('Failed to load doctors');

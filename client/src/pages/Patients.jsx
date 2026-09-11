@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPatient } from '../services/patients';
 import { getPatientDisplayName } from '../utils/agendaUtils';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 /* ================================
    Helpers
@@ -82,8 +82,8 @@ export default function Patients() {
         setPageError('');
 
         const [patientsResponse, appointmentsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/patients`),
-          fetch(`${API_BASE_URL}/api/appointments`),
+          fetch(`${API_BASE_URL}/api/patients`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/appointments`, { credentials: 'include' }),
         ]);
 
         if (!patientsResponse.ok || !appointmentsResponse.ok) {

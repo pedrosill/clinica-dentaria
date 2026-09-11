@@ -17,9 +17,9 @@ export default function useAgendaData() {
         setPageError('');
 
         const [appointmentsResponse, patientsResponse, doctorsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/appointments`),
-          fetch(`${API_BASE_URL}/api/patients`),
-          fetch(`${API_BASE_URL}/api/doctors`),
+          fetch(`${API_BASE_URL}/api/appointments`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/patients`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/doctors`, { credentials: 'include' }),
         ]);
 
         if (!appointmentsResponse.ok || !patientsResponse.ok || !doctorsResponse.ok) {

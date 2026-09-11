@@ -18,6 +18,10 @@ test('creates an appointment, shows it on the dashboard, and reschedules it', as
   const newDate = formatDateInput(addDays(new Date(), 3));
 
   await page.goto('/agenda');
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByTestId('login-email').fill('browser.admin@example.test');
+  await page.getByTestId('login-password').fill('browser-password-123');
+  await page.getByTestId('login-submit').click();
   await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible();
 
   await page.getByTestId('add-appointment').click();

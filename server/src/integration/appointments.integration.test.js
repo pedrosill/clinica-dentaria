@@ -19,20 +19,34 @@ const migrationPath = path.join(
   '20260528011229_init_refreshed',
   'migration.sql'
 );
+const authMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911153000_add_authentication',
+  'migration.sql'
+);
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
 const prisma = require('../../db');
+const { hashPassword } = require('../utils/auth');
 
 let server;
 let baseUrl;
 let doctor;
 let patients;
+let sessionCookie;
 
 async function request(pathname, options) {
-  const response = await fetch(`${baseUrl}${pathname}`, options);
+  const headers = {
+    ...(options?.headers || {}),
+    ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+  };
+  const response = await fetch(`${baseUrl}${pathname}`, { ...options, headers });
   const body = await response.json().catch(() => null);
 
   return { response, body };
@@ -59,6 +73,8 @@ test.before(async () => {
 
 test.beforeEach(async () => {
   await prisma.appointment.deleteMany();
+  await prisma.userSession.deleteMany();
+  await prisma.user.deleteMany();
   await prisma.patient.deleteMany();
   await prisma.doctor.deleteMany();
 
@@ -79,6 +95,29 @@ test.beforeEach(async () => {
       })
     )
   );
+
+  await prisma.user.create({
+    data: {
+      email: 'integration.admin@example.test',
+      displayName: 'Integration Admin',
+      passwordHash: hashPassword('integration-password-123'),
+      role: 'admin',
+    },
+  });
+
+  const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: 'integration.admin@example.test',
+      password: 'integration-password-123',
+    }),
+  });
+  assert.equal(loginResponse.status, 200);
+  const setCookie = loginResponse.headers.get('set-cookie');
+  assert.match(setCookie, /HttpOnly/);
+  assert.match(setCookie, /SameSite=Lax/);
+  sessionCookie = setCookie.split(';')[0];
 });
 
 test.after(async () => {
@@ -121,6 +160,53 @@ test('availability returns the 30-minute clinic grid and marks booked slots', as
     availabilityResult.body.slots.find((slot) => slot.time === '09:30').status,
     'free'
   );
+});
+
+test('rejects protected resource access without a session', async () => {
+  const response = await fetch(`${baseUrl}/api/patients`);
+  assert.equal(response.status, 401);
+});
+
+test('reports liveness and database readiness', async () => {
+  const livenessResponse = await fetch(`${baseUrl}/health`);
+  const readinessResponse = await fetch(`${baseUrl}/health/ready`);
+
+  assert.equal(livenessResponse.status, 200);
+  assert.deepEqual(await livenessResponse.json(), { status: 'ok' });
+  assert.equal(readinessResponse.status, 200);
+  assert.deepEqual(await readinessResponse.json(), { status: 'ready' });
+});
+
+test('enforces administrator-only doctor changes', async () => {
+  await prisma.user.create({
+    data: {
+      email: 'integration.receptionist@example.test',
+      displayName: 'Integration Receptionist',
+      passwordHash: hashPassword('integration-receptionist-123'),
+      role: 'receptionist',
+    },
+  });
+
+  const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: 'integration.receptionist@example.test',
+      password: 'integration-receptionist-123',
+    }),
+  });
+  const receptionistCookie = loginResponse.headers.get('set-cookie').split(';')[0];
+
+  const response = await fetch(`${baseUrl}/api/doctors`, {
+    method: 'POST',
+    headers: {
+      Cookie: receptionistCookie,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name: 'Not Allowed Doctor' }),
+  });
+
+  assert.equal(response.status, 403);
 });
 
 test('the API rejects out-of-hours and impossible date-only appointments', async () => {

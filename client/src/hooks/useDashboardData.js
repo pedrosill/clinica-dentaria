@@ -39,8 +39,8 @@ export default function useDashboardData() {
         setPageError('');
 
         const [patientsResponse, appointmentsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/patients`),
-          fetch(`${API_BASE_URL}/api/appointments`),
+          fetch(`${API_BASE_URL}/api/patients`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/appointments`, { credentials: 'include' }),
         ]);
 
         if (!patientsResponse.ok) {

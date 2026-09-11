@@ -1,15 +1,15 @@
 const express = require('express');
+const authRoutes = require('./authRoutes');
 const patientRoutes = require('./patientRoutes');
 const doctorRoutes = require('./doctorRoutes');
 const appointmentRoutes = require('./appointmentRoutes');
-const asyncHandler = require('../utils/asyncHandler');
-const appointmentController = require('../controllers/appointmentController');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/debug/patients', asyncHandler(appointmentController.getDebugPatients));
-router.use('/patients', patientRoutes);
-router.use('/doctors', doctorRoutes);
-router.use('/appointments', appointmentRoutes);
+router.use('/auth', authRoutes);
+router.use('/patients', requireAuth, patientRoutes);
+router.use('/doctors', requireAuth, doctorRoutes);
+router.use('/appointments', requireAuth, appointmentRoutes);
 
 module.exports = router;

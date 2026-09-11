@@ -31,7 +31,8 @@ export default function useGuidedReschedule({
           duration: String(duration || appointment.duration || 30),
         });
         const response = await fetch(
-          `${API_BASE_URL}/api/appointments/${appointment.id}/reschedule-options?${query}`
+          `${API_BASE_URL}/api/appointments/${appointment.id}/reschedule-options?${query}`,
+          { credentials: 'include' }
         );
         const data = await response.json().catch(() => null);
 

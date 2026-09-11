@@ -3,6 +3,7 @@
 ================================ */
 import { CalendarDays, CreditCard, LayoutDashboard, Settings, Stethoscope, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import useAuth from '../context/useAuth';
 
 /* ================================
    Navigation items
@@ -44,6 +45,14 @@ const navigationItems = [
    Component
 ================================ */
 export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const initials = String(user?.displayName || 'U')
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <aside className="sticky top-0 hidden h-screen w-80 shrink-0 border-r border-slate-200 bg-white xl:flex">
       <div className="flex w-full flex-col p-5">
@@ -91,13 +100,20 @@ export default function Sidebar() {
         <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-sm font-semibold text-slate-700">
-              DS
+              {initials}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900">Dr. Smith</p>
-              <p className="truncate text-sm text-slate-500">Lead Dentist</p>
+              <p className="truncate text-sm font-semibold text-slate-900">{user?.displayName}</p>
+              <p className="truncate text-sm capitalize text-slate-500">{user?.role}</p>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            Sign out
+          </button>
         </div>
       </div>
     </aside>

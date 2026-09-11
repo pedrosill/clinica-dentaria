@@ -79,6 +79,7 @@ export default function useDoctorForm(setDoctors) {
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include',
           body: JSON.stringify(payload),
         }
       );
@@ -131,6 +132,7 @@ export default function useDoctorForm(setDoctors) {
 
       const response = await fetch(`${API_BASE_URL}/api/doctors/${doctorPendingDelete.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       const data = await response.json().catch(() => null);

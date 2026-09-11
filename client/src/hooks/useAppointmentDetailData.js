@@ -60,10 +60,10 @@ export default function useAppointmentDetailData(appointmentId) {
           doctorsResponse,
           appointmentsResponse,
         ] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`),
-          fetch(`${API_BASE_URL}/api/patients`),
-          fetch(`${API_BASE_URL}/api/doctors`),
-          fetch(`${API_BASE_URL}/api/appointments`),
+          fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/patients`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/doctors`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/appointments`, { credentials: 'include' }),
         ]);
 
         if (!appointmentResponse.ok) {

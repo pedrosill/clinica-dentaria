@@ -166,6 +166,7 @@ export default function useAppointmentForm({
         }
 
         const response = await fetch(`${API_BASE_URL}/api/appointments/availability?${query}`, {
+          credentials: 'include',
           signal: controller.signal,
         });
         const data = await response.json().catch(() => null);
@@ -375,6 +376,7 @@ export default function useAppointmentForm({
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include',
           body: JSON.stringify(payload),
         }
       );

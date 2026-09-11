@@ -38,7 +38,9 @@ export default function usePatientDetailData(patientId) {
         setIsLoading(true);
         setPageError('');
 
-        const response = await fetch(`${API_BASE_URL}/api/patients/${patientId}`);
+      const response = await fetch(`${API_BASE_URL}/api/patients/${patientId}`, {
+        credentials: 'include',
+      });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => null);

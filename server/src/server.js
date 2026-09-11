@@ -1,12 +1,14 @@
 const app = require('./app');
-const { PORT } = require('./config/env');
+const { NODE_ENV, PORT } = require('./config/env');
 const { runSeed } = require('./startup/seed');
 const { backfillPatientIdentityFields } = require('./startup/backfill');
 
 async function startServer() {
   try {
-    await runSeed();
-    await backfillPatientIdentityFields();
+    if (NODE_ENV !== 'production') {
+      await runSeed();
+      await backfillPatientIdentityFields();
+    }
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);

@@ -12,15 +12,24 @@ const migrationPath = path.join(
   '20260528011229_init_refreshed',
   'migration.sql'
 );
+const authMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911153000_add_authentication',
+  'migration.sql'
+);
 
 process.env.DATABASE_URL = `file:${databasePath.replaceAll('\\', '/')}`;
 
 const database = new Database(databasePath);
 database.exec(fs.readFileSync(migrationPath, 'utf8'));
+database.exec(fs.readFileSync(authMigrationPath, 'utf8'));
 database.close();
 
 const app = require('../app');
 const prisma = require('../../db');
+const { hashPassword } = require('../utils/auth');
 const port = Number(process.env.PORT) || 5100;
 
 let server;
@@ -43,6 +52,15 @@ async function seedBrowserFixtures() {
       email: `browser.patient.${fixtureSuffix}@example.test`,
       nif: String(900000000 + (Date.now() % 9999999)),
       nationality: 'Portuguese',
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'browser.admin@example.test',
+      displayName: 'Browser Test Admin',
+      passwordHash: hashPassword('browser-password-123'),
+      role: 'admin',
     },
   });
 

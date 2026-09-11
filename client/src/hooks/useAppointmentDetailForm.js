@@ -185,6 +185,7 @@ export default function useAppointmentDetailForm({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(patientId),
           doctorId: Number(doctorId),
@@ -245,6 +246,7 @@ export default function useAppointmentDetailForm({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(appointment.patientId),
           doctorId: Number(appointment.doctorId),
@@ -296,6 +298,7 @@ export default function useAppointmentDetailForm({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(appointment.patientId),
           doctorId: Number(appointment.doctorId),

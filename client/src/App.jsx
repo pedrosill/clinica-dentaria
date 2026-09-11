@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Agenda from './pages/Agenda';
@@ -11,6 +11,9 @@ import AppointmentDetail from './pages/AppointmentDetail';
 import PatientDetail from './pages/PatientDetail';
 import DoctorDetail from './pages/DoctorDetail';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+import AuthProvider from './context/AuthContext';
+import useAuth from './context/useAuth';
 
 /* ================================
    Shared states
@@ -41,7 +44,22 @@ function PlaceholderPage({ title, description }) {
 /* ================================
    App shell
 ================================ */
-export default function App() {
+function ProtectedRoutes() {
+  const { isLoading, user } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+        <p className="text-sm font-medium text-slate-600">Loading clinic workspace…</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="flex min-h-screen w-full">
@@ -72,5 +90,16 @@ export default function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<ProtectedRoutes />} />
+      </Routes>
+    </AuthProvider>
   );
 }

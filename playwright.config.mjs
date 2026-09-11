@@ -18,6 +18,7 @@ export default defineConfig({
       command: 'node server/src/test/startBrowserServer.js',
       url: 'http://127.0.0.1:5100/',
       env: {
+        CLIENT_ORIGIN: 'http://127.0.0.1:4173',
         PORT: '5100',
       },
       reuseExistingServer: false,
