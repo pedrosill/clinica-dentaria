@@ -70,10 +70,10 @@ const appointmentSeed = [
   { patientIndex: 4, date: '2026-10-14T00:00:00.000Z', time: '16:00', treatmentType: 'Braces', notes: 'Wire adjustment.' },
   { patientIndex: 0, date: '2026-10-15T00:00:00.000Z', time: '08:30', treatmentType: 'Consultation', notes: 'General check.' },
   { patientIndex: 1, date: '2026-10-18T00:00:00.000Z', time: '12:00', treatmentType: 'Cleaning', notes: 'Quarterly cleaning.' },
-  { patientIndex: 2, date: '2026-10-20T00:00:00.000Z', time: '09:45', treatmentType: 'Surgery', notes: 'Procedure planning.' },
+  { patientIndex: 2, date: '2026-10-20T00:00:00.000Z', time: '09:30', treatmentType: 'Surgery', notes: 'Procedure planning.' },
   { patientIndex: 3, date: '2026-10-22T00:00:00.000Z', time: '14:30', treatmentType: 'Root Canal', notes: 'Canal inspection.' },
   { patientIndex: 4, date: '2026-10-24T00:00:00.000Z', time: '17:00', treatmentType: 'Braces', notes: 'Bracket check.' },
-  { patientIndex: 0, date: '2026-10-27T00:00:00.000Z', time: '10:15', treatmentType: 'Consultation', notes: 'Results review.' },
+  { patientIndex: 0, date: '2026-10-27T00:00:00.000Z', time: '10:30', treatmentType: 'Consultation', notes: 'Results review.' },
   { patientIndex: 1, date: '2026-10-29T00:00:00.000Z', time: '11:30', treatmentType: 'Cleaning', notes: 'Final cleaning this month.' },
 ];
 
