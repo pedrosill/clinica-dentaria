@@ -5,7 +5,6 @@ import AgendaWeekView from '../components/agenda/AgendaWeekView';
 import AgendaMonthView from '../components/agenda/AgendaMonthView';
 import AgendaDayDetails from '../components/agenda/AgendaDayDetails';
 import AppointmentModal from '../components/agenda/AppointmentModal';
-import { TREATMENT_OPTIONS } from '../constants/agendaConstants';
 import useAgendaData from '../hooks/useAgendaData';
 import useAppointmentForm from '../hooks/useAppointmentForm';
 import {
@@ -40,7 +39,15 @@ export default function Agenda() {
   const [selectedDate, setSelectedDate] = useState(initialAgendaDate);
   const [currentMonth, setCurrentMonth] = useState(initialAgendaDate);
 
-  const { appointments, setAppointments, patients, doctors, isLoading, pageError } = useAgendaData();
+  const {
+    appointments,
+    setAppointments,
+    patients,
+    doctors,
+    clinicSettings,
+    isLoading,
+    pageError,
+  } = useAgendaData();
 
   const {
     isModalOpen,
@@ -66,6 +73,8 @@ export default function Agenda() {
     doctorSearchResults,
     appointmentCalendarDays,
     timeOptions,
+    durationOptions,
+    treatmentOptions,
     availabilityError,
     isAvailabilityLoading,
     openCreateModal,
@@ -90,6 +99,7 @@ export default function Agenda() {
     patients,
     doctors,
     appointments,
+    appointmentTypes: clinicSettings?.appointmentTypes || [],
     setAppointments,
     setSelectedDate,
   });
@@ -256,7 +266,8 @@ export default function Agenda() {
         duration={duration}
         treatmentType={treatmentType}
         notes={notes}
-        treatmentOptions={TREATMENT_OPTIONS}
+        treatmentOptions={treatmentOptions}
+        durationOptions={durationOptions}
         timeOptions={timeOptions}
         availabilityError={availabilityError}
         isAvailabilityLoading={isAvailabilityLoading}

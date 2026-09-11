@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, UserRound, X } from 'lucide-react';
 import { API_BASE_URL } from '../../constants/agendaConstants';
-const DAY_START_HOUR = 8;
-const DAY_END_HOUR = 20;
-const SLOT_INTERVAL_MINUTES = 30;
 const DURATION_OPTIONS = ['30', '60', '90', '120'];
 
 function pad(value) {
@@ -45,18 +42,6 @@ function formatShortDate(dateValue) {
 
 function formatTimeLabel(timeValue) {
   return String(timeValue).slice(0, 5);
-}
-
-function buildDaySlots() {
-  const slots = [];
-
-  for (let hour = DAY_START_HOUR; hour < DAY_END_HOUR; hour += 1) {
-    for (let minute = 0; minute < 60; minute += SLOT_INTERVAL_MINUTES) {
-      slots.push(`${pad(hour)}:${pad(minute)}`);
-    }
-  }
-
-  return slots;
 }
 
 function getMinutesFromTime(timeValue) {
@@ -114,10 +99,14 @@ export default function RescheduleAppointmentModal({
 }) {
   const [inspectedDate, setInspectedDate] = useState(date || '');
   const [dayAppointments, setDayAppointments] = useState([]);
+  const [daySlotOptions, setDaySlotOptions] = useState([]);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [scheduleError, setScheduleError] = useState('');
 
-  const daySlots = useMemo(() => buildDaySlots(), []);
+  const daySlots = useMemo(
+    () => daySlotOptions.map((slot) => slot.time),
+    [daySlotOptions]
+  );
   const selectedDuration = useMemo(() => String(duration || '30'), [duration]);
 
   const blockedSlotTimes = useMemo(() => {
@@ -141,11 +130,7 @@ export default function RescheduleAppointmentModal({
       const startMinutes = getMinutesFromTime(dayAppointment.time);
       const endMinutes = startMinutes + Number(dayAppointment.duration || 30);
 
-      for (
-        let currentMinutes = startMinutes;
-        currentMinutes < endMinutes;
-        currentMinutes += SLOT_INTERVAL_MINUTES
-      ) {
+      for (let currentMinutes = startMinutes; currentMinutes < endMinutes; currentMinutes += 30) {
         blocked.add(`${pad(Math.floor(currentMinutes / 60))}:${pad(currentMinutes % 60)}`);
       }
     });
@@ -154,40 +139,12 @@ export default function RescheduleAppointmentModal({
   }, [appointment, date, dayAppointments, inspectedDate]);
 
   const availableStartTimes = useMemo(() => {
-    const validStarts = new Set();
-    const durationMinutes = Number(selectedDuration || 30);
-    const dayEndMinutes = DAY_END_HOUR * 60;
-
-    daySlots.forEach((slotTime) => {
-      const startMinutes = getMinutesFromTime(slotTime);
-      const endMinutes = startMinutes + durationMinutes;
-
-      if (endMinutes > dayEndMinutes) {
-        return;
-      }
-
-      let conflicts = false;
-
-      for (
-        let currentMinutes = startMinutes;
-        currentMinutes < endMinutes;
-        currentMinutes += SLOT_INTERVAL_MINUTES
-      ) {
-        const currentSlot = `${pad(Math.floor(currentMinutes / 60))}:${pad(currentMinutes % 60)}`;
-
-        if (blockedSlotTimes.has(currentSlot)) {
-          conflicts = true;
-          break;
-        }
-      }
-
-      if (!conflicts) {
-        validStarts.add(slotTime);
-      }
-    });
-
-    return validStarts;
-  }, [blockedSlotTimes, daySlots, selectedDuration]);
+    return new Set(
+      daySlotOptions
+        .filter((slot) => slot.status === 'free')
+        .map((slot) => slot.time)
+    );
+  }, [daySlotOptions]);
 
   const selectedDateLabel = useMemo(() => {
     if (!date) return 'No date selected';
@@ -258,10 +215,12 @@ export default function RescheduleAppointmentModal({
           : [];
 
         setDayAppointments(normalizedAppointments);
+        setDaySlotOptions(Array.isArray(appointmentsData?.slotOptions) ? appointmentsData.slotOptions : []);
       } catch (error) {
         if (!isMounted) return;
         setScheduleError(error.message || 'Failed to load inspected day schedule');
         setDayAppointments([]);
+        setDaySlotOptions([]);
       } finally {
         if (isMounted) {
           setIsLoadingSchedule(false);
@@ -383,6 +342,13 @@ export default function RescheduleAppointmentModal({
                       className="h-16 animate-pulse rounded-2xl border border-slate-200 bg-slate-50"
                     />
                   ))}
+                </div>
+              ) : dayTimelineItems.length === 0 ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-8 text-center">
+                  <p className="text-sm font-semibold text-amber-900">Clinic closed</p>
+                  <p className="mt-2 text-sm text-amber-800">
+                    No appointment starts are available on this date.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">

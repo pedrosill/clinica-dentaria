@@ -27,15 +27,32 @@ function getClinicDayBounds(date) {
   return { clinicOpen, clinicClose };
 }
 
+function getScheduleDayBounds(date, { startTime = '08:00', endTime = '20:00' } = {}) {
+  const dayStart = new Date(`${date}T00:00:00`);
+  const clinicOpen = new Date(dayStart);
+  const [openHour, openMinute] = startTime.split(':').map(Number);
+  clinicOpen.setHours(openHour, openMinute, 0, 0);
+
+  const clinicClose = new Date(dayStart);
+  const [closeHour, closeMinute] = endTime.split(':').map(Number);
+  clinicClose.setHours(closeHour, closeMinute, 0, 0);
+
+  return { clinicOpen, clinicClose };
+}
+
 function buildAvailabilitySlots({
   clinicOpen,
   clinicClose,
   duration,
   bookedAppointments = [],
+  breaks = [],
+  isClosed = false,
   now = new Date(),
 }) {
   const normalizedDuration = Number(duration || 30);
   const slotOptions = [];
+
+  if (isClosed) return slotOptions;
 
   for (
     let slotStart = new Date(clinicOpen);
@@ -46,6 +63,9 @@ function buildAvailabilitySlots({
     const overlapsExistingAppointment = bookedAppointments.some(
       (appointment) => appointment.start < slotEnd && appointment.end > slotStart
     );
+    const overlapsBreak = breaks.some(
+      (breakPeriod) => breakPeriod.start < slotEnd && breakPeriod.end > slotStart
+    );
 
     const status = isPastSlot(slotStart, now)
       ? 'unavailable'
@@ -53,6 +73,8 @@ function buildAvailabilitySlots({
       ? 'unavailable'
       : overlapsExistingAppointment
         ? 'booked'
+        : overlapsBreak
+          ? 'unavailable'
         : 'free';
 
     slotOptions.push({
@@ -72,5 +94,6 @@ module.exports = {
   formatTimeOnly,
   isPastSlot,
   getClinicDayBounds,
+  getScheduleDayBounds,
   buildAvailabilitySlots,
 };

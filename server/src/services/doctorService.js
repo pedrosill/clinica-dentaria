@@ -32,12 +32,6 @@ async function createDoctor(payload) {
     throw new HttpError(400, 'Doctor name is required');
   }
 
-  const existingDoctorCount = await prisma.doctor.count();
-
-  if (existingDoctorCount >= 1) {
-    throw new HttpError(400, 'Only 1 doctor is supported for now');
-  }
-
   return prisma.doctor.create({
     data: {
       name,

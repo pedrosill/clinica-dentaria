@@ -131,9 +131,11 @@ According to the project context, the root `dev` command runs both services toge
 ## Current scope
 
 The project is currently in active development and includes:
-- patient create/read support
-- appointment create/read support
+- patient and doctor management
+- appointment creation, availability, rescheduling, and status workflows
 - dashboard and agenda pages
+- authenticated role-based access
+- configurable clinic hours, breaks, closures, provider schedules, and appointment types
 - SQLite development data seeding. [file:16]
 
-Known limitations still remain, including incomplete week/day agenda views, missing update/delete UI flows, and missing authentication. [file:16]
+Billing, clinical charting, treatment plans, patient reminders, and patient-portal features remain future-version work. [file:16]

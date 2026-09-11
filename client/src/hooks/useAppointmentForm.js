@@ -2,7 +2,7 @@
    Imports
 ================================ */
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE_URL, TIME_OPTIONS } from '../constants/agendaConstants';
+import { API_BASE_URL, TIME_OPTIONS, TREATMENT_OPTIONS } from '../constants/agendaConstants';
 import {
   buildCalendarDays,
   formatDateInput,
@@ -24,6 +24,7 @@ export default function useAppointmentForm({
   patients,
   doctors,
   appointments,
+  appointmentTypes = [],
   setAppointments,
   setSelectedDate,
 }) {
@@ -63,6 +64,29 @@ export default function useAppointmentForm({
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [availabilityError, setAvailabilityError] = useState('');
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(false);
+  const [hasLoadedAvailability, setHasLoadedAvailability] = useState(false);
+
+  const activeAppointmentTypes = useMemo(
+    () => appointmentTypes.filter((type) => type.isActive !== false),
+    [appointmentTypes]
+  );
+
+  const treatmentOptions = useMemo(
+    () => activeAppointmentTypes.length > 0
+      ? activeAppointmentTypes.map((type) => type.name)
+      : TREATMENT_OPTIONS,
+    [activeAppointmentTypes]
+  );
+
+  const durationOptions = useMemo(() => {
+    const durations = new Set([30, 60, 90, 120]);
+    activeAppointmentTypes.forEach((type) => durations.add(Number(type.duration)));
+
+    return [...durations]
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .sort((first, second) => first - second)
+      .map((value) => ({ value: String(value), label: `${value} min` }));
+  }, [activeAppointmentTypes]);
 
   /* ================================
      Derived: recommended patients
@@ -116,7 +140,7 @@ export default function useAppointmentForm({
   );
 
   const timeOptions = useMemo(() => {
-    const options = availabilitySlots.length > 0
+    const options = hasLoadedAvailability
       ? availabilitySlots
       : CLINIC_TIME_OPTIONS.map((time) => ({
           time,
@@ -135,7 +159,7 @@ export default function useAppointmentForm({
     }
 
     return options;
-  }, [appointmentTime, availabilitySlots, doctorId, editingAppointmentId]);
+  }, [appointmentTime, availabilitySlots, doctorId, editingAppointmentId, hasLoadedAvailability]);
 
   useEffect(() => {
     if (!isModalOpen || !doctorId || !appointmentDate) {
@@ -144,6 +168,7 @@ export default function useAppointmentForm({
       setAvailabilitySlots([]);
       setAvailabilityError('');
       setIsAvailabilityLoading(false);
+      setHasLoadedAvailability(false);
       return undefined;
     }
 
@@ -177,6 +202,14 @@ export default function useAppointmentForm({
 
         const nextSlots = Array.isArray(data?.slots) ? data.slots : [];
         setAvailabilitySlots(nextSlots);
+        setHasLoadedAvailability(true);
+        setAvailabilityError(
+          data?.isClosed
+            ? data.closureLabel
+              ? `Clinic closed: ${data.closureLabel}`
+              : 'Clinic closed on the selected date'
+            : ''
+        );
 
         setAppointmentTime((currentTime) => {
           const currentSlot = nextSlots.find((slot) => slot.time === currentTime);
@@ -221,7 +254,7 @@ export default function useAppointmentForm({
     setIsCalendarOpen(false);
     setAppointmentTime('09:00');
     setDuration('30');
-    setTreatmentType('Consultation');
+    setTreatmentType(treatmentOptions[0] || 'Consultation');
     setNotes('');
     setSubmitError('');
   }
@@ -330,6 +363,14 @@ export default function useAppointmentForm({
     setDoctorSelectorOpen(false);
   }
 
+  function handleTreatmentTypeChange(value) {
+    setTreatmentType(value);
+    const selectedType = activeAppointmentTypes.find((type) => type.name === value);
+    if (selectedType) {
+      setDuration(String(selectedType.duration));
+    }
+  }
+
   /* ================================
      Actions: save appointment
   ================================ */
@@ -435,6 +476,8 @@ export default function useAppointmentForm({
     doctorSearchResults,
     appointmentCalendarDays,
     timeOptions,
+    durationOptions,
+    treatmentOptions,
     availabilityError,
     isAvailabilityLoading,
     openCreateModal,
@@ -453,7 +496,7 @@ export default function useAppointmentForm({
     setDoctorSelectorOpen,
     setAppointmentTime,
     setDuration,
-    setTreatmentType,
+    setTreatmentType: handleTreatmentTypeChange,
     setNotes,
   };
 }

@@ -26,9 +26,17 @@ const authMigrationPath = path.join(
   '20260911153000_add_authentication',
   'migration.sql'
 );
+const clinicSettingsMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911170000_add_clinic_settings',
+  'migration.sql'
+);
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(clinicSettingsMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
@@ -77,6 +85,8 @@ test.beforeEach(async () => {
   await prisma.user.deleteMany();
   await prisma.patient.deleteMany();
   await prisma.doctor.deleteMany();
+  await prisma.providerSchedule.deleteMany();
+  await prisma.clinicSettings.deleteMany();
 
   doctor = await prisma.doctor.create({
     data: { name: 'Integration Doctor' },
@@ -175,6 +185,136 @@ test('reports liveness and database readiness', async () => {
   assert.deepEqual(await livenessResponse.json(), { status: 'ok' });
   assert.equal(readinessResponse.status, 200);
   assert.deepEqual(await readinessResponse.json(), { status: 'ready' });
+});
+
+test('weekly hours, breaks, and provider availability control booking slots', async () => {
+  const initialSettings = await request('/api/settings');
+  const schedules = initialSettings.body.schedules.map((schedule) => ({
+    weekday: schedule.weekday,
+    isOpen: schedule.weekday === 4 ? true : schedule.isOpen,
+    startTime: schedule.weekday === 4 ? '09:00' : schedule.startTime,
+    endTime: schedule.weekday === 4 ? '18:00' : schedule.endTime,
+    breakStart: schedule.weekday === 4 ? '12:00' : schedule.breakStart,
+    breakEnd: schedule.weekday === 4 ? '13:00' : schedule.breakEnd,
+  }));
+
+  const updateResult = await request('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clinicName: initialSettings.body.clinicName,
+      timezone: initialSettings.body.timezone,
+      slotIntervalMinutes: 30,
+      schedules,
+    }),
+  });
+
+  assert.equal(updateResult.response.status, 200);
+  assert.equal(updateResult.body.schedules.find((schedule) => schedule.weekday === 4).startTime, '09:00');
+  const persistedThursday = await prisma.clinicSchedule.findUnique({
+    where: { settingsId_weekday: { settingsId: 1, weekday: 4 } },
+  });
+  assert.equal(persistedThursday.startTime, '09:00');
+  assert.equal(
+    await prisma.providerSchedule.count({ where: { doctorId: doctor.id } }),
+    0
+  );
+
+  const availabilityResult = await request(
+    `/api/appointments/availability?doctorId=${doctor.id}&date=2099-01-15&duration=30`
+  );
+
+  assert.equal(availabilityResult.response.status, 200);
+  assert.equal(availabilityResult.body.clinicOpenTime, '09:00');
+  assert.equal(availabilityResult.body.clinicCloseTime, '18:00');
+  assert.equal(availabilityResult.body.slots[0].time, '09:00');
+  assert.equal(
+    availabilityResult.body.slots.find((slot) => slot.time === '12:00').status,
+    'unavailable'
+  );
+  assert.equal(
+    availabilityResult.body.slots.find((slot) => slot.time === '17:30').status,
+    'free'
+  );
+  assert.equal(
+    availabilityResult.body.slots.find((slot) => slot.time === '18:00'),
+    undefined
+  );
+
+  const outsideHoursResult = await request('/api/appointments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(appointmentPayload({ time: '08:30' })),
+  });
+  assert.equal(outsideHoursResult.response.status, 400);
+
+  const breakResult = await request('/api/appointments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(appointmentPayload({ time: '12:00' })),
+  });
+  assert.equal(breakResult.response.status, 400);
+
+  const providerResult = await request(`/api/settings/providers/${doctor.id}/schedule`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      days: updateResult.body.schedules.map((schedule) => ({
+        weekday: schedule.weekday,
+        isWorking: schedule.weekday !== 5,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        breakStart: schedule.breakStart,
+        breakEnd: schedule.breakEnd,
+      })),
+    }),
+  });
+  assert.equal(providerResult.response.status, 200);
+
+  const providerClosedAvailability = await request(
+    `/api/appointments/availability?doctorId=${doctor.id}&date=2099-01-16&duration=30`
+  );
+  assert.equal(providerClosedAvailability.body.isClosed, true);
+  assert.equal(providerClosedAvailability.body.slots.length, 0);
+});
+
+test('clinic settings control closures and appointment templates', async () => {
+  const initialSettings = await request('/api/settings');
+
+  assert.equal(initialSettings.response.status, 200);
+  assert.equal(initialSettings.body.slotIntervalMinutes, 30);
+  assert.equal(initialSettings.body.schedules.find((day) => day.weekday === 1).startTime, '08:00');
+
+  const closureResult = await request('/api/settings/closures', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date: '2099-01-15', label: 'Staff training' }),
+  });
+
+  assert.equal(closureResult.response.status, 201);
+  assert.equal(closureResult.body.date, '2099-01-15');
+
+  const closedAvailability = await request(
+    `/api/appointments/availability?doctorId=${doctor.id}&date=2099-01-15&duration=30`
+  );
+
+  assert.equal(closedAvailability.response.status, 200);
+  assert.equal(closedAvailability.body.isClosed, true);
+  assert.equal(closedAvailability.body.slots.length, 0);
+
+  const typeResult = await request('/api/settings/appointment-types', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Emergency visit', duration: 60 }),
+  });
+
+  assert.equal(typeResult.response.status, 201);
+  assert.equal(typeResult.body.duration, 60);
+
+  const settingsAfterUpdate = await request('/api/settings');
+  assert.ok(
+    settingsAfterUpdate.body.appointmentTypes.some((type) => type.name === 'Emergency visit')
+  );
 });
 
 test('enforces administrator-only doctor changes', async () => {

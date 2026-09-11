@@ -31,18 +31,33 @@ function timeToMinutes(time) {
   return hours * 60 + minutes;
 }
 
-function isValidClinicAppointmentTime(time, duration = 30) {
+function isValidClinicAppointmentTime(
+  time,
+  duration = 30,
+  { startTime = '08:00', endTime = '20:00', breaks = [], isClosed = false } = {}
+) {
+  if (isClosed) return false;
+
   if (!isValidThirtyMinuteTimeSlot(time)) {
     return false;
   }
 
   const startMinutes = timeToMinutes(time);
   const normalizedDuration = Number(duration || 30);
+  const endMinutes = timeToMinutes(endTime);
+  const appointmentEnd = startMinutes + normalizedDuration;
+
+  const overlapsBreak = breaks.some((breakPeriod) => {
+    const breakStart = timeToMinutes(breakPeriod.startTime);
+    const breakEnd = timeToMinutes(breakPeriod.endTime);
+    return startMinutes < breakEnd && appointmentEnd > breakStart;
+  });
 
   return (
-    startMinutes >= CLINIC_OPEN_MINUTES &&
-    startMinutes < CLINIC_CLOSE_MINUTES &&
-    startMinutes + normalizedDuration <= CLINIC_CLOSE_MINUTES
+    startMinutes >= timeToMinutes(startTime) &&
+    startMinutes < endMinutes &&
+    appointmentEnd <= endMinutes &&
+    !overlapsBreak
   );
 }
 

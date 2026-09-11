@@ -19,12 +19,20 @@ const authMigrationPath = path.join(
   '20260911153000_add_authentication',
   'migration.sql'
 );
+const clinicSettingsMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911170000_add_clinic_settings',
+  'migration.sql'
+);
 
 process.env.DATABASE_URL = `file:${databasePath.replaceAll('\\', '/')}`;
 
 const database = new Database(databasePath);
 database.exec(fs.readFileSync(migrationPath, 'utf8'));
 database.exec(fs.readFileSync(authMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(clinicSettingsMigrationPath, 'utf8'));
 database.close();
 
 const app = require('../app');

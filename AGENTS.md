@@ -38,13 +38,19 @@ Maintain the `client/`/`server/` separation. Do not move business rules into pag
 These rules are product requirements, not merely UI preferences. Enforce them in the server and reflect them in every relevant client flow.
 
 1. Appointment start times use `HH:MM` and a 30-minute grid: `08:00`, `08:30`, `09:00`, and so on.
-2. Clinic start-time options run from `08:00` through `19:30`. A selected duration must still finish by the clinic close at `20:00`; longer appointments therefore have fewer valid start times.
+2. The default clinic start-time options run from `08:00` through `19:30`, with a default close at `20:00`. Practice and provider settings may change the active hours, but a selected duration must still finish by the configured close; longer appointments therefore have fewer valid start times.
 3. The add-appointment form and reschedule form must use the same availability rules. A slot must visibly communicate whether it is free or booked, and the server must reject conflicts even if a client is stale.
 4. The add-appointment date defaults sensibly, but its calendar picker is opened intentionally by clicking the date field. Do not force an expanded calendar when the form opens.
 5. Appointment date and time are changed through the reschedule workflow. The appointment detail page must not expose a separate date/time edit control that bypasses rescheduling.
 6. Rescheduling must persist both the date and time and then refresh or reconcile every affected view. The appointment must appear on the agenda under its new date/time and no longer remain in the old slot.
 7. Terminal statuses (`completed`, `cancelled`, and `no_show`) must not be offered for rescheduling. Active appointments (`scheduled` and `arrived`) are the normal scheduling states; preserve the existing status semantics when changing availability or dashboard logic.
 8. The dashboard's upcoming agenda must be derived from the appointments API, include only future active appointments, sort by the combined appointment date/time, and remain correct after a reschedule or status change.
+
+## Scheduling settings
+
+- `ClinicSettings`, weekly `ClinicSchedule` entries, dated `ClinicClosure` entries, appointment types, and provider schedules are the source of truth for operational scheduling.
+- Availability, appointment creation, and rescheduling must all resolve the same clinic/provider schedule for the requested date. Do not reintroduce hard-coded hours or treatment-duration lists in client forms.
+- Appointment types may be archived, but existing appointments retain their saved treatment text and duration.
 
 When changing scheduling behavior, inspect and update the complete path: client form state, availability request, server controller, appointment service, conflict validation, persistence, and refresh behavior. Do not fix one screen with a second set of subtly different slot constants.
 

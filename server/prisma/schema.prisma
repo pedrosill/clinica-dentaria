@@ -33,6 +33,70 @@ model UserSession {
   ipAddress  String?
 }
 
+model ClinicSettings {
+  id                  Int              @id @default(1)
+  clinicName          String           @default("DentalPro")
+  timezone            String           @default("Europe/Lisbon")
+  slotIntervalMinutes Int              @default(30)
+  schedules           ClinicSchedule[]
+  closures            ClinicClosure[]
+  appointmentTypes    AppointmentType[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model ClinicSchedule {
+  id         Int           @id @default(autoincrement())
+  settingsId Int
+  weekday    Int
+  isOpen     Boolean       @default(false)
+  startTime  String        @default("08:00")
+  endTime    String        @default("20:00")
+  breakStart String?
+  breakEnd   String?
+  settings   ClinicSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  @@unique([settingsId, weekday])
+}
+
+model ClinicClosure {
+  id         Int           @id @default(autoincrement())
+  settingsId Int
+  date       DateTime
+  label      String
+  settings   ClinicSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  @@unique([settingsId, date])
+  @@index([date])
+}
+
+model AppointmentType {
+  id         Int           @id @default(autoincrement())
+  settingsId Int
+  name       String
+  duration   Int           @default(30)
+  isActive   Boolean       @default(true)
+  settings   ClinicSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([settingsId, name])
+}
+
+model ProviderSchedule {
+  id         Int      @id @default(autoincrement())
+  doctorId   Int
+  weekday    Int
+  isWorking  Boolean  @default(true)
+  startTime  String   @default("08:00")
+  endTime    String   @default("20:00")
+  breakStart String?
+  breakEnd   String?
+  doctor     Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, weekday])
+}
+
 model Patient {
   id           Int           @id @default(autoincrement())
   fullName     String
@@ -53,6 +117,7 @@ model Doctor {
   nif          String?
   createdAt    DateTime      @default(now())
   appointments Appointment[]
+  schedules    ProviderSchedule[]
 }
 
 model Appointment {

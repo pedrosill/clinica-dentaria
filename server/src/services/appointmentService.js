@@ -11,9 +11,10 @@ const {
   SLOT_INTERVAL_MINUTES,
   addMinutes,
   formatTimeOnly,
-  getClinicDayBounds,
+  getScheduleDayBounds,
   buildAvailabilitySlots,
 } = require('../utils/appointmentScheduling');
+const { getDoctorScheduleForDate } = require('./clinicSettingsService');
 
 const appointmentListInclude = {
   patient: true,
@@ -148,6 +149,9 @@ async function getRescheduleOptions({ appointmentId, date, duration }) {
       end: minutesToTime(timeToMinutes(start) + requestedDuration),
       duration: requestedDuration,
     })),
+    slotOptions: availability.slotOptions,
+    isClosed: availability.isClosed,
+    closureLabel: availability.closureLabel,
     recommendation: nextAvailable,
   };
 }
@@ -291,23 +295,40 @@ async function getDoctorDaySchedule({
 
   await ensureDoctorExists(normalizedDoctorId);
 
-  const appointments = await getDoctorAppointmentsForDate({
+  const scheduleRules = await getDoctorScheduleForDate({
     doctorId: normalizedDoctorId,
     date: normalizedDate,
-    excludeAppointmentId,
   });
+
+  const appointments = scheduleRules.isClosed
+    ? []
+    : await getDoctorAppointmentsForDate({
+        doctorId: normalizedDoctorId,
+        date: normalizedDate,
+        excludeAppointmentId,
+      });
 
   const bookedAppointments = appointments.map((appointment) =>
     toScheduleItem(appointment, normalizedDate)
   );
 
-  const { clinicOpen, clinicClose } = getClinicDayBounds(normalizedDate);
+  const { clinicOpen, clinicClose } = getScheduleDayBounds(normalizedDate, scheduleRules);
 
   return {
     doctorId: normalizedDoctorId,
     date: normalizedDate,
     clinicOpenTime: formatTimeOnly(clinicOpen),
     clinicCloseTime: formatTimeOnly(clinicClose),
+    startTime: scheduleRules.startTime,
+    endTime: scheduleRules.endTime,
+    isClosed: scheduleRules.isClosed,
+    closureLabel: scheduleRules.closureLabel,
+    breaks: scheduleRules.breakStart && scheduleRules.breakEnd
+      ? [{
+          start: buildDateTime(normalizedDate, scheduleRules.breakStart),
+          end: buildDateTime(normalizedDate, scheduleRules.breakEnd),
+        }]
+      : [],
     bookedAppointments,
   };
 }
@@ -337,12 +358,14 @@ async function getAvailableStartTimes({
     excludeAppointmentId,
   });
 
-  const { clinicOpen, clinicClose } = getClinicDayBounds(normalizedDate);
+  const { clinicOpen, clinicClose } = getScheduleDayBounds(normalizedDate, schedule);
   const slotOptions = buildAvailabilitySlots({
     clinicOpen,
     clinicClose,
     duration: normalizedDuration,
     bookedAppointments: schedule.bookedAppointments,
+    breaks: schedule.breaks,
+    isClosed: schedule.isClosed,
   });
   const availableStartTimes = slotOptions
     .filter((slot) => slot.status === 'free')
@@ -354,6 +377,8 @@ async function getAvailableStartTimes({
     duration: normalizedDuration,
     clinicOpenTime: schedule.clinicOpenTime,
     clinicCloseTime: schedule.clinicCloseTime,
+    isClosed: schedule.isClosed,
+    closureLabel: schedule.closureLabel,
     bookedAppointments: schedule.bookedAppointments.map((appointment) => ({
       id: appointment.id,
       startTime: appointment.startTime,
@@ -388,6 +413,8 @@ async function getAppointmentAvailability({
     duration: availability.duration,
     clinicOpenTime: availability.clinicOpenTime,
     clinicCloseTime: availability.clinicCloseTime,
+    isClosed: availability.isClosed,
+    closureLabel: availability.closureLabel,
     slots: availability.slotOptions,
     bookedAppointments: availability.bookedAppointments,
   };
@@ -440,7 +467,7 @@ async function findNextAvailableDate({
   return null;
 }
 
-function validateAppointmentPayload(payload, { legacyTime } = {}) {
+function validateAppointmentPayload(payload, { legacyTime, schedulingRules } = {}) {
   if (!payload.patientId || !payload.doctorId || !payload.date || !payload.time) {
     throw new HttpError(400, 'Patient, doctor, date and time are required');
   }
@@ -461,10 +488,25 @@ function validateAppointmentPayload(payload, { legacyTime } = {}) {
   const preservesUnchangedLegacyTime =
     payload.time === legacyTime && !isValidThirtyMinuteTimeSlot(payload.time);
 
-  if (!isValidClinicAppointmentTime(payload.time, payload.duration) && !preservesUnchangedLegacyTime) {
+  const scheduleValidationOptions = schedulingRules
+    ? {
+        startTime: schedulingRules.startTime,
+        endTime: schedulingRules.endTime,
+        isClosed: schedulingRules.isClosed,
+        breaks: schedulingRules.breakStart && schedulingRules.breakEnd
+          ? [{ startTime: schedulingRules.breakStart, endTime: schedulingRules.breakEnd }]
+          : [],
+      }
+    : {};
+
+  if (!isValidClinicAppointmentTime(payload.time, payload.duration, scheduleValidationOptions) && !preservesUnchangedLegacyTime) {
     throw new HttpError(
       400,
-      'Appointment time must be a valid 30-minute clinic slot between 08:00 and 19:30'
+      schedulingRules?.isClosed
+        ? schedulingRules.closureLabel
+          ? `The clinic is closed on this date: ${schedulingRules.closureLabel}`
+          : 'The clinic is closed on this date'
+        : 'Appointment time must be within the clinic schedule and use a 30-minute slot'
     );
   }
 
@@ -530,8 +572,12 @@ async function getAppointmentById(appointmentId) {
 
 async function createAppointment(payload) {
   const normalized = normalizeAppointmentPayload(payload);
+  const schedulingRules = await getDoctorScheduleForDate({
+    doctorId: normalized.doctorId,
+    date: normalized.date,
+  });
 
-  validateAppointmentPayload(normalized);
+  validateAppointmentPayload(normalized, { schedulingRules });
   await ensurePatientExists(normalized.patientId);
   await ensureDoctorExists(normalized.doctorId);
 
@@ -589,8 +635,14 @@ async function updateAppointment(appointmentId, payload) {
     );
   }
 
+  const schedulingRules = await getDoctorScheduleForDate({
+    doctorId: normalized.doctorId,
+    date: normalized.date,
+  });
+
   validateAppointmentPayload(normalized, {
     legacyTime: existingAppointment.time,
+    schedulingRules,
   });
 
   await ensurePatientExists(normalized.patientId);

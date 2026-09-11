@@ -24,6 +24,7 @@ export default function AppointmentModal({
   appointmentCalendarDays,
   appointmentTime,
   duration,
+  durationOptions,
   treatmentType,
   notes,
   treatmentOptions,
@@ -62,13 +63,6 @@ export default function AppointmentModal({
     () => patientSearchResults.filter((patient) => !recommendedPatientIds.has(patient.id)),
     [patientSearchResults, recommendedPatientIds]
   );
-
-  const durationOptions = [
-    { value: '30', label: '30 min' },
-    { value: '60', label: '60 min' },
-    { value: '90', label: '90 min' },
-    { value: '120', label: '120 min' },
-  ];
 
   const treatmentSelectOptions = treatmentOptions.map((option) => ({
     value: option,
