@@ -3,6 +3,7 @@
 ================================ */
 import {
   getAppointmentDateTime,
+  getAppLocale,
   getPatientDisplayName,
   isActiveAppointmentStatus,
 } from './agendaUtils.js';
@@ -10,8 +11,8 @@ import {
 /* ================================
    Helpers: formatting
 ================================ */
-export function formatPatientCreatedDate(dateValue) {
-  return new Intl.DateTimeFormat('en-GB', {
+export function formatPatientCreatedDate(dateValue, locale = getAppLocale()) {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import useLanguage from '../context/useLanguage';
 import AgendaHeader from '../components/agenda/AgendaHeader';
 import AgendaWeekView from '../components/agenda/AgendaWeekView';
 import AgendaMonthView from '../components/agenda/AgendaMonthView';
@@ -26,6 +27,7 @@ import {
 export default function Agenda() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const [viewType, setViewType] = useState('week');
   const initialAgendaDate = useMemo(() => {
     const dateParam = new URLSearchParams(location.search).get('date');
@@ -152,13 +154,13 @@ export default function Agenda() {
           to={`/appointments/${appointment.id}`}
           className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
         >
-          Open appointment
+          {t('Open appointment')}
         </Link>
         <Link
           to={getPatientDetailPath(appointment.patientId)}
           className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
         >
-          Open patient
+          {t('Open patient')}
         </Link>
       </div>
     );

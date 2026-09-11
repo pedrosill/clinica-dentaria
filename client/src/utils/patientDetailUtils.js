@@ -1,10 +1,12 @@
+import { getAppLocale } from './agendaUtils.js';
+
 export function startOfDay(date) {
   const value = new Date(date);
   value.setHours(0, 0, 0, 0);
   return value;
 }
 
-export function formatDisplayDate(date, locale = 'en-GB') {
+export function formatDisplayDate(date, locale = getAppLocale()) {
   return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',

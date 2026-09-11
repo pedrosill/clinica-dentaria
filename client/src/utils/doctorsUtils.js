@@ -1,5 +1,7 @@
-export function formatDisplayDate(date) {
-  return new Intl.DateTimeFormat('en-GB', {
+import { getAppLocale } from './agendaUtils.js';
+
+export function formatDisplayDate(date, locale = getAppLocale()) {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
