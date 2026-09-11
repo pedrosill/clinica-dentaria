@@ -61,7 +61,7 @@ function ProtectedRoutes() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-200/70">
       <div className="flex min-h-screen w-full">
         <Sidebar />
 
