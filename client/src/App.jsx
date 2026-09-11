@@ -18,29 +18,6 @@ import useAuth from './context/useAuth';
 /* ================================
    Shared states
 ================================ */
-function PlaceholderPage({ title, description }) {
-  return (
-    <div className="w-full space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-teal-700">Module</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-            {title}
-          </h1>
-          <p className="max-w-2xl text-sm leading-6 text-slate-500">{description}</p>
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center shadow-sm md:p-14">
-        <p className="text-sm font-medium text-slate-700">{title} is under development</p>
-        <p className="mt-2 text-sm text-slate-500">
-          This area stays in the current shell and will follow the same UI patterns.
-        </p>
-      </section>
-    </div>
-  );
-}
-
 /* ================================
    App shell
 ================================ */
@@ -76,15 +53,6 @@ function ProtectedRoutes() {
               <Route path="/doctors" element={<Doctors />} />
               <Route path="/doctors/:doctorId" element={<DoctorDetail />} />
               <Route path="/settings" element={<Settings />} />
-              <Route
-                path="/billing"
-                element={
-                  <PlaceholderPage
-                    title="Billing"
-                    description="Billing and invoices will appear here once that module is implemented."
-                  />
-                }
-              />
             </Routes>
           </div>
         </main>

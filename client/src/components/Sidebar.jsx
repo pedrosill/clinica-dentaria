@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { CalendarDays, CreditCard, LayoutDashboard, Settings, Stethoscope, Users } from 'lucide-react';
+import { CalendarDays, LayoutDashboard, Settings, Stethoscope, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import useAuth from '../context/useAuth';
 
@@ -28,11 +28,6 @@ const navigationItems = [
     to: '/doctors',
     label: 'Doctors',
     icon: Stethoscope,
-  },
-  {
-    to: '/billing',
-    label: 'Billing',
-    icon: CreditCard,
   },
   {
     to: '/settings',
