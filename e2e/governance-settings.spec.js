@@ -44,6 +44,7 @@ test('records patient consent and exposes the JSON export', async ({ page }) => 
   await page.getByRole('tab', { name: 'Search patients', exact: true }).click();
   await page.getByPlaceholder('Search all patients by name, phone, email or NIF').fill('Browser Test Patient');
   await page.getByRole('link', { name: 'Open patient', exact: true }).first().click();
+  await page.getByRole('tab', { name: 'Operations', exact: true }).click();
   await page.getByRole('button', { name: /Patient data governance/ }).click();
   await expect(page.getByRole('heading', { name: 'Patient data governance', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Download JSON export', exact: true })).toBeVisible();

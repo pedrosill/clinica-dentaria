@@ -86,6 +86,7 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
   await page.getByRole('tab', { name: 'Search patients', exact: true }).click();
   await page.getByPlaceholder('Search all patients by name, phone, email or NIF').fill('Browser Test Patient');
   await page.getByRole('link', { name: 'Open patient', exact: true }).first().click();
+  await page.getByRole('tab', { name: 'Clinical record', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Clinical record', exact: true })).toBeVisible();
 
   await page.getByLabel('Allergies').fill('Latex');

@@ -41,11 +41,28 @@ function PatientToolToggle({ title, description, isOpen, onToggle }) {
   );
 }
 
+function PatientTab({ title, isActive, onClick }) {
+  const { t } = useLanguage();
+
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
+      onClick={onClick}
+      className={`rounded-xl px-4 py-2.5 text-sm font-medium transition ${isActive ? 'bg-teal-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}
+    >
+      {t(title)}
+    </button>
+  );
+}
+
 
 export default function PatientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState('overview');
   const [openPatientTool, setOpenPatientTool] = useState(null);
 
   const patientId = useMemo(() => {
@@ -182,62 +199,74 @@ export default function PatientDetail() {
         formatDisplayDate={formatDisplayDate}
       />
 
-      <ClinicalRecordSection
-        patientId={patientId}
-        appointments={appointments}
-        clinicalRecord={clinicalRecord}
-        setClinicalRecord={setClinicalRecord}
-      />
+      <nav className="flex flex-wrap gap-2 border-b border-slate-300 pb-3" role="tablist" aria-label={t('Patient areas')}>
+        <PatientTab title="Overview" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+        <PatientTab title="Clinical record" isActive={activeTab === 'clinical'} onClick={() => setActiveTab('clinical')} />
+        <PatientTab title="Operations" isActive={activeTab === 'operations'} onClick={() => setActiveTab('operations')} />
+      </nav>
 
-      <div className="space-y-3">
-        <PatientToolToggle
-          title="Patient data governance"
-          description="Review consent history and export the structured patient record as JSON."
-          isOpen={openPatientTool === 'governance'}
-          onToggle={() => setOpenPatientTool((current) => (current === 'governance' ? null : 'governance'))}
+      {activeTab === 'clinical' ? (
+        <ClinicalRecordSection
+          patientId={patientId}
+          appointments={appointments}
+          clinicalRecord={clinicalRecord}
+          setClinicalRecord={setClinicalRecord}
         />
-        {openPatientTool === 'governance' ? <PatientGovernanceSection patientId={patientId} /> : null}
+      ) : null}
 
-        <PatientToolToggle
-          title="Recall history"
-          description="Compact history of this patient’s follow-ups."
-          isOpen={openPatientTool === 'recall'}
-          onToggle={() => setOpenPatientTool((current) => (current === 'recall' ? null : 'recall'))}
-        />
-        {openPatientTool === 'recall' ? <PatientRecallSection patientId={patientId} /> : null}
+      {activeTab === 'operations' ? (
+        <div className="space-y-3">
+          <PatientToolToggle
+            title="Patient data governance"
+            description="Review consent history and export the structured patient record as JSON."
+            isOpen={openPatientTool === 'governance'}
+            onToggle={() => setOpenPatientTool((current) => (current === 'governance' ? null : 'governance'))}
+          />
+          {openPatientTool === 'governance' ? <PatientGovernanceSection patientId={patientId} /> : null}
 
-        <PatientToolToggle
-          title="Waitlist history"
-          description="Compact history of this patient’s waitlist requests."
-          isOpen={openPatientTool === 'waitlist'}
-          onToggle={() => setOpenPatientTool((current) => (current === 'waitlist' ? null : 'waitlist'))}
-        />
-        {openPatientTool === 'waitlist' ? <PatientWaitlistSection patientId={patientId} /> : null}
-      </div>
+          <PatientToolToggle
+            title="Recall history"
+            description="Compact history of this patient’s follow-ups."
+            isOpen={openPatientTool === 'recall'}
+            onToggle={() => setOpenPatientTool((current) => (current === 'recall' ? null : 'recall'))}
+          />
+          {openPatientTool === 'recall' ? <PatientRecallSection patientId={patientId} /> : null}
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <PatientAppointmentsSection
-          title={t('Upcoming appointments')}
-          description={t('Current and future appointments for this patient.')}
-          emptyTitle={t('No upcoming appointments')}
-          emptyDescription={t('This patient does not have any upcoming bookings yet.')}
-          appointments={upcomingAppointments}
-          formatDisplayDate={formatDisplayDate}
-          getStatusClasses={getStatusClasses}
-          getStatusLabel={getStatusLabel}
-        />
+          <PatientToolToggle
+            title="Waitlist history"
+            description="Compact history of this patient’s waitlist requests."
+            isOpen={openPatientTool === 'waitlist'}
+            onToggle={() => setOpenPatientTool((current) => (current === 'waitlist' ? null : 'waitlist'))}
+          />
+          {openPatientTool === 'waitlist' ? <PatientWaitlistSection patientId={patientId} /> : null}
+        </div>
+      ) : null}
 
-        <PatientAppointmentsSection
-          title={t('Recent completed appointments')}
-          description={t('Latest completed work already recorded for this patient.')}
-          emptyTitle={t('No completed appointments yet')}
-          emptyDescription={t('Completed treatment history will appear here once appointments are concluded.')}
-          appointments={recentCompletedAppointments}
-          formatDisplayDate={formatDisplayDate}
-          getStatusClasses={getStatusClasses}
-          getStatusLabel={getStatusLabel}
-        />
-      </div>
+      {activeTab === 'overview' ? (
+        <div className="grid gap-6 xl:grid-cols-2">
+          <PatientAppointmentsSection
+            title={t('Upcoming appointments')}
+            description={t('Current and future appointments for this patient.')}
+            emptyTitle={t('No upcoming appointments')}
+            emptyDescription={t('This patient does not have any upcoming bookings yet.')}
+            appointments={upcomingAppointments}
+            formatDisplayDate={formatDisplayDate}
+            getStatusClasses={getStatusClasses}
+            getStatusLabel={getStatusLabel}
+          />
+
+          <PatientAppointmentsSection
+            title={t('Recent completed appointments')}
+            description={t('Latest completed work already recorded for this patient.')}
+            emptyTitle={t('No completed appointments yet')}
+            emptyDescription={t('Completed treatment history will appear here once appointments are concluded.')}
+            appointments={recentCompletedAppointments}
+            formatDisplayDate={formatDisplayDate}
+            getStatusClasses={getStatusClasses}
+            getStatusLabel={getStatusLabel}
+          />
+        </div>
+      ) : null}
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
