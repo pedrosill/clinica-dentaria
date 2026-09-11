@@ -7,7 +7,7 @@
     "start": "node index.js",
     "dev": "node index.js",
     "seed": "node seed.js",
-    "test": "node --test src/utils/appointmentScheduling.test.js src/utils/appointmentUtils.test.js src/utils/parse.test.js"
+    "test": "node --test src/utils/appointmentScheduling.test.js src/utils/appointmentUtils.test.js src/utils/parse.test.js src/integration/appointments.integration.test.js"
   },
   "keywords": [],
   "author": "",
