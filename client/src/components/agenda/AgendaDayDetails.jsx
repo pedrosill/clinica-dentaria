@@ -1,4 +1,5 @@
 import { getPatientDisplayName } from '../../utils/agendaUtils';
+import useLanguage from '../../context/useLanguage';
 
 export default function AgendaDayDetails({
   selectedDate,
@@ -9,13 +10,15 @@ export default function AgendaDayDetails({
   renderCompactActions,
   onOpenCreateModal,
 }) {
+  const { t } = useLanguage();
+
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-slate-300 pb-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-950">{formatFullDate(selectedDate)}</h2>
           <p className="text-sm text-slate-700">
-            {appointments.length} appointment{appointments.length === 1 ? '' : 's'}
+            {appointments.length} {t(appointments.length === 1 ? 'appointment' : 'appointments')}
           </p>
         </div>
 
@@ -24,7 +27,7 @@ export default function AgendaDayDetails({
           onClick={onOpenCreateModal}
           className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
         >
-          Add for this day
+          {t('Add for this day')}
         </button>
       </div>
 
@@ -33,7 +36,7 @@ export default function AgendaDayDetails({
           appointments.map((appointment) => (
             <div
               key={appointment.id}
-              className="overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 p-4 transition hover:bg-slate-100/70"
+              className="border-t border-slate-200 py-4 first:border-t-0 first:pt-0"
             >
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="space-y-2">
@@ -50,7 +53,7 @@ export default function AgendaDayDetails({
                       appointment.status
                     )}`}
                   >
-                    {getStatusLabel(appointment.status)}
+                    {t(getStatusLabel(appointment.status))}
                   </span>
 
                   {renderCompactActions(appointment)}
@@ -59,10 +62,10 @@ export default function AgendaDayDetails({
             </div>
           ))
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-            <p className="text-sm font-medium text-slate-800">No appointments for this day</p>
+          <div className="border-t border-dashed border-slate-300 pt-6 text-center">
+            <p className="text-sm font-medium text-slate-800">{t('No appointments for this day')}</p>
             <p className="mt-2 text-sm text-slate-600">
-              Add a booking for this date to prepare the day ahead.
+              {t('Add a booking for this date to prepare the day ahead.')}
             </p>
           </div>
         )}

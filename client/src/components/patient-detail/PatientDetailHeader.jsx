@@ -1,5 +1,6 @@
 import { ChevronLeft, Pencil, Trash2, UserRound, X } from 'lucide-react';
 import { getPatientDisplayName } from '../../utils/agendaUtils';
+import useLanguage from '../../context/useLanguage';
 
 export default function PatientDetailHeader({
   patient,
@@ -10,6 +11,8 @@ export default function PatientDetailHeader({
   onCancelEdit,
   onOpenDeleteModal,
 }) {
+  const { t } = useLanguage();
+
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -21,7 +24,7 @@ export default function PatientDetailHeader({
               className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Back
+              {t('Back')}
             </button>
 
             {isEditing ? (
@@ -32,7 +35,7 @@ export default function PatientDetailHeader({
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <X className="h-4 w-4" />
-                Cancel
+                {t('Cancel')}
               </button>
             ) : (
               <>
@@ -42,7 +45,7 @@ export default function PatientDetailHeader({
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
                 >
                   <Pencil className="h-4 w-4" />
-                  Edit
+                  {t('Edit')}
                 </button>
 
                 <button
@@ -51,7 +54,7 @@ export default function PatientDetailHeader({
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  {t('Delete')}
                 </button>
               </>
             )}
@@ -63,12 +66,12 @@ export default function PatientDetailHeader({
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-teal-800">Patient file</p>
+              <p className="text-sm font-semibold text-teal-800">{t('Patient file')}</p>
               <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
                 {getPatientDisplayName(patient)}
               </h1>
               <p className="text-sm text-slate-700">
-                Operational patient details and appointment history.
+                {t('Operational patient details and appointment history.')}
               </p>
             </div>
           </div>

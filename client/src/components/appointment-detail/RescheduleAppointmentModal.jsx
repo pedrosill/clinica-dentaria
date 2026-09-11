@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Clock3, UserRound, X } from 'l
 import { API_BASE_URL } from '../../constants/agendaConstants';
 import Dialog from '../ui/Dialog';
 import { getAppointmentDurationOptions } from '../../utils/appointmentTypeUtils';
+import useLanguage from '../../context/useLanguage';
 
 function pad(value) {
   return String(value).padStart(2, '0');
@@ -24,8 +25,8 @@ function addDays(dateValue, amount) {
   return nextDate;
 }
 
-function formatLongDate(dateValue) {
-  return new Intl.DateTimeFormat('en-GB', {
+function formatLongDate(dateValue, locale = 'en-GB') {
+  return new Intl.DateTimeFormat(locale, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -33,8 +34,8 @@ function formatLongDate(dateValue) {
   }).format(new Date(dateValue));
 }
 
-function formatShortDate(dateValue) {
-  return new Intl.DateTimeFormat('en-GB', {
+function formatShortDate(dateValue, locale = 'en-GB') {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -74,12 +75,12 @@ function getSlotState({ slotTime, selectedTime, selectedDuration, blockedSlots, 
   return 'free';
 }
 
-function getDoctorName(appointment) {
-  return appointment?.doctor?.name || 'No doctor assigned';
+function getDoctorName(appointment, t) {
+  return appointment?.doctor?.name || t('No doctor assigned');
 }
 
-function getPatientName(appointment) {
-  if (!appointment?.patient) return 'Unknown patient';
+function getPatientName(appointment, t) {
+  if (!appointment?.patient) return t('Unknown patient');
   if (appointment.patient.fullName) return appointment.patient.fullName;
   return `${appointment.patient.firstName || ''} ${appointment.patient.lastName || ''}`.trim();
 }
@@ -99,6 +100,7 @@ export default function RescheduleAppointmentModal({
   onClose,
   onSubmit,
 }) {
+  const { t, locale } = useLanguage();
   const [inspectedDate, setInspectedDate] = useState(date || '');
   const [dayAppointments, setDayAppointments] = useState([]);
   const [daySlotOptions, setDaySlotOptions] = useState([]);
@@ -153,14 +155,14 @@ export default function RescheduleAppointmentModal({
   }, [daySlotOptions]);
 
   const selectedDateLabel = useMemo(() => {
-    if (!date) return 'No date selected';
-    return formatLongDate(date);
-  }, [date]);
+    if (!date) return t('No date selected');
+    return formatLongDate(date, locale);
+  }, [date, locale, t]);
 
   const inspectedDateLabel = useMemo(() => {
-    if (!inspectedDate) return 'Loading day...';
-    return formatLongDate(inspectedDate);
-  }, [inspectedDate]);
+    if (!inspectedDate) return t('Loading day...');
+    return formatLongDate(inspectedDate, locale);
+  }, [inspectedDate, locale, t]);
 
   const dayTimelineItems = useMemo(() => {
     return daySlots.map((slotTime) => ({
@@ -201,7 +203,7 @@ export default function RescheduleAppointmentModal({
         );
 
         if (!appointmentsResponse.ok) {
-          throw new Error('Failed to load inspected day schedule');
+          throw new Error(t('Failed to load inspected day schedule'));
         }
 
         const appointmentsData = await appointmentsResponse.json();
@@ -224,7 +226,7 @@ export default function RescheduleAppointmentModal({
         setDaySlotOptions(Array.isArray(appointmentsData?.slotOptions) ? appointmentsData.slotOptions : []);
       } catch (error) {
         if (!isMounted) return;
-        setScheduleError(error.message || 'Failed to load inspected day schedule');
+        setScheduleError(error.message || t('Failed to load inspected day schedule'));
         setDayAppointments([]);
         setDaySlotOptions([]);
       } finally {
@@ -239,7 +241,7 @@ export default function RescheduleAppointmentModal({
     return () => {
       isMounted = false;
     };
-  }, [appointment?.doctorId, appointment?.id, inspectedDate, isOpen, selectedDuration]);
+  }, [appointment?.doctorId, appointment?.id, inspectedDate, isOpen, selectedDuration, t]);
 
   function handleInspectPreviousDay() {
     if (!inspectedDate) return;
@@ -275,13 +277,12 @@ export default function RescheduleAppointmentModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 md:px-8">
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-teal-800">Scheduling workflow</p>
+            <p className="text-sm font-semibold text-teal-800">{t('Scheduling workflow')}</p>
             <h2 id="reschedule-appointment-modal-title" className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
-              Reschedule Appointment
+              {t('Reschedule Appointment')}
             </h2>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              Inspect the doctor&apos;s day timeline, choose a valid free slot, and keep the
-              booking flow safely aligned with backend conflict rules.
+              {t("Inspect the doctor's day timeline, choose a valid free slot, and keep the booking flow safely aligned with backend conflict rules.")}
             </p>
           </div>
 
@@ -290,7 +291,7 @@ export default function RescheduleAppointmentModal({
             onClick={onClose}
             disabled={isSubmitting}
             className="rounded-2xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-            aria-label="Close reschedule modal"
+            aria-label={t('Close reschedule modal')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -301,7 +302,7 @@ export default function RescheduleAppointmentModal({
             <div className="border-b border-slate-200 px-6 py-5 md:px-8">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">Inspected day schedule</p>
+                  <p className="text-sm font-semibold text-slate-950">{t('Inspected day schedule')}</p>
                   <p className="mt-1 text-sm text-slate-600">{inspectedDateLabel}</p>
                 </div>
 
@@ -312,7 +313,7 @@ export default function RescheduleAppointmentModal({
                     className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
                   >
                     <ChevronLeft className="mr-2 h-4 w-4" />
-                    Previous day
+                    {t('Previous day')}
                   </button>
 
                   <button
@@ -320,7 +321,7 @@ export default function RescheduleAppointmentModal({
                     onClick={handleInspectNextDay}
                     className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
                   >
-                    Next day
+                    {t('Next day')}
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </button>
                 </div>
@@ -328,13 +329,13 @@ export default function RescheduleAppointmentModal({
 
               <div className="mt-4 flex flex-wrap gap-3 text-xs font-medium">
                 <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                  Free selectable
+                  {t('Free selectable')}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-rose-700 ring-1 ring-inset ring-rose-200">
-                  Booked / blocked
+                  {t('Booked / blocked')}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-teal-700 ring-1 ring-inset ring-teal-200">
-                  Selected
+                  {t('Selected')}
                 </span>
               </div>
 
@@ -357,9 +358,9 @@ export default function RescheduleAppointmentModal({
                 </div>
               ) : dayTimelineItems.length === 0 ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-8 text-center">
-                  <p className="text-sm font-semibold text-amber-900">Clinic closed</p>
+                  <p className="text-sm font-semibold text-amber-900">{t('Clinic closed')}</p>
                   <p className="mt-2 text-sm text-amber-800">
-                    No appointment starts are available on this date.
+                    {t('No appointment starts are available on this date.')}
                   </p>
                 </div>
               ) : (
@@ -408,10 +409,10 @@ export default function RescheduleAppointmentModal({
                               </p>
                               <p className="mt-1 text-sm text-slate-600">
                                 {isSelected
-                                  ? `Selected for ${selectedDuration} min`
-                                  : isBooked
-                                    ? 'Unavailable for this duration'
-                                    : 'Available to book'}
+                                   ? `${t('Selected for')} ${selectedDuration} ${t('min')}`
+                                   : isBooked
+                                     ? t('Unavailable for this duration')
+                                     : t('Available to book')}
                               </p>
                             </div>
                           </div>
@@ -419,31 +420,31 @@ export default function RescheduleAppointmentModal({
                           <div className="flex flex-wrap items-center gap-2">
                             {slotState === 'selected' ? (
                               <span className="inline-flex rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-800 ring-1 ring-inset ring-teal-200">
-                                Start time
+                                 {t('Start time')}
                               </span>
                             ) : null}
 
                             {slotState === 'selected-range' ? (
                               <span className="inline-flex rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-800 ring-1 ring-inset ring-teal-200">
-                                Selected range
+                                 {t('Selected range')}
                               </span>
                             ) : null}
 
                             {slotState === 'blocked' ? (
                               <span className="inline-flex rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-200">
-                                Booked
+                                 {t('Booked')}
                               </span>
                             ) : null}
 
                             {slotState === 'invalid' ? (
                               <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300">
-                                Conflicts with duration
+                                 {t('Conflicts with duration')}
                               </span>
                             ) : null}
 
                             {slotState === 'free' ? (
                               <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                Select slot
+                                 {t('Select slot')}
                               </span>
                             ) : null}
                           </div>
@@ -466,36 +467,36 @@ export default function RescheduleAppointmentModal({
                     </div>
 
                     <div>
-                      <p className="text-sm font-semibold text-slate-950">Appointment summary</p>
-                      <p className="text-sm text-slate-600">Current booking context</p>
+                       <p className="text-sm font-semibold text-slate-950">{t('Appointment summary')}</p>
+                       <p className="text-sm text-slate-600">{t('Current booking context')}</p>
                     </div>
                   </div>
 
                   <div className="mt-5 space-y-4">
                     <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                        Patient
+                         {t('Patient')}
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-950">
-                        {getPatientName(appointment)}
+                         {getPatientName(appointment, t)}
                       </p>
                     </div>
 
                     <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                        Doctor
+                         {t('Doctor')}
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-950">
-                        {getDoctorName(appointment)}
+                         {getDoctorName(appointment, t)}
                       </p>
                     </div>
 
                     <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                        Treatment
+                         {t('Treatment')}
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-950">
-                        {appointment.treatmentType || 'Not recorded'}
+                         {appointment.treatmentType || t('Not recorded')}
                       </p>
                     </div>
                   </div>
@@ -508,15 +509,15 @@ export default function RescheduleAppointmentModal({
                     </div>
 
                     <div>
-                      <p className="text-sm font-semibold text-slate-950">Selected slot</p>
-                      <p className="text-sm text-slate-600">What will be submitted</p>
+                       <p className="text-sm font-semibold text-slate-950">{t('Selected slot')}</p>
+                       <p className="text-sm text-slate-600">{t('What will be submitted')}</p>
                     </div>
                   </div>
 
                   <div className="mt-5 space-y-4">
                     <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
-                        Date
+                         {t('Date')}
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-950">
                         {selectedDateLabel}
@@ -525,15 +526,15 @@ export default function RescheduleAppointmentModal({
 
                     <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
-                        Time
+                         {t('Time')}
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-950">
-                        {time ? formatTimeLabel(time) : 'No time selected'}
+                         {time ? formatTimeLabel(time) : t('No time selected')}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Duration</label>
+                       <label className="text-sm font-medium text-slate-700">{t('Duration')}</label>
                       <select
                         value={selectedDuration}
                         onChange={(event) => onDurationChange(event.target.value)}
@@ -541,8 +542,8 @@ export default function RescheduleAppointmentModal({
                         className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {durationOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
+                           <option key={option.value} value={option.value}>
+                             {option.value} {t('min')}
                           </option>
                         ))}
                       </select>
@@ -550,19 +551,19 @@ export default function RescheduleAppointmentModal({
 
                     <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                        Original booking
+                         {t('Original booking')}
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
-                        {formatShortDate(appointment.date)} at {formatTimeLabel(appointment.time)}
+                         {formatShortDate(appointment.date, locale)} {t('at')} {formatTimeLabel(appointment.time)}
                       </p>
                     </div>
                   </div>
                 </section>
 
                 <section className="rounded-3xl border border-slate-300 bg-white p-5 shadow-sm">
-                  <p className="text-sm font-semibold text-slate-950">Inspected day bookings</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Existing appointments already blocking this doctor on {inspectedDateLabel}.
+                   <p className="text-sm font-semibold text-slate-950">{t('Inspected day bookings')}</p>
+                   <p className="mt-1 text-sm text-slate-600">
+                     {t('Existing appointments already blocking this doctor on')} {inspectedDateLabel}.
                   </p>
 
                   <div className="mt-4 space-y-3">
@@ -573,22 +574,22 @@ export default function RescheduleAppointmentModal({
                         return (
                           <div
                             key={item.id}
-                            className={`rounded-2xl border p-4 ${
+                            className={`border-t p-4 first:border-t-0 first:pt-0 ${
                               isCurrentAppointment
                                 ? 'border-sky-200 bg-sky-50'
-                                : 'border-slate-300 bg-slate-50'
+                                : 'border-slate-200'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="text-sm font-semibold text-slate-950">
-                                  {formatTimeLabel(item.time)} · {Number(item.duration || 30)} min
+                                   {formatTimeLabel(item.time)} · {Number(item.duration || 30)} {t('min')}
                                 </p>
                                 <p className="mt-1 text-sm text-slate-700">
                                    {getPatientName(item)}
                                 </p>
                                 <p className="mt-1 text-xs font-medium text-slate-500">
-                                  {item.treatmentType || 'Not recorded'}
+                                   {item.treatmentType || t('Not recorded')}
                                 </p>
                               </div>
 
@@ -599,19 +600,19 @@ export default function RescheduleAppointmentModal({
                                     : 'bg-slate-200 text-slate-700 ring-slate-300'
                                 }`}
                               >
-                                {isCurrentAppointment ? 'Current' : 'Booked'}
+                                 {isCurrentAppointment ? t('Current') : t('Booked')}
                               </span>
                             </div>
                           </div>
                         );
                       })
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
+                       <div className="border-t border-dashed border-slate-300 pt-6 text-center">
                         <p className="text-sm font-medium text-slate-800">
-                          No bookings found for this inspected day.
+                           {t('No bookings found for this inspected day.')}
                         </p>
                         <p className="mt-2 text-sm text-slate-600">
-                          All valid timeline starts for the selected duration are currently open.
+                           {t('All valid timeline starts for the selected duration are currently open.')}
                         </p>
                       </div>
                     )}
@@ -630,11 +631,11 @@ export default function RescheduleAppointmentModal({
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                    Ready to submit
+                     {t('Ready to submit')}
                   </p>
                   <p className="mt-2 text-sm font-medium text-slate-900">
-                    {date ? formatShortDate(date) : 'No date selected'} ·{' '}
-                    {time ? formatTimeLabel(time) : 'No time selected'} · {selectedDuration} min
+                     {date ? formatShortDate(date, locale) : t('No date selected')} ·{' '}
+                     {time ? formatTimeLabel(time) : t('No time selected')} · {selectedDuration} {t('min')}
                   </p>
                 </div>
 
@@ -645,7 +646,7 @@ export default function RescheduleAppointmentModal({
                     disabled={isSubmitting}
                     className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Cancel
+                     {t('Cancel')}
                   </button>
 
                   <button
@@ -653,7 +654,7 @@ export default function RescheduleAppointmentModal({
                     disabled={isSubmitting || !date || !time || !availableStartTimes.has(time)}
                     className="inline-flex min-w-44 items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {isSubmitting ? 'Saving...' : 'Save reschedule'}
+                     {isSubmitting ? t('Saving...') : t('Save reschedule')}
                   </button>
                 </div>
               </form>

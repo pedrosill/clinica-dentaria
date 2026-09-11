@@ -10,6 +10,7 @@ import {
   getAppointmentTypeOptions,
 } from '../../utils/appointmentTypeUtils';
 import { getPatientDisplayName } from '../../utils/agendaUtils';
+import useLanguage from '../../context/useLanguage';
 
 /* ================================
    Component
@@ -33,6 +34,8 @@ export default function AppointmentInfoSection({
   onCancelEdit,
   onSave,
 }) {
+  const { t } = useLanguage();
+
   const patientOptions = useMemo(
     () =>
       patients.map((patientOption) => ({
@@ -54,9 +57,12 @@ export default function AppointmentInfoSection({
   const treatmentOptions = useMemo(
     () => {
       const options = getAppointmentTypeOptions(appointmentTypes, appointment?.treatmentType);
-      return options.length > 0 ? options : [EMPTY_APPOINTMENT_TYPE_OPTION];
+      return options.length > 0 ? options : [{
+        ...EMPTY_APPOINTMENT_TYPE_OPTION,
+        label: t(EMPTY_APPOINTMENT_TYPE_OPTION.label),
+      }];
     },
-    [appointment?.treatmentType, appointmentTypes]
+    [appointment?.treatmentType, appointmentTypes, t]
   );
 
   return (
@@ -68,12 +74,12 @@ export default function AppointmentInfoSection({
 
         <div>
           <h2 className="text-xl font-semibold text-slate-900">
-            {isCompletedAppointment ? 'Completion record' : 'Appointment information'}
+            {isCompletedAppointment ? t('Completion record') : t('Appointment information')}
           </h2>
           <p className="text-sm text-slate-500">
             {isCompletedAppointment
-              ? 'Final outcome and clinical notes for this completed visit.'
-              : 'Scheduling and follow-up use the same validated booking flow.'}
+              ? t('Final outcome and clinical notes for this completed visit.')
+              : t('Scheduling and follow-up use the same validated booking flow.')}
           </p>
         </div>
       </div>
@@ -81,128 +87,128 @@ export default function AppointmentInfoSection({
       {!isEditing ? (
         isCompletedAppointment ? (
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Date
+                {t('Date')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {formatLongDate(appointment.date)}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Status
+                {t('Status')}
               </p>
               <span
                 className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${getStatusClasses(
                   appointment.status
                 )}`}
               >
-                {getStatusLabel(appointment.status)}
+                {t(getStatusLabel(appointment.status))}
               </span>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Performed treatment
+                {t('Performed treatment')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.performedTreatment || 'Not recorded yet'}
+                {appointment.performedTreatment || t('Not recorded yet')}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Completion note
+                {t('Completion note')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.completionNotes || 'No completion note recorded.'}
+                {appointment.completionNotes || t('No completion note recorded.')}
               </p>
             </div>
           </div>
         ) : (
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Date
+                {t('Date')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {formatLongDate(appointment.date)}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Time
+                {t('Time')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">{appointment.time}</p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Duration
+                {t('Duration')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.duration || 30} minutes
+                {appointment.duration || 30} {t('minutes')}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Status
+                {t('Status')}
               </p>
               <span
                 className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${getStatusClasses(
                   appointment.status
                 )}`}
               >
-                {getStatusLabel(appointment.status)}
+                {t(getStatusLabel(appointment.status))}
               </span>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Scheduled treatment
+                {t('Scheduled treatment')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.treatmentType || 'Not recorded'}
+                {appointment.treatmentType || t('Not recorded')}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Doctor
+                {t('Doctor')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.doctor?.name || 'No doctor assigned'}
+                {appointment.doctor?.name || t('No doctor assigned')}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Performed treatment
+                {t('Performed treatment')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.performedTreatment || 'Not recorded yet'}
+                {appointment.performedTreatment || t('Not recorded yet')}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Scheduling notes
+                {t('Scheduling notes')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.notes || 'No scheduling notes recorded.'}
+                {appointment.notes || t('No scheduling notes recorded.')}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Completion note
+                {t('Completion note')}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.completionNotes || 'No completion note recorded.'}
+                {appointment.completionNotes || t('No completion note recorded.')}
               </p>
             </div>
           </div>
@@ -210,36 +216,35 @@ export default function AppointmentInfoSection({
       ) : (
         <form onSubmit={onSave} className="mt-6 space-y-4">
           <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-            Update the patient, doctor, treatment, or notes here. Use Reschedule to change the
-            appointment date, time, or duration.
+            {t('Update the patient, doctor, treatment, or notes here. Use Reschedule to change the appointment date, time, or duration.')}
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="lg:col-span-2">
               <SelectDropdown
-                label="Patient"
+                label={t('Patient')}
                 value={patientId}
                 onChange={onPatientChange}
                 options={patientOptions}
-                placeholder="Select a patient"
+                placeholder={t('Select a patient')}
                 disabled={isSubmitting}
               />
             </div>
 
             <div className="lg:col-span-2">
               <SelectDropdown
-                label="Doctor"
+                label={t('Doctor')}
                 value={doctorId}
                 onChange={onDoctorChange}
                 options={doctorOptions}
-                placeholder="Select a doctor"
+                placeholder={t('Select a doctor')}
                 disabled={isSubmitting}
               />
             </div>
 
             <div>
               <SelectDropdown
-                label="Scheduled treatment"
+                label={t('Scheduled treatment')}
                 value={treatmentType}
                 onChange={onTreatmentTypeChange}
                 options={treatmentOptions}
@@ -248,7 +253,7 @@ export default function AppointmentInfoSection({
             </div>
 
             <div className="space-y-2 lg:col-span-2">
-              <label className="text-sm font-medium text-slate-700">Scheduling notes</label>
+              <label className="text-sm font-medium text-slate-700">{t('Scheduling notes')}</label>
               <textarea
                 rows="4"
                 value={notes}
@@ -265,7 +270,7 @@ export default function AppointmentInfoSection({
               disabled={isSubmitting}
               className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Cancel
+              {t('Cancel')}
             </button>
 
             <button
@@ -274,7 +279,7 @@ export default function AppointmentInfoSection({
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <Save className="h-4 w-4" />
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
+              {isSubmitting ? t('Saving...') : t('Save Changes')}
             </button>
           </div>
         </form>

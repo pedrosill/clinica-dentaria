@@ -1,5 +1,6 @@
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import Dialog from './ui/Dialog';
+import useLanguage from '../context/useLanguage';
 
 export default function DeleteConfirmModal({
   isOpen,
@@ -11,6 +12,8 @@ export default function DeleteConfirmModal({
   onCancel,
   onConfirm,
 }) {
+  const { t } = useLanguage();
+
   if (!isOpen) {
     return null;
   }
@@ -30,9 +33,9 @@ export default function DeleteConfirmModal({
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-red-700">Delete action</p>
+              <p className="text-sm font-medium text-red-700">{t('Delete action')}</p>
             <h2 id="delete-confirm-modal-title" className="mt-1 text-xl font-semibold text-slate-900">
-              {title}
+              {t(title)}
             </h2>
             </div>
           </div>
@@ -41,7 +44,7 @@ export default function DeleteConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            aria-label="Close modal"
+            aria-label={t('Close modal')}
             className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
             <X className="h-5 w-5" />
@@ -57,7 +60,7 @@ export default function DeleteConfirmModal({
             disabled={isSubmitting}
             className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {cancelLabel}
+            {t(cancelLabel)}
           </button>
 
           <button
@@ -67,7 +70,7 @@ export default function DeleteConfirmModal({
             className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
             <Trash2 className="h-4 w-4" />
-            {isSubmitting ? 'Deleting...' : confirmLabel}
+            {isSubmitting ? t('Deleting...') : t(confirmLabel)}
           </button>
         </div>
       </Dialog>

@@ -1,4 +1,5 @@
 import { getAppLocale } from '../../utils/agendaUtils';
+import useLanguage from '../../context/useLanguage';
 
 export default function AgendaWeekView({
   weekLabel,
@@ -13,13 +14,15 @@ export default function AgendaWeekView({
   onOpenCreateModal,
   onOpenAppointment,
 }) {
+  const { t } = useLanguage();
+
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
       <div className="mb-5 flex flex-col gap-2 border-b border-slate-300 pb-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-950">{weekLabel}</h2>
           <p className="text-sm text-slate-700">
-            Select a day or open an appointment.
+            {t('Select a day or open an appointment.')}
           </p>
         </div>
       </div>
@@ -33,12 +36,12 @@ export default function AgendaWeekView({
           return (
             <div
               key={day.toISOString()}
-              className={`rounded-2xl border p-4 transition ${
+              className={`border-t border-slate-200 p-4 transition first:border-t-0 xl:border-l xl:border-t-0 xl:pl-4 ${
                 isSameDay(day, selectedDate)
                   ? 'border-teal-600 bg-teal-50 shadow-inner ring-1 ring-inset ring-teal-200'
                   : isSameDay(day, new Date())
                     ? 'border-teal-300 bg-teal-50/60'
-                    : 'border-slate-300 bg-slate-50/80'
+                    : ''
               }`}
             >
               <button
@@ -46,7 +49,7 @@ export default function AgendaWeekView({
                 onClick={() => onSelectDate(day)}
                 className={`w-full rounded-xl px-2 py-2 text-left transition ${
                   isSameDay(day, selectedDate)
-                    ? 'bg-white text-teal-950 shadow-sm ring-1 ring-inset ring-teal-200 hover:bg-white/80'
+                    ? 'text-teal-950 hover:bg-teal-100/60'
                     : ''
                 }`}
               >
@@ -71,7 +74,7 @@ export default function AgendaWeekView({
                   dayAppointments.map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm transition hover:bg-slate-50"
+                      className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -86,7 +89,7 @@ export default function AgendaWeekView({
                             appointment.status
                           )}`}
                         >
-                          {getStatusLabel(appointment.status)}
+                          {t(getStatusLabel(appointment.status))}
                         </span>
                       </div>
 
@@ -95,19 +98,19 @@ export default function AgendaWeekView({
                         onClick={() => onOpenAppointment(appointment.id)}
                         className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
                       >
-                        Open appointment
+                        {t('Open appointment')}
                       </button>
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
-                    <p className="text-sm font-medium text-slate-700">No appointments</p>
+                  <div className="border-t border-dashed border-slate-300 pt-4 text-center">
+                    <p className="text-sm font-medium text-slate-700">{t('No appointments')}</p>
                     <button
                       type="button"
                       onClick={() => onOpenCreateModal(day)}
                       className="mt-3 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
                     >
-                      Add
+                      {t('Add')}
                     </button>
                   </div>
                 )}

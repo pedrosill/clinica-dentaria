@@ -83,6 +83,7 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
   await page.getByTestId('login-submit').click();
   await expect(page.getByRole('heading', { name: 'Patients', exact: true })).toBeVisible();
 
+  await page.getByRole('tab', { name: 'Search patients', exact: true }).click();
   await page.getByPlaceholder('Search all patients by name, phone, email or NIF').fill('Browser Test Patient');
   await page.getByRole('link', { name: 'Open patient', exact: true }).first().click();
   await expect(page.getByRole('heading', { name: 'Clinical record', exact: true })).toBeVisible();
@@ -133,6 +134,21 @@ test('switches the clinic interface between English and European Portuguese', as
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT');
   await expect(page.getByTestId('language-select')).toBeEnabled();
 
+  await page.goto('/agenda');
+  await expect(page.getByRole('button', { name: 'Adicionar consulta', exact: true })).toBeVisible();
+  await expect(page.getByText('No appointments', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Adicionar consulta', exact: true }).click();
+  const portugueseModal = page.getByTestId('appointment-modal');
+  await expect(portugueseModal.getByText('Paciente', { exact: true })).toBeVisible();
+  await expect(portugueseModal.getByTestId('appointment-date-toggle')).toHaveAttribute(
+    'aria-expanded',
+    'false'
+  );
+  await expect(portugueseModal.getByText('Escolher data', { exact: true })).toBeVisible();
+  await portugueseModal.getByRole('button', { name: 'Fechar janela', exact: true }).click();
+
+  await page.goto('/settings');
+  await expect(page.getByTestId('language-select')).toBeVisible();
   await page.getByTestId('language-select').selectOption('en');
   await page.getByTestId('save-clinic-settings').click();
   await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeVisible();

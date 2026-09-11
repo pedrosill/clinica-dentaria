@@ -52,6 +52,12 @@ VITE_API_BASE_URL="http://localhost:5000"
 
 Set this value to the deployed backend URL for production builds.
 
+Apply pending database migrations before starting the backend, especially after pulling a version with new migrations:
+
+```bash
+npm run db:migrate --prefix server
+```
+
 ## Run in development
 
 From the project root:

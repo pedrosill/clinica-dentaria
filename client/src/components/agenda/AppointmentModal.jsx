@@ -4,6 +4,7 @@ import { getPatientDisplayName } from '../../utils/agendaUtils';
 import SelectDropdown from '../ui/SelectDropdown';
 import { EMPTY_APPOINTMENT_TYPE_OPTION } from '../../utils/appointmentTypeUtils';
 import Dialog from '../ui/Dialog';
+import useLanguage from '../../context/useLanguage';
 
 export default function AppointmentModal({
   isOpen,
@@ -56,6 +57,8 @@ export default function AppointmentModal({
   onTreatmentTypeChange,
   onNotesChange,
 }) {
+  const { t } = useLanguage();
+
   const recommendedPatients = useMemo(
     () => patientSearchResults.filter((patient) => recommendedPatientIds.has(patient.id)),
     [patientSearchResults, recommendedPatientIds]
@@ -69,19 +72,27 @@ export default function AppointmentModal({
   const treatmentSelectOptions = treatmentOptions.length > 0 ? treatmentOptions.map((option) => ({
     value: option,
     label: option,
-  })) : [EMPTY_APPOINTMENT_TYPE_OPTION];
+  })) : [{
+    ...EMPTY_APPOINTMENT_TYPE_OPTION,
+    label: t(EMPTY_APPOINTMENT_TYPE_OPTION.label),
+  }];
+
+  const localizedDurationOptions = durationOptions.map((option) => ({
+    ...option,
+    label: `${option.value} ${t('min')}`,
+  }));
 
   const timeSelectOptions = timeOptions.map((option) => {
     const time = typeof option === 'string' ? option : option.time;
     const status = typeof option === 'string' ? 'free' : option.status;
     const statusLabel = {
-      free: 'Free',
-      booked: 'Booked',
-      unavailable: 'Unavailable',
-      existing: 'Existing',
-      loading: 'Select doctor',
-      'select-doctor': 'Select doctor',
-    }[status] || 'Unavailable';
+      free: t('Free'),
+      booked: t('Booked'),
+      unavailable: t('Unavailable'),
+      existing: t('Existing'),
+      loading: t('Select doctor'),
+      'select-doctor': t('Select doctor'),
+    }[status] || t('Unavailable');
 
     return {
       value: time,
@@ -104,10 +115,10 @@ export default function AppointmentModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-teal-800">
-              {editingAppointmentId ? 'Reschedule booking' : 'New booking'}
+              {editingAppointmentId ? t('Reschedule booking') : t('New booking')}
             </p>
             <h2 id="appointment-modal-title" className="mt-1 text-2xl font-semibold text-slate-950">
-              {editingAppointmentId ? 'Update Appointment' : 'Create Appointment'}
+              {editingAppointmentId ? t('Update Appointment') : t('Create Appointment')}
             </h2>
           </div>
 
@@ -115,7 +126,7 @@ export default function AppointmentModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            aria-label="Close modal"
+            aria-label={t('Close modal')}
             className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
           >
             ×
@@ -131,13 +142,13 @@ export default function AppointmentModal({
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2 lg:col-span-2">
-              <label className="text-sm font-medium text-slate-800">Patient</label>
+              <label className="text-sm font-medium text-slate-800">{t('Patient')}</label>
               <div className="relative">
                 <input
                   data-testid="appointment-patient"
                   type="text"
                   value={patientSearch}
-                  placeholder="Search by name or phone"
+                  placeholder={t('Search by name or phone')}
                   onFocus={onPatientFocus}
                   onBlur={onPatientBlur}
                   onChange={(event) => onPatientSearchChange(event.target.value)}
@@ -149,7 +160,7 @@ export default function AppointmentModal({
                     <>
                       {recommendedPatients.length > 0 ? (
                         <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Recommended
+                          {t('Recommended')}
                         </p>
                       ) : null}
 
@@ -173,7 +184,7 @@ export default function AppointmentModal({
 
                       {otherPatients.length > 0 && recommendedPatients.length > 0 ? (
                         <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          All patients
+                          {t('All patients')}
                         </p>
                       ) : null}
 
@@ -196,7 +207,7 @@ export default function AppointmentModal({
                       ))}
 
                       {recommendedPatients.length === 0 && otherPatients.length === 0 ? (
-                        <p className="px-4 py-3 text-sm text-slate-500">No patients found</p>
+                        <p className="px-4 py-3 text-sm text-slate-500">{t('No patients found')}</p>
                       ) : null}
                     </>
                   </div>
@@ -205,13 +216,13 @@ export default function AppointmentModal({
             </div>
 
             <div className="space-y-2 lg:col-span-2">
-              <label className="text-sm font-medium text-slate-800">Doctor</label>
+              <label className="text-sm font-medium text-slate-800">{t('Doctor')}</label>
               <div className="relative">
                 <input
                   data-testid="appointment-doctor"
                   type="text"
                   value={doctorSearch}
-                  placeholder="Search by doctor name, email or phone"
+                  placeholder={t('Search by doctor name, email or phone')}
                   onFocus={onDoctorFocus}
                   onBlur={onDoctorBlur}
                   onChange={(event) => onDoctorSearchChange(event.target.value)}
@@ -241,7 +252,7 @@ export default function AppointmentModal({
                     ))}
 
                     {doctorSearchResults.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-slate-500">No doctors found</p>
+                      <p className="px-4 py-3 text-sm text-slate-500">{t('No doctors found')}</p>
                     ) : null}
                   </div>
                 ) : null}
@@ -249,11 +260,11 @@ export default function AppointmentModal({
             </div>
 
             <div className="space-y-2 lg:col-span-2">
-              <label className="text-sm font-medium text-slate-800">Date</label>
+              <label className="text-sm font-medium text-slate-800">{t('Date')}</label>
 
-              <div className="rounded-3xl border border-slate-300 bg-slate-50 p-3 shadow-sm">
+              <div className="pt-1">
                 {isCalendarOpen ? (
-                  <div className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-1 pb-2">
                   <button
                     type="button"
                     onClick={() => onCalendarMonthChange(-1)}
@@ -264,7 +275,7 @@ export default function AppointmentModal({
 
                   <div className="text-center">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Appointment date
+                      {t('Appointment date')}
                     </p>
                     <p className="mt-0.5 text-sm font-semibold text-slate-950">
                       {formatCalendarMonth(calendarMonth)}
@@ -290,14 +301,14 @@ export default function AppointmentModal({
                 >
                   <span>
                     <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-700">
-                      Selected date
+                      {t('Selected date')}
                     </span>
                     <span className="mt-1 block text-sm font-semibold text-slate-950">
                       {formatFullDate(calendarSelection)}
                     </span>
                   </span>
                   <span className="text-xs font-semibold text-teal-700">
-                    {isCalendarOpen ? 'Hide calendar' : 'Choose date'}
+                    {isCalendarOpen ? t('Hide calendar') : t('Choose date')}
                   </span>
                 </button>
 
@@ -306,7 +317,7 @@ export default function AppointmentModal({
                 <div className="mt-3 grid grid-cols-7 gap-1.5 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label) => (
                     <div key={label} className="py-1">
-                      {label}
+                      {t(label)}
                     </div>
                   ))}
                 </div>
@@ -337,10 +348,10 @@ export default function AppointmentModal({
                   })}
                 </div>
 
-                <div className="mt-3 flex items-center justify-between rounded-2xl border border-slate-300 bg-white px-3 py-2.5 shadow-sm">
+                <div className="mt-3 flex items-center justify-between border-t border-slate-200 px-1 pt-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Selected
+                      {t('Selected')}
                     </p>
                     <p className="mt-0.5 text-sm font-medium text-slate-900">
                       {formatFullDate(calendarSelection)}
@@ -352,7 +363,7 @@ export default function AppointmentModal({
                     onClick={onTodaySelect}
                     className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-200"
                   >
-                    Today
+                    {t('Today')}
                   </button>
                 </div>
                   </>
@@ -363,9 +374,10 @@ export default function AppointmentModal({
             </div>
 
             <SelectDropdown
-              label="Time"
+              label={t('Time')}
               value={appointmentTime}
               options={timeSelectOptions}
+              placeholder={t('Select an option')}
               onChange={onAppointmentTimeChange}
               disabled={isSubmitting || isAvailabilityLoading}
             />
@@ -376,33 +388,35 @@ export default function AppointmentModal({
               </p>
             ) : doctorId ? (
               <p className="text-xs text-slate-500 lg:col-span-2">
-                Availability shown from 08:00 to 19:30 for the selected doctor, date and duration.
+                {t('Availability shown from 08:00 to 19:30 for the selected doctor, date and duration.')}
               </p>
             ) : (
               <p className="text-xs text-slate-500 lg:col-span-2">
-                Select a doctor to see which 30-minute slots are free or booked.
+                {t('Select a doctor to see which 30-minute slots are free or booked.')}
               </p>
             )}
 
             <SelectDropdown
-              label="Duration"
+              label={t('Duration')}
               value={duration}
-              options={durationOptions}
+              options={localizedDurationOptions}
+              placeholder={t('Select an option')}
               onChange={onDurationChange}
               disabled={isSubmitting}
             />
 
             <SelectDropdown
-              label="Treatment"
+              label={t('Treatment')}
               value={treatmentType}
               options={treatmentSelectOptions}
+              placeholder={t('Select an option')}
               onChange={onTreatmentTypeChange}
               disabled={isSubmitting}
               className="lg:col-span-2"
             />
 
             <div className="space-y-2 lg:col-span-2">
-              <label className="text-sm font-medium text-slate-800">Notes</label>
+              <label className="text-sm font-medium text-slate-800">{t('Notes')}</label>
               <textarea
                 rows="4"
                 value={notes}
@@ -419,7 +433,7 @@ export default function AppointmentModal({
               disabled={isSubmitting}
               className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Cancel
+              {t('Cancel')}
             </button>
 
             <button
@@ -429,10 +443,10 @@ export default function AppointmentModal({
               className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting
-                ? 'Saving...'
+                ? t('Saving...')
                 : editingAppointmentId
-                  ? 'Save Changes'
-                  : 'Create Appointment'}
+                  ? t('Save Changes')
+                  : t('Create Appointment')}
             </button>
           </div>
         </form>

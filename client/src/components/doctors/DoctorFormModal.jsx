@@ -1,4 +1,5 @@
 import Dialog from '../ui/Dialog';
+import useLanguage from '../../context/useLanguage';
 
 export default function DoctorFormModal({
   isOpen,
@@ -10,6 +11,8 @@ export default function DoctorFormModal({
   onClose,
   onSubmit,
 }) {
+  const { t } = useLanguage();
+
   if (!isOpen) return null;
 
   return (
@@ -24,10 +27,10 @@ export default function DoctorFormModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-teal-800">
-              {editingDoctorId ? 'Update staff record' : 'New doctor'}
+              {editingDoctorId ? t('Update staff record') : t('New doctor')}
             </p>
             <h2 id="doctor-form-modal-title" className="mt-1 text-2xl font-semibold text-slate-950">
-              {editingDoctorId ? 'Edit Doctor' : 'Add Doctor'}
+              {editingDoctorId ? t('Edit Doctor') : t('Add Doctor')}
             </h2>
           </div>
 
@@ -35,7 +38,7 @@ export default function DoctorFormModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            aria-label="Close modal"
+            aria-label={t('Close modal')}
             className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
           >
             ×
@@ -51,7 +54,7 @@ export default function DoctorFormModal({
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium text-slate-800">Name</label>
+              <label className="text-sm font-medium text-slate-800">{t('Name')}</label>
               <input
                 type="text"
                 name="name"
@@ -62,7 +65,7 @@ export default function DoctorFormModal({
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium text-slate-800">Email</label>
+              <label className="text-sm font-medium text-slate-800">{t('Email')}</label>
               <input
                 type="email"
                 name="email"
@@ -73,7 +76,7 @@ export default function DoctorFormModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-800">Phone</label>
+              <label className="text-sm font-medium text-slate-800">{t('Phone')}</label>
               <input
                 type="text"
                 name="phone"
@@ -84,7 +87,7 @@ export default function DoctorFormModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-800">Specialty</label>
+              <label className="text-sm font-medium text-slate-800">{t('Specialty')}</label>
               <input
                 type="text"
                 name="specialty"
@@ -102,7 +105,7 @@ export default function DoctorFormModal({
               disabled={isSubmitting}
               className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Cancel
+              {t('Cancel')}
             </button>
 
             <button
@@ -111,10 +114,10 @@ export default function DoctorFormModal({
               className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting
-                ? 'Saving...'
+                ? t('Saving...')
                 : editingDoctorId
-                  ? 'Save Changes'
-                  : 'Create Doctor'}
+                  ? t('Save Changes')
+                  : t('Create Doctor')}
             </button>
           </div>
         </form>

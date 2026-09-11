@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import PatientAppointmentsSection from '../components/patient-detail/PatientAppointmentsSection';
@@ -16,11 +17,36 @@ import {
   getStatusLabel,
 } from '../utils/patientDetailUtils';
 import { getPatientDisplayName } from '../utils/agendaUtils';
+import useLanguage from '../context/useLanguage';
+
+function PatientToolToggle({ title, description, isOpen, onToggle }) {
+  const { t } = useLanguage();
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={isOpen}
+      className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-300 bg-white px-5 py-4 text-left transition hover:border-teal-400 hover:bg-teal-50/30"
+    >
+      <span>
+        <span className="block text-base font-semibold text-slate-950">{t(title)}</span>
+        <span className="mt-1 block text-sm text-slate-600">{t(description)}</span>
+      </span>
+      <span className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-teal-800">
+        {isOpen ? t('Close section') : t('Open section')}
+        <ChevronDown className={`h-5 w-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </span>
+    </button>
+  );
+}
 
 
 export default function PatientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  const [openPatientTool, setOpenPatientTool] = useState(null);
 
   const patientId = useMemo(() => {
     if (!id) return null;
@@ -69,9 +95,9 @@ export default function PatientDetail() {
   if (!patient && !isLoading) {
   return (
     <section className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm md:p-8">
-      <p className="text-sm font-medium text-red-700">Patient not found</p>
+      <p className="text-sm font-medium text-red-700">{t('Patient not found')}</p>
       <p className="mt-2 text-sm leading-6 text-red-600">
-        The requested patient record could not be loaded.
+        {t('The requested patient record could not be loaded.')}
       </p>
     </section>
   );
@@ -102,7 +128,7 @@ export default function PatientDetail() {
               onClick={handleBack}
               className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
             >
-              Back
+              {t('Back')}
             </button>
           </div>
         </section>
@@ -117,7 +143,7 @@ export default function PatientDetail() {
   if (!patient) {
     return (
       <div className="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-        <p className="text-sm font-medium text-slate-800">Patient not found</p>
+        <p className="text-sm font-medium text-slate-800">{t('Patient not found')}</p>
       </div>
     );
   }
@@ -163,18 +189,38 @@ export default function PatientDetail() {
         setClinicalRecord={setClinicalRecord}
       />
 
-      <PatientGovernanceSection patientId={patientId} />
+      <div className="space-y-3">
+        <PatientToolToggle
+          title="Patient data governance"
+          description="Review consent history and export the structured patient record as JSON."
+          isOpen={openPatientTool === 'governance'}
+          onToggle={() => setOpenPatientTool((current) => (current === 'governance' ? null : 'governance'))}
+        />
+        {openPatientTool === 'governance' ? <PatientGovernanceSection patientId={patientId} /> : null}
 
-      <PatientRecallSection patientId={patientId} />
+        <PatientToolToggle
+          title="Recall history"
+          description="Compact history of this patient’s follow-ups."
+          isOpen={openPatientTool === 'recall'}
+          onToggle={() => setOpenPatientTool((current) => (current === 'recall' ? null : 'recall'))}
+        />
+        {openPatientTool === 'recall' ? <PatientRecallSection patientId={patientId} /> : null}
 
-      <PatientWaitlistSection patientId={patientId} />
+        <PatientToolToggle
+          title="Waitlist history"
+          description="Compact history of this patient’s waitlist requests."
+          isOpen={openPatientTool === 'waitlist'}
+          onToggle={() => setOpenPatientTool((current) => (current === 'waitlist' ? null : 'waitlist'))}
+        />
+        {openPatientTool === 'waitlist' ? <PatientWaitlistSection patientId={patientId} /> : null}
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <PatientAppointmentsSection
-          title="Upcoming appointments"
-          description="Current and future appointments for this patient."
-          emptyTitle="No upcoming appointments"
-          emptyDescription="This patient does not have any upcoming bookings yet."
+          title={t('Upcoming appointments')}
+          description={t('Current and future appointments for this patient.')}
+          emptyTitle={t('No upcoming appointments')}
+          emptyDescription={t('This patient does not have any upcoming bookings yet.')}
           appointments={upcomingAppointments}
           formatDisplayDate={formatDisplayDate}
           getStatusClasses={getStatusClasses}
@@ -182,10 +228,10 @@ export default function PatientDetail() {
         />
 
         <PatientAppointmentsSection
-          title="Recent completed appointments"
-          description="Latest completed work already recorded for this patient."
-          emptyTitle="No completed appointments yet"
-          emptyDescription="Completed treatment history will appear here once appointments are concluded."
+          title={t('Recent completed appointments')}
+          description={t('Latest completed work already recorded for this patient.')}
+          emptyTitle={t('No completed appointments yet')}
+          emptyDescription={t('Completed treatment history will appear here once appointments are concluded.')}
           appointments={recentCompletedAppointments}
           formatDisplayDate={formatDisplayDate}
           getStatusClasses={getStatusClasses}
@@ -195,8 +241,8 @@ export default function PatientDetail() {
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
-        title="Confirm patient deletion"
-        message={`Are you sure you want to delete patient: ${getPatientDisplayName(patient)}?`}
+        title={t('Confirm patient deletion')}
+        message={`${t('Are you sure you want to delete patient')}: ${getPatientDisplayName(patient)}?`}
         isSubmitting={isSubmitting}
         onCancel={handleCloseDeleteModal}
         onConfirm={handleDeletePatient}

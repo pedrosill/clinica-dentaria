@@ -4,8 +4,8 @@ export function startOfDay(date) {
   return value;
 }
 
-export function formatDisplayDate(date) {
-  return new Intl.DateTimeFormat('en-GB', {
+export function formatDisplayDate(date, locale = 'en-GB') {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

@@ -1,4 +1,5 @@
 import { getPatientDisplayName } from '../../utils/agendaUtils';
+import useLanguage from '../../context/useLanguage';
 
 export default function PatientInfoSection({
   patient,
@@ -9,16 +10,18 @@ export default function PatientInfoSection({
   onSubmit,
   formatDisplayDate,
 }) {
+  const { t } = useLanguage();
+
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
       <div className="border-b border-slate-300 pb-4">
-        <h2 className="text-lg font-semibold text-slate-950">Patient information</h2>
+        <h2 className="text-lg font-semibold text-slate-950">{t('Patient information')}</h2>
       </div>
 
       {isEditing ? (
         <form onSubmit={onSubmit} className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           <div className="space-y-2 md:col-span-2 xl:col-span-6">
-            <label className="text-sm font-medium text-slate-700">Full name</label>
+            <label className="text-sm font-medium text-slate-700">{t('Full name')}</label>
             <input
               type="text"
               name="fullName"
@@ -29,7 +32,7 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-2">
-            <label className="text-sm font-medium text-slate-700">Phone</label>
+            <label className="text-sm font-medium text-slate-700">{t('Phone')}</label>
             <input
               type="text"
               name="phone"
@@ -40,7 +43,7 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-2">
-            <label className="text-sm font-medium text-slate-700">Email</label>
+            <label className="text-sm font-medium text-slate-700">{t('Email')}</label>
             <input
               type="email"
               name="email"
@@ -51,7 +54,7 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-2">
-            <label className="text-sm font-medium text-slate-700">NIF</label>
+            <label className="text-sm font-medium text-slate-700">{t('NIF')}</label>
             <input
               type="text"
               name="nif"
@@ -62,7 +65,7 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-3">
-            <label className="text-sm font-medium text-slate-700">Nationality</label>
+            <label className="text-sm font-medium text-slate-700">{t('Nationality')}</label>
             <input
               type="text"
               name="nationality"
@@ -78,41 +81,41 @@ export default function PatientInfoSection({
               disabled={isSubmitting}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSubmitting ? 'Saving...' : 'Save patient'}
+              {isSubmitting ? t('Saving...') : t('Save patient')}
             </button>
           </div>
         </form>
       ) : (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Full name</p>
+          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Full name')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">
               {getPatientDisplayName(patient)}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Phone</p>
+          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Phone')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{patient.phone}</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Email</p>
+          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Email')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{patient.email}</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">NIF</p>
+          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('NIF')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{patient.nif}</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Nationality</p>
+          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Nationality')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{patient.nationality}</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Created</p>
+          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Created')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">
               {formatDisplayDate(patient.createdAt)}
             </p>

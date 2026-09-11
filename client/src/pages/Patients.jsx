@@ -30,8 +30,8 @@ function isSameDay(firstDate, secondDate) {
   );
 }
 
-function formatFullDate(date) {
-  return new Intl.DateTimeFormat('en-GB', {
+function formatFullDate(date, locale = 'en-GB') {
+  return new Intl.DateTimeFormat(locale, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -52,7 +52,7 @@ function getAppointmentDateTime(appointment) {
 ================================ */
 export default function Patients() {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   /* ================================
      State: page data
@@ -60,6 +60,7 @@ export default function Patients() {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeView, setActiveView] = useState('today');
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
 
@@ -278,20 +279,48 @@ export default function Patients() {
           </button>
         </div>
 
-        <div className="mt-5 border-t border-slate-300 pt-5">
-          <label className="relative block">
-            <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-500">
-              <Search className="h-4 w-4" />
-            </span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t('Search all patients by name, phone, email or NIF')}
-              className="w-full rounded-2xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-500 focus:border-teal-700 focus:bg-white focus:outline-none"
-            />
-          </label>
+        <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-300 pt-5" role="tablist" aria-label={t('Patient views')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === 'today'}
+            onClick={() => setActiveView('today')}
+            className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${activeView === 'today' ? 'bg-teal-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}
+          >
+            {t('Patients today')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === 'search'}
+            onClick={() => setActiveView('search')}
+            className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${activeView === 'search' ? 'bg-teal-700 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}
+          >
+            <Search className="mr-2 h-4 w-4" />
+            {t('Search patients')}
+          </button>
         </div>
+
+        {activeView === 'search' ? (
+          <div className="mt-4">
+            <label className="relative block">
+              <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-500">
+                <Search className="h-4 w-4" />
+              </span>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(event) => {
+                  setActiveView('search');
+                  setSearchTerm(event.target.value);
+                }}
+                placeholder={t('Search all patients by name, phone, email or NIF')}
+                autoFocus
+                className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-500 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
+              />
+            </label>
+          </div>
+        ) : null}
       </section>
 
       {pageError ? (
@@ -303,7 +332,7 @@ export default function Patients() {
       {/* ================================
          Render: search results
       ================================ */}
-      {searchTerm.trim() ? (
+      {activeView === 'search' ? (
         <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-2 border-b border-slate-300 pb-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -317,7 +346,12 @@ export default function Patients() {
           </div>
 
           <div className="mt-5 space-y-4">
-            {filteredPatients.length === 0 ? (
+            {!searchTerm.trim() ? (
+              <div className="border-t border-dashed border-slate-300 pt-6 text-center">
+                <p className="text-sm font-medium text-slate-800">{t('Search by patient details')}</p>
+                <p className="mt-2 text-sm text-slate-600">{t('Enter a name, phone, email or NIF to find a patient.')}</p>
+              </div>
+            ) : filteredPatients.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
                 <p className="text-sm font-medium text-slate-800">{t('No matching patients found')}</p>
                 <p className="mt-2 text-sm text-slate-600">
@@ -366,13 +400,13 @@ export default function Patients() {
       {/* ================================
          Render: todays patient list
       ================================ */}
-      <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
+      {activeView === 'today' ? <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-2 border-b border-slate-300 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-950">
               {t('Patients with appointments today')}
             </h2>
-            <p className="text-sm text-slate-700">{formatFullDate(today)}</p>
+            <p className="text-sm text-slate-700">{formatFullDate(today, locale)}</p>
           </div>
 
           <p className="text-sm font-medium text-slate-700">
@@ -420,7 +454,7 @@ export default function Patients() {
                       className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
                     >
                       <CalendarDays className="mr-2 h-4 w-4" />
-                      Appointment
+                      {t('Appointment')}
                     </Link>
 
                     <Link
@@ -428,7 +462,7 @@ export default function Patients() {
                       className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
                     >
                       <UserRound className="mr-2 h-4 w-4" />
-                      Patient
+                      {t('Patient')}
                     </Link>
                   </div>
                 </div>
@@ -436,7 +470,7 @@ export default function Patients() {
             ))
           )}
         </div>
-      </section>
+      </section> : null}
 
       {/* ================================
          Render: create patient modal
@@ -446,8 +480,8 @@ export default function Patients() {
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-teal-800">New patient</p>
-                <h2 className="mt-1 text-2xl font-semibold text-slate-950">Add Patient</h2>
+                <p className="text-sm font-semibold text-teal-800">{t('New patient')}</p>
+                <h2 className="mt-1 text-2xl font-semibold text-slate-950">{t('Add Patient')}</h2>
               </div>
 
               <button
@@ -469,7 +503,7 @@ export default function Patients() {
             <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium text-slate-800">Full name</label>
+                  <label className="text-sm font-medium text-slate-800">{t('Full name')}</label>
                   <input
                     type="text"
                     value={createFullName}
@@ -479,7 +513,7 @@ export default function Patients() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800">Phone</label>
+                  <label className="text-sm font-medium text-slate-800">{t('Phone')}</label>
                   <input
                     type="text"
                     value={createPhone}
@@ -489,7 +523,7 @@ export default function Patients() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800">Email</label>
+                  <label className="text-sm font-medium text-slate-800">{t('Email')}</label>
                   <input
                     type="email"
                     value={createEmail}
@@ -499,7 +533,7 @@ export default function Patients() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800">Nationality</label>
+                  <label className="text-sm font-medium text-slate-800">{t('Nationality')}</label>
                   <input
                     type="text"
                     value={createNationality}
@@ -509,7 +543,7 @@ export default function Patients() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800">NIF</label>
+                  <label className="text-sm font-medium text-slate-800">{t('NIF')}</label>
                   <input
                     type="text"
                     value={createNif}
@@ -528,7 +562,7 @@ export default function Patients() {
                   disabled={isCreateSubmitting}
                   className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Cancel
+                  {t('Cancel')}
                 </button>
 
                 <button
@@ -536,7 +570,7 @@ export default function Patients() {
                   disabled={isCreateSubmitting}
                   className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {isCreateSubmitting ? 'Saving...' : 'Create Patient'}
+                  {isCreateSubmitting ? t('Saving...') : t('Create Patient')}
                 </button>
               </div>
             </form>

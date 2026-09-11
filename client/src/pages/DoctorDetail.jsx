@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Mail, Phone, Receipt, UserRound } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getDoctorById } from '../services/doctors';
+import useLanguage from '../context/useLanguage';
 
 function LoadingState() {
   return (
@@ -20,15 +21,17 @@ function LoadingState() {
 }
 
 function ErrorState({ message }) {
+  const { t } = useLanguage();
+
   return (
     <section className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm md:p-8">
-      <p className="text-sm font-medium text-red-700">Unable to load doctor</p>
+      <p className="text-sm font-medium text-red-700">{t('Unable to load doctor')}</p>
       <p className="mt-2 text-sm leading-6 text-red-600">{message}</p>
       <Link
         to="/doctors"
         className="mt-4 inline-flex items-center text-sm font-medium text-red-700 underline-offset-4 hover:underline"
       >
-        Back to Doctors
+        {t('Back to Doctors')}
       </Link>
     </section>
   );
@@ -37,6 +40,7 @@ function ErrorState({ message }) {
 export default function DoctorDetail() {
   const { doctorId } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [doctor, setDoctor] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
@@ -54,7 +58,7 @@ export default function DoctorDetail() {
         setDoctor(data);
       } catch (error) {
         if (!isMounted) return;
-        setPageError(error.message || 'Failed to load doctor');
+        setPageError(error.message || t('Failed to load doctor'));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -67,7 +71,7 @@ export default function DoctorDetail() {
     return () => {
       isMounted = false;
     };
-  }, [doctorId]);
+  }, [doctorId, t]);
 
   if (isLoading) {
     return <LoadingState />;
@@ -94,16 +98,16 @@ export default function DoctorDetail() {
             className="inline-flex items-center gap-2 text-sm font-medium text-teal-700 transition hover:text-teal-800"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t('Back')}
           </button>
 
           <div>
-            <p className="text-sm font-medium text-teal-700">Doctor detail</p>
+            <p className="text-sm font-medium text-teal-700">{t('Doctor detail')}</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
               {doctor.name}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Review doctor contact and billing information.
+              {t('Review doctor contact and professional information.')}
             </p>
           </div>
         </div>
@@ -117,10 +121,10 @@ export default function DoctorDetail() {
 
           <div>
             <h2 className="text-xl font-semibold text-slate-900">
-              Doctor information
+              {t('Doctor information')}
             </h2>
             <p className="text-sm text-slate-500">
-              Basic details for this doctor record.
+              {t('Basic details for this doctor record.')}
             </p>
           </div>
         </div>
@@ -128,7 +132,7 @@ export default function DoctorDetail() {
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Name
+              {t('Name')}
             </p>
             <p className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-900">
               <UserRound className="h-4 w-4 text-slate-500" />
@@ -138,31 +142,31 @@ export default function DoctorDetail() {
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Email
+              {t('Email')}
             </p>
             <p className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-900">
               <Mail className="h-4 w-4 text-slate-500" />
-              {doctor.email || 'No email recorded'}
+              {doctor.email || t('No email recorded')}
             </p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Phone
+              {t('Phone')}
             </p>
             <p className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-900">
               <Phone className="h-4 w-4 text-slate-500" />
-              {doctor.phone || 'No phone recorded'}
+              {doctor.phone || t('No phone recorded')}
             </p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              NIF
+              {t('NIF')}
             </p>
             <p className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-900">
               <Receipt className="h-4 w-4 text-slate-500" />
-              {doctor.nif || 'No NIF recorded'}
+              {doctor.nif || t('No NIF recorded')}
             </p>
           </div>
         </div>

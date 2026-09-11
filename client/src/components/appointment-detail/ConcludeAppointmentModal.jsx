@@ -9,6 +9,7 @@ import {
   EMPTY_APPOINTMENT_TYPE_OPTION,
   getAppointmentTypeOptions,
 } from '../../utils/appointmentTypeUtils';
+import useLanguage from '../../context/useLanguage';
 
 /* ================================
    Component
@@ -27,15 +28,20 @@ export default function ConcludeAppointmentModal({
   onClose,
   onSubmit,
 }) {
+  const { t } = useLanguage();
+
   const treatmentOptions = useMemo(
     () => {
       const options = getAppointmentTypeOptions(
         appointmentTypes,
         appointment?.performedTreatment || appointment?.treatmentType
       );
-      return options.length > 0 ? options : [EMPTY_APPOINTMENT_TYPE_OPTION];
+      return options.length > 0 ? options : [{
+        ...EMPTY_APPOINTMENT_TYPE_OPTION,
+        label: t(EMPTY_APPOINTMENT_TYPE_OPTION.label),
+      }];
     },
-    [appointment, appointmentTypes]
+    [appointment, appointmentTypes, t]
   );
 
   if (!isOpen) return null;
@@ -51,13 +57,12 @@ export default function ConcludeAppointmentModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-teal-700">Doctor workflow</p>
+            <p className="text-sm font-medium text-teal-700">{t('Doctor workflow')}</p>
             <h2 id="conclude-appointment-modal-title" className="mt-1 text-2xl font-semibold text-slate-900">
-              Conclude Appointment
+              {t('Conclude Appointment')}
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Record what was done, mark the appointment completed, and optionally continue to
-              follow-up scheduling.
+              {t('Record what was done, mark the appointment completed, and optionally continue to follow-up scheduling.')}
             </p>
           </div>
 
@@ -66,45 +71,44 @@ export default function ConcludeAppointmentModal({
             onClick={onClose}
             className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             disabled={isSubmitting}
-            aria-label="Close modal"
+            aria-label={t('Close modal')}
           >
             ×
           </button>
         </div>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="border-t border-slate-200 pt-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Scheduled treatment
+              {t('Scheduled treatment')}
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
-              {appointment.treatmentType || 'Not recorded'}
+              {appointment.treatmentType || t('Not recorded')}
             </p>
           </div>
 
-          <div>
-            <SelectDropdown
-              label="Performed treatment"
-              value={performedTreatment}
-              onChange={onPerformedTreatmentChange}
-              options={treatmentOptions}
-              disabled={isSubmitting}
-            />
-          </div>
+          <SelectDropdown
+            label={t('Performed treatment')}
+            value={performedTreatment}
+            onChange={onPerformedTreatmentChange}
+            options={treatmentOptions}
+            placeholder={t('Select an option')}
+            disabled={isSubmitting}
+          />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Completion note</label>
+            <label className="text-sm font-medium text-slate-700">{t('Completion note')}</label>
             <textarea
               rows="4"
               value={completionNotes}
               onChange={(event) => onCompletionNotesChange(event.target.value)}
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-teal-600 focus:bg-white focus:outline-none"
-              placeholder="Add a short completion note if needed"
+              placeholder={t('Add a short completion note if needed')}
             />
           </div>
 
           <div className="space-y-3">
-            <p className="text-sm font-medium text-slate-700">After conclusion</p>
+            <p className="text-sm font-medium text-slate-700">{t('After conclusion')}</p>
 
             <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <input
@@ -116,9 +120,9 @@ export default function ConcludeAppointmentModal({
                 className="mt-1"
               />
               <span>
-                <span className="block text-sm font-medium text-slate-900">Finish only</span>
+                <span className="block text-sm font-medium text-slate-900">{t('Finish only')}</span>
                 <span className="mt-1 block text-sm text-slate-500">
-                  Mark the appointment completed and stay on this page.
+                  {t('Mark the appointment completed and stay on this page.')}
                 </span>
               </span>
             </label>
@@ -134,11 +138,10 @@ export default function ConcludeAppointmentModal({
               />
               <span>
                 <span className="block text-sm font-medium text-slate-900">
-                  Finish and continue to reschedule
+                  {t('Finish and continue to reschedule')}
                 </span>
                 <span className="mt-1 block text-sm text-slate-500">
-                  After conclusion, open the booking form immediately so a follow-up slot can be
-                  assigned.
+                  {t('After conclusion, open the booking form immediately so a follow-up slot can be assigned.')}
                 </span>
               </span>
             </label>
@@ -151,7 +154,7 @@ export default function ConcludeAppointmentModal({
               disabled={isSubmitting}
               className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Cancel
+              {t('Cancel')}
             </button>
 
             <button
@@ -160,7 +163,7 @@ export default function ConcludeAppointmentModal({
               className="inline-flex min-w-40 items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <CheckCircle2 className="h-4 w-4" />
-              {isSubmitting ? 'Saving...' : 'Complete Appointment'}
+              {isSubmitting ? t('Saving...') : t('Complete Appointment')}
             </button>
           </div>
         </form>

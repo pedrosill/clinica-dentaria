@@ -58,6 +58,11 @@ const navigationItems = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const roleLabel = {
+    administrator: 'Administrator',
+    receptionist: 'Receptionist',
+    dentist: 'Dentist',
+  }[String(user?.role || '').toLowerCase()] || user?.role;
   const initials = String(user?.displayName || 'U')
     .split(/\s+/)
     .map((part) => part[0])
@@ -71,7 +76,7 @@ export default function Sidebar() {
         {/* ================================
            Brand block
         ================================ */}
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+        <div className="border-b border-slate-200 pb-5">
           <p className="text-sm font-medium text-teal-700">{t('Clinic workspace')}</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
             DentalPro
@@ -109,14 +114,14 @@ export default function Sidebar() {
         {/* ================================
            User block
         ================================ */}
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mt-6 border-t border-slate-200 pt-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-sm font-semibold text-slate-700">
               {initials}
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-slate-900">{user?.displayName}</p>
-              <p className="truncate text-sm capitalize text-slate-500">{user?.role}</p>
+              <p className="truncate text-sm text-slate-500">{roleLabel ? t(roleLabel) : ''}</p>
             </div>
           </div>
           <button

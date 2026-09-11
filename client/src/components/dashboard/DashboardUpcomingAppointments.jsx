@@ -28,10 +28,7 @@ export default function DashboardUpcomingAppointments({ appointments }) {
       <div className="mt-6 space-y-3">
         {appointments.length > 0 ? (
           appointments.map((appointment) => (
-            <div
-              key={appointment.id}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-            >
+            <div key={appointment.id} className="border-t border-slate-200 py-4 first:border-t-0">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">

@@ -8,6 +8,7 @@
     "dev": "node index.js",
     "seed": "node seed.js",
     "admin:create": "node scripts/createAdmin.js",
+    "db:migrate": "prisma migrate deploy",
     "db:backup": "node scripts/backup.js",
     "db:restore": "node scripts/restore.js",
     "postinstall": "prisma generate",

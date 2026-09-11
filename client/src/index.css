@@ -7,10 +7,6 @@ body {
 
 /* Keep the interface calm while making panels and controls easier to distinguish. */
 @layer utilities {
-  .border-slate-200 {
-    border-color: #cbd5e1;
-  }
-
   .shadow-sm {
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 6px 16px -10px rgb(15 23 42 / 0.3);
   }

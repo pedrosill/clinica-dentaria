@@ -17,7 +17,7 @@ export default function AgendaHeader({
           <p className="text-sm font-semibold text-teal-800">{t('Secretary workflow')}</p>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Agenda')}</h1>
           <p className="text-sm text-slate-700">
-            {t('Review the week, prepare today&apos;s patients, and manage bookings.')}
+            {t("Review the week, prepare today's patients, and manage bookings.")}
           </p>
         </div>
 
