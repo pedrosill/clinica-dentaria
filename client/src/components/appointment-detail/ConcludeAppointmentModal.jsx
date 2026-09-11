@@ -4,6 +4,7 @@
 import { useMemo } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import SelectDropdown from '../ui/SelectDropdown';
+import Dialog from '../ui/Dialog';
 import { TREATMENT_OPTIONS } from '../../utils/appointmentDetailUtils';
 
 /* ================================
@@ -35,11 +36,17 @@ export default function ConcludeAppointmentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl md:p-8">
+      <Dialog
+        isOpen={isOpen}
+        onClose={onClose}
+        isCloseDisabled={isSubmitting}
+        labelledBy="conclude-appointment-modal-title"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl md:p-8"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-teal-700">Doctor workflow</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-900">
+            <h2 id="conclude-appointment-modal-title" className="mt-1 text-2xl font-semibold text-slate-900">
               Conclude Appointment
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -53,6 +60,7 @@ export default function ConcludeAppointmentModal({
             onClick={onClose}
             className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             disabled={isSubmitting}
+            aria-label="Close modal"
           >
             ×
           </button>
@@ -150,7 +158,7 @@ export default function ConcludeAppointmentModal({
             </button>
           </div>
         </form>
-      </div>
+      </Dialog>
     </div>
   );
 }

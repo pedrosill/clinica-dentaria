@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, UserRound, X } from 'lucide-react';
 import { API_BASE_URL } from '../../constants/agendaConstants';
+import Dialog from '../ui/Dialog';
 const DURATION_OPTIONS = ['30', '60', '90', '120'];
 
 function pad(value) {
@@ -260,11 +261,17 @@ export default function RescheduleAppointmentModal({
 
   return (
     <div data-testid="reschedule-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-      <div className="flex max-h-[94vh] min-h-[760px] w-full max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-slate-300 bg-white shadow-2xl">
+      <Dialog
+        isOpen={isOpen && Boolean(appointment)}
+        onClose={onClose}
+        isCloseDisabled={isSubmitting}
+        labelledBy="reschedule-appointment-modal-title"
+        className="flex max-h-[94vh] min-h-[760px] w-full max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-slate-300 bg-white shadow-2xl"
+      >
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 md:px-8">
           <div className="space-y-2">
             <p className="text-sm font-semibold text-teal-800">Scheduling workflow</p>
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
+            <h2 id="reschedule-appointment-modal-title" className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
               Reschedule Appointment
             </h2>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
@@ -648,7 +655,7 @@ export default function RescheduleAppointmentModal({
             </div>
           </aside>
         </div>
-      </div>
+      </Dialog>
     </div>
   );
 }

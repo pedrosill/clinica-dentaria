@@ -8,7 +8,6 @@ export default function AgendaDayDetails({
   getStatusLabel,
   renderCompactActions,
   onOpenCreateModal,
-  onOpenAppointment,
 }) {
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
@@ -34,7 +33,6 @@ export default function AgendaDayDetails({
           appointments.map((appointment) => (
             <div
               key={appointment.id}
-              onDoubleClick={() => onOpenAppointment(appointment.id)}
               className="overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 p-4 transition hover:bg-slate-100/70"
             >
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">

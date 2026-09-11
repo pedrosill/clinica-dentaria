@@ -19,7 +19,7 @@ export default function AgendaWeekView({
         <div>
           <h2 className="text-lg font-semibold text-slate-950">{weekLabel}</h2>
           <p className="text-sm text-slate-700">
-            Double-click a card to open the appointment detail.
+            Select a day or open an appointment.
           </p>
         </div>
       </div>
@@ -71,7 +71,6 @@ export default function AgendaWeekView({
                   dayAppointments.map((appointment) => (
                     <div
                       key={appointment.id}
-                      onDoubleClick={() => onOpenAppointment(appointment.id)}
                       className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm transition hover:bg-slate-50"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -90,6 +89,14 @@ export default function AgendaWeekView({
                           {getStatusLabel(appointment.status)}
                         </span>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => onOpenAppointment(appointment.id)}
+                        className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
+                      >
+                        Open appointment
+                      </button>
                     </div>
                   ))
                 ) : (

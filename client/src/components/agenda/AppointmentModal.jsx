@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
 import { getPatientDisplayName } from '../../utils/agendaUtils';
 import SelectDropdown from '../ui/SelectDropdown';
+import Dialog from '../ui/Dialog';
 
 export default function AppointmentModal({
   isOpen,
@@ -92,13 +93,19 @@ export default function AppointmentModal({
 
   return (
     <div data-testid="appointment-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8">
+      <Dialog
+        isOpen={isOpen}
+        onClose={onClose}
+        isCloseDisabled={isSubmitting}
+        labelledBy="appointment-modal-title"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-teal-800">
               {editingAppointmentId ? 'Reschedule booking' : 'New booking'}
             </p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            <h2 id="appointment-modal-title" className="mt-1 text-2xl font-semibold text-slate-950">
               {editingAppointmentId ? 'Update Appointment' : 'Create Appointment'}
             </h2>
           </div>
@@ -107,6 +114,7 @@ export default function AppointmentModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close modal"
             className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
           >
             ×
@@ -427,7 +435,7 @@ export default function AppointmentModal({
             </button>
           </div>
         </form>
-      </div>
+      </Dialog>
     </div>
   );
 }

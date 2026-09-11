@@ -21,7 +21,7 @@ export default function AgendaMonthView({
             }).format(currentMonth)}
           </h2>
           <p className="text-sm text-slate-700">
-            Single click selects a day. Double-click opens week view.
+            Single click selects a day. Use Open week to open the week view.
           </p>
         </div>
       </div>
@@ -42,11 +42,9 @@ export default function AgendaMonthView({
           const isCurrentMonth = isSameMonth(day, currentMonth);
 
           return (
-            <button
+            <div
               key={day.toISOString()}
-              type="button"
               onClick={() => onSelectDay(day)}
-              onDoubleClick={() => onOpenWeek(day)}
               className={`min-h-28 rounded-2xl border p-3 text-left transition ${
                 isSameDay(day, selectedDate)
                   ? 'border-teal-600 bg-teal-50 shadow-inner ring-1 ring-inset ring-teal-200'
@@ -55,17 +53,38 @@ export default function AgendaMonthView({
                     : 'border-slate-200 bg-slate-50 text-slate-500'
               }`}
             >
-              <p
-                className={`text-sm font-semibold ${
-                  isSameDay(day, selectedDate)
-                    ? 'text-teal-950'
-                    : isCurrentMonth
-                      ? 'text-slate-950'
-                      : 'text-slate-500'
-                }`}
-              >
-                {day.getDate()}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelectDay(day);
+                  }}
+                  aria-label={`Select ${new Intl.DateTimeFormat(getAppLocale(), {
+                    dateStyle: 'full',
+                  }).format(day)}`}
+                  className={`rounded-lg px-1 py-0.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-1 ${
+                    isSameDay(day, selectedDate)
+                      ? 'text-teal-950'
+                      : isCurrentMonth
+                        ? 'text-slate-950'
+                        : 'text-slate-500'
+                  }`}
+                >
+                  {day.getDate()}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenWeek(day);
+                  }}
+                  className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-1"
+                >
+                  Open week
+                </button>
+              </div>
 
               <div className="mt-3 space-y-2">
                 {dayAppointments.slice(0, 2).map((appointment) => (
@@ -91,13 +110,8 @@ export default function AgendaMonthView({
                   </div>
                 ) : null}
 
-                {isSameDay(day, selectedDate) ? (
-                  <div className="pt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-800">
-                    Double-click to open week
-                  </div>
-                ) : null}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

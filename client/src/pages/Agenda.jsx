@@ -238,7 +238,6 @@ export default function Agenda() {
         getStatusLabel={getStatusLabel}
         renderCompactActions={renderCompactActions}
         onOpenCreateModal={() => openCreateModal(selectedDate)}
-        onOpenAppointment={(appointmentId) => navigate(`/appointments/${appointmentId}`)}
       />
 
       <AppointmentModal

@@ -1,3 +1,5 @@
+import Dialog from '../ui/Dialog';
+
 export default function DoctorFormModal({
   isOpen,
   editingDoctorId,
@@ -12,13 +14,19 @@ export default function DoctorFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8">
+      <Dialog
+        isOpen={isOpen}
+        onClose={onClose}
+        isCloseDisabled={isSubmitting}
+        labelledBy="doctor-form-modal-title"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-teal-800">
               {editingDoctorId ? 'Update staff record' : 'New doctor'}
             </p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            <h2 id="doctor-form-modal-title" className="mt-1 text-2xl font-semibold text-slate-950">
               {editingDoctorId ? 'Edit Doctor' : 'Add Doctor'}
             </h2>
           </div>
@@ -27,6 +35,7 @@ export default function DoctorFormModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close modal"
             className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
           >
             ×
@@ -109,7 +118,7 @@ export default function DoctorFormModal({
             </button>
           </div>
         </form>
-      </div>
+      </Dialog>
     </div>
   );
 }
