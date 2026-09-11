@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const { assertPermission } = require('../utils/authorization');
 
 async function requireAuth(req, res, next) {
   try {
@@ -25,7 +26,19 @@ function requireRole(...allowedRoles) {
   };
 }
 
+function requirePermission(resource, action) {
+  return (req, res, next) => {
+    try {
+      assertPermission(req.user, resource, action);
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  };
+}
+
 module.exports = {
   requireAuth,
+  requirePermission,
   requireRole,
 };

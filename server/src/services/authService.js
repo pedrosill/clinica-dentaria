@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
+const { parseNumericId } = require('../utils/parse');
 const {
   createSessionToken,
   getSessionExpiry,
@@ -17,7 +18,20 @@ const PUBLIC_USER_SELECT = {
   displayName: true,
   role: true,
   isActive: true,
+  doctorProfile: {
+    select: { id: true },
+  },
 };
+
+function toPublicUser(user) {
+  if (!user) return null;
+
+  const { doctorProfile, passwordHash, ...publicUser } = user;
+  return {
+    ...publicUser,
+    doctorId: doctorProfile?.id || null,
+  };
+}
 
 async function createUser({ email, displayName, password, role = 'receptionist' }) {
   const normalizedEmail = normalizeEmail(email);
@@ -40,12 +54,16 @@ async function createUser({ email, displayName, password, role = 'receptionist' 
       role,
     },
     select: PUBLIC_USER_SELECT,
-  });
+  }).then(toPublicUser);
 }
 
 async function login({ email, password, userAgent, ipAddress }) {
   const user = await prisma.user.findUnique({
     where: { email: normalizeEmail(email) },
+    select: {
+      ...PUBLIC_USER_SELECT,
+      passwordHash: true,
+    },
   });
 
   if (!user || !user.isActive || !verifyPassword(password, user.passwordHash)) {
@@ -74,13 +92,45 @@ async function login({ email, password, userAgent, ipAddress }) {
   return {
     token,
     user: {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      role: user.role,
-      isActive: user.isActive,
+      ...toPublicUser(user),
     },
   };
+}
+
+async function changePassword({ userId, currentPassword, newPassword, sessionToken }) {
+  const id = parseNumericId(userId, 'user id');
+  const current = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, passwordHash: true, isActive: true },
+  });
+
+  if (!current || !current.isActive || !verifyPassword(currentPassword, current.passwordHash)) {
+    throw new HttpError(401, 'Current password is incorrect');
+  }
+
+  if (String(newPassword || '').length < 12) {
+    throw new HttpError(400, 'New password must be at least 12 characters');
+  }
+
+  if (verifyPassword(newPassword, current.passwordHash)) {
+    throw new HttpError(400, 'New password must be different from the current password');
+  }
+
+  const currentTokenHash = sessionToken ? hashSessionToken(sessionToken) : null;
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: { passwordHash: hashPassword(newPassword) },
+    }),
+    prisma.userSession.updateMany({
+      where: {
+        userId: id,
+        revokedAt: null,
+        ...(currentTokenHash ? { tokenHash: { not: currentTokenHash } } : {}),
+      },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
 }
 
 async function getUserForSessionToken(token) {
@@ -104,7 +154,7 @@ async function getUserForSessionToken(token) {
     data: { lastSeenAt: new Date() },
   });
 
-  return session.user;
+  return toPublicUser(session.user);
 }
 
 async function getUserFromRequest(req) {
@@ -127,9 +177,39 @@ async function revokeSessionFromRequest(req) {
   });
 }
 
+async function listUsers() {
+  const users = await prisma.user.findMany({
+    select: PUBLIC_USER_SELECT,
+    orderBy: [{ isActive: 'desc' }, { displayName: 'asc' }],
+  });
+  return users.map(toPublicUser);
+}
+
+async function setUserActive(userId, isActive, actor) {
+  const id = parseNumericId(userId, 'user id');
+  if (id === Number(actor?.id) && !isActive) {
+    throw new HttpError(400, 'An administrator cannot deactivate their own account');
+  }
+  try {
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isActive },
+      select: PUBLIC_USER_SELECT,
+    });
+    if (!isActive) await prisma.userSession.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+    return toPublicUser(updated);
+  } catch (error) {
+    if (error?.code === 'P2025') throw new HttpError(404, 'User not found');
+    throw error;
+  }
+}
+
 module.exports = {
   createUser,
+  changePassword,
   getUserFromRequest,
+  listUsers,
   login,
   revokeSessionFromRequest,
+  setUserActive,
 };

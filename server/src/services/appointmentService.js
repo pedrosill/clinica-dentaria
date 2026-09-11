@@ -15,25 +15,32 @@ const {
   buildAvailabilitySlots,
 } = require('../utils/appointmentScheduling');
 const { getDoctorScheduleForDate } = require('./clinicSettingsService');
+const { assertPermission } = require('../utils/authorization');
 
 const appointmentListInclude = {
   patient: true,
   doctor: true,
 };
 
-const appointmentDetailInclude = {
-  doctor: true,
-  patient: {
-    include: {
-      appointments: {
-        orderBy: [{ date: 'desc' }, { time: 'desc' }],
-        include: {
-          doctor: true,
+function appointmentDetailIncludeFor(user) {
+  return {
+    doctor: true,
+    patient: {
+      include: {
+        appointments: {
+          where: {
+            archivedAt: null,
+            ...(user?.role === 'dentist' ? { doctorId: user.doctorId || -1 } : {}),
+          },
+          orderBy: [{ date: 'desc' }, { time: 'desc' }],
+          include: {
+            doctor: true,
+          },
         },
       },
     },
-  },
-};
+  };
+}
 
 function toDateOnlyString(dateValue) {
   const date = new Date(dateValue);
@@ -54,7 +61,7 @@ function minutesToTime(totalMinutes) {
   return `${hours}:${minutes}`;
 }
 
-async function getRescheduleOptions({ appointmentId, date, duration }) {
+async function getRescheduleOptions({ appointmentId, date, duration, user }) {
   const id = parseNumericId(appointmentId, 'appointment id');
 
   const appointment = await prisma.appointment.findUnique({
@@ -70,6 +77,14 @@ async function getRescheduleOptions({ appointmentId, date, duration }) {
   if (!appointment) {
     throw new HttpError(404, 'Appointment not found');
   }
+
+  if (appointment.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+  if (appointment.patient?.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+  assertAppointmentAccess(user, appointment, 'read');
 
   if (TERMINAL_APPOINTMENT_STATUSES.includes(appointment.status)) {
     throw new HttpError(
@@ -160,6 +175,32 @@ const RESCHEDULE_SCAN_LIMIT_DAYS = 60;
 const ACTIVE_SCHEDULING_STATUSES = ['scheduled', 'arrived'];
 const TERMINAL_APPOINTMENT_STATUSES = ['completed', 'cancelled', 'no_show'];
 
+function assertAppointmentAccess(user, appointment, action) {
+  assertPermission(user, 'appointment', action);
+
+  if (user.role === 'dentist' && Number(user.doctorId) !== Number(appointment.doctorId)) {
+    throw new HttpError(403, 'Dentists may only access appointments assigned to them');
+  }
+}
+
+function assertReceptionistAppointmentPayload(user, payload) {
+  if (
+    user.role === 'receptionist' &&
+    (payload.performedTreatment !== undefined ||
+      payload.completionNotes !== undefined ||
+      payload.status === 'completed')
+  ) {
+    throw new HttpError(403, 'Receptionists cannot write clinical appointment data');
+  }
+}
+
+async function ensureDoctorAccess(user, doctorId) {
+  assertPermission(user, 'appointment', 'read');
+  if (user.role === 'dentist' && Number(user.doctorId) !== Number(doctorId)) {
+    throw new HttpError(403, 'Dentists may only access their own agenda');
+  }
+}
+
 function buildDateTime(date, time) {
   return new Date(`${date}T${String(time)}:00`);
 }
@@ -215,9 +256,11 @@ async function getDoctorAppointmentsForDate({
     where: {
       doctorId: normalizedDoctorId,
       date: startOfDate(normalizedDate),
+      patient: { archivedAt: null },
       status: {
         in: ACTIVE_SCHEDULING_STATUSES,
       },
+      archivedAt: null,
       ...(normalizedExcludeAppointmentId
         ? {
             NOT: {
@@ -254,6 +297,7 @@ async function findAppointmentConflict({
     where: {
       doctorId: normalizedDoctorId,
       date: new Date(`${date}T00:00:00`),
+      patient: { archivedAt: null },
       ...(normalizedAppointmentId
         ? {
             NOT: {
@@ -264,6 +308,7 @@ async function findAppointmentConflict({
       status: {
         in: ACTIVE_SCHEDULING_STATUSES,
       },
+      archivedAt: null,
     },
     include: {
       patient: true,
@@ -399,7 +444,9 @@ async function getAppointmentAvailability({
   date,
   duration,
   excludeAppointmentId = null,
+  user,
 }) {
+  await ensureDoctorAccess(user, doctorId);
   const availability = await getAvailableStartTimes({
     doctorId,
     date,
@@ -483,6 +530,11 @@ function validateAppointmentPayload(payload, { legacyTime, schedulingRules } = {
     throw new HttpError(400, 'Invalid doctor id');
   }
 
+  const supportedStatuses = new Set(['scheduled', 'arrived', 'completed', 'cancelled', 'no_show']);
+  if (!supportedStatuses.has(payload.status)) {
+    throw new HttpError(400, 'Invalid appointment status');
+  }
+
   parseDateOnly(payload.date, 'appointment date');
 
   const preservesUnchangedLegacyTime =
@@ -519,9 +571,10 @@ function validateAppointmentPayload(payload, { legacyTime, schedulingRules } = {
 }
 
 async function ensurePatientExists(patientId) {
-  const patient = await prisma.patient.findUnique({
+  const patient = await prisma.patient.findFirst({
     where: {
       id: patientId,
+      archivedAt: null,
     },
   });
 
@@ -546,37 +599,54 @@ async function ensureDoctorExists(doctorId) {
   return doctor;
 }
 
-async function getAppointments() {
+async function getAppointments(user) {
+  assertPermission(user, 'appointment', 'read');
   return prisma.appointment.findMany({
+    where: {
+      archivedAt: null,
+      patient: { archivedAt: null },
+      ...(user.role === 'dentist' ? { doctorId: user.doctorId || -1 } : {}),
+    },
     include: appointmentListInclude,
     orderBy: [{ date: 'asc' }, { time: 'asc' }],
   });
 }
 
-async function getAppointmentById(appointmentId) {
+async function getAppointmentById(appointmentId, user) {
   const id = parseNumericId(appointmentId, 'appointment id');
 
   const appointment = await prisma.appointment.findUnique({
     where: {
       id,
     },
-    include: appointmentDetailInclude,
+    include: appointmentDetailIncludeFor(user),
   });
 
   if (!appointment) {
     throw new HttpError(404, 'Appointment not found');
   }
 
+  if (appointment.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+  if (appointment.patient?.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+  assertAppointmentAccess(user, appointment, 'read');
+
   return appointment;
 }
 
-async function createAppointment(payload) {
+async function createAppointment(payload, user) {
+  assertPermission(user, 'appointment', 'schedule');
+  assertReceptionistAppointmentPayload(user, payload);
   const normalized = normalizeAppointmentPayload(payload);
   const schedulingRules = await getDoctorScheduleForDate({
     doctorId: normalized.doctorId,
     date: normalized.date,
   });
 
+  await validateConfiguredAppointmentType(normalized.treatmentType);
   validateAppointmentPayload(normalized, { schedulingRules });
   await ensurePatientExists(normalized.patientId);
   await ensureDoctorExists(normalized.doctorId);
@@ -614,7 +684,9 @@ async function createAppointment(payload) {
   });
 }
 
-async function updateAppointment(appointmentId, payload) {
+async function updateAppointment(appointmentId, payload, user) {
+  assertPermission(user, 'appointment', 'schedule');
+  assertReceptionistAppointmentPayload(user, payload);
   const id = parseNumericId(appointmentId, 'appointment id');
   const normalized = normalizeAppointmentPayload(payload);
 
@@ -627,6 +699,16 @@ async function updateAppointment(appointmentId, payload) {
   if (!existingAppointment) {
     throw new HttpError(404, 'Appointment not found');
   }
+
+  if (existingAppointment.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+
+  assertAppointmentAccess(user, existingAppointment, 'schedule');
+
+  await validateConfiguredAppointmentType(normalized.treatmentType, {
+    historicalValues: [existingAppointment.treatmentType],
+  });
 
   if (TERMINAL_APPOINTMENT_STATUSES.includes(existingAppointment.status)) {
     throw new HttpError(
@@ -690,11 +772,12 @@ async function updateAppointment(appointmentId, payload) {
           ? normalized.completionNotes
           : existingAppointment.completionNotes,
     },
-    include: appointmentDetailInclude,
+    include: appointmentDetailIncludeFor(user),
   });
 }
 
-async function concludeAppointment(appointmentId, payload) {
+async function concludeAppointment(appointmentId, payload, user) {
+  assertPermission(user, 'appointment', 'clinicalWrite');
   const id = parseNumericId(appointmentId, 'appointment id');
   const performedTreatment = String(payload.performedTreatment || '').trim();
   const completionNotes = payload.completionNotes?.trim() || null;
@@ -713,6 +796,11 @@ async function concludeAppointment(appointmentId, payload) {
     throw new HttpError(404, 'Appointment not found');
   }
 
+  if (existingAppointment.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+  assertAppointmentAccess(user, existingAppointment, 'clinicalWrite');
+
   return prisma.appointment.update({
     where: {
       id,
@@ -722,11 +810,12 @@ async function concludeAppointment(appointmentId, payload) {
       performedTreatment,
       completionNotes,
     },
-    include: appointmentDetailInclude,
+    include: appointmentDetailIncludeFor(user),
   });
 }
 
-async function deleteAppointment(appointmentId) {
+async function deleteAppointment(appointmentId, user) {
+  assertPermission(user, 'appointment', 'archive');
   const id = parseNumericId(appointmentId, 'appointment id');
 
   const existingAppointment = await prisma.appointment.findUnique({
@@ -739,18 +828,27 @@ async function deleteAppointment(appointmentId) {
     throw new HttpError(404, 'Appointment not found');
   }
 
-  await prisma.appointment.delete({
+  if (existingAppointment.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+
+  await prisma.appointment.update({
     where: {
       id,
+    },
+    data: {
+      status: 'cancelled',
+      archivedAt: new Date(),
     },
   });
 
   return {
-    message: 'Appointment deleted successfully',
+    message: 'Appointment archived successfully',
   };
 }
 
-async function updateAppointmentStatus(appointmentId, payload) {
+async function updateAppointmentStatus(appointmentId, payload, user) {
+  assertPermission(user, 'appointment', 'status');
   const id = parseNumericId(appointmentId, 'appointment id');
   const { status } = payload;
   const supportedStatuses = ['scheduled', 'arrived', 'completed', 'cancelled', 'no_show'];
@@ -768,6 +866,11 @@ async function updateAppointmentStatus(appointmentId, payload) {
   if (!existingAppointment) {
     throw new HttpError(404, 'Appointment not found');
   }
+
+  if (existingAppointment.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+  assertAppointmentAccess(user, existingAppointment, 'status');
 
   const allowedTransitions = {
     scheduled: ['arrived', 'cancelled', 'no_show'],
@@ -820,3 +923,21 @@ module.exports = {
   getAvailableStartTimes,
   findNextAvailableDate,
 };
+
+async function getActiveAppointmentTypeNames() {
+  const types = await prisma.appointmentType.findMany({
+    where: { settingsId: 1, isActive: true },
+    select: { name: true },
+  });
+  return new Set(types.map((type) => type.name));
+}
+
+async function validateConfiguredAppointmentType(value, { historicalValues = [] } = {}) {
+  const name = String(value || '').trim();
+  const activeNames = await getActiveAppointmentTypeNames();
+  const historicalNames = new Set(historicalValues.filter(Boolean));
+
+  if (!name || (!activeNames.has(name) && !historicalNames.has(name))) {
+    throw new HttpError(400, 'Appointment type must be one of the active clinic appointment types');
+  }
+}

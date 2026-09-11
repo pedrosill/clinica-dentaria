@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { CalendarDays, LayoutDashboard, Settings, Stethoscope, Users } from 'lucide-react';
+import { BarChart3, CalendarDays, ClipboardList, Clock3, LayoutDashboard, Settings, Stethoscope, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import useAuth from '../context/useAuth';
 import useLanguage from '../context/useLanguage';
@@ -29,6 +29,21 @@ const navigationItems = [
     to: '/doctors',
     label: 'Doctors',
     icon: Stethoscope,
+  },
+  {
+    to: '/recalls',
+    label: 'Recalls',
+    icon: ClipboardList,
+  },
+  {
+    to: '/waitlist',
+    label: 'Waitlist',
+    icon: Clock3,
+  },
+  {
+    to: '/reports',
+    label: 'Reports',
+    icon: BarChart3,
   },
   {
     to: '/settings',

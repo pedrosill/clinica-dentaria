@@ -40,6 +40,34 @@ const clinicLanguageMigrationPath = path.join(
   '20260911200000_add_clinic_language',
   'migration.sql'
 );
+const authorizationScopeMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911210000_add_authorization_scope_and_archiving',
+  'migration.sql'
+);
+const dataGovernanceMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911220000_add_data_governance',
+  'migration.sql'
+);
+const patientRecallsMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911230000_add_patient_recalls',
+  'migration.sql'
+);
+const waitlistMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911240000_add_waitlist_entries',
+  'migration.sql'
+);
 
 process.env.DATABASE_URL = `file:${databasePath.replaceAll('\\', '/')}`;
 
@@ -49,6 +77,10 @@ database.exec(fs.readFileSync(authMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(clinicSettingsMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(clinicalRecordsMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(clinicLanguageMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(authorizationScopeMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(dataGovernanceMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(patientRecallsMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(waitlistMigrationPath, 'utf8'));
 database.close();
 
 const app = require('../app');

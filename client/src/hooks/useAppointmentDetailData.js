@@ -22,6 +22,7 @@ export default function useAppointmentDetailData(appointmentId) {
   const [appointment, setAppointment] = useState(null);
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [appointmentTypes, setAppointmentTypes] = useState([]);
   const [allAppointments, setAllAppointments] = useState([]);
 
   /* ================================
@@ -44,6 +45,7 @@ export default function useAppointmentDetailData(appointmentId) {
         setAppointment(null);
         setPatients([]);
         setDoctors([]);
+        setAppointmentTypes([]);
         setAllAppointments([]);
         setPageError('Invalid appointment id');
         setIsLoading(false);
@@ -59,11 +61,13 @@ export default function useAppointmentDetailData(appointmentId) {
           patientsResponse,
           doctorsResponse,
           appointmentsResponse,
+          settingsResponse,
         ] = await Promise.all([
           fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, { credentials: 'include' }),
           fetch(`${API_BASE_URL}/api/patients`, { credentials: 'include' }),
           fetch(`${API_BASE_URL}/api/doctors`, { credentials: 'include' }),
           fetch(`${API_BASE_URL}/api/appointments`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/api/settings`, { credentials: 'include' }),
         ]);
 
         if (!appointmentResponse.ok) {
@@ -88,11 +92,13 @@ export default function useAppointmentDetailData(appointmentId) {
           patientsData,
           doctorsData,
           appointmentsData,
+          settingsData,
         ] = await Promise.all([
           appointmentResponse.json(),
           patientsResponse.json(),
           doctorsResponse.json(),
           appointmentsResponse.json(),
+          settingsResponse.json(),
         ]);
 
         if (!isMounted) return;
@@ -101,6 +107,7 @@ export default function useAppointmentDetailData(appointmentId) {
         setPatients(Array.isArray(patientsData) ? patientsData : []);
         setDoctors(Array.isArray(doctorsData) ? doctorsData : []);
         setAllAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+        setAppointmentTypes(Array.isArray(settingsData?.appointmentTypes) ? settingsData.appointmentTypes : []);
       } catch (error) {
         if (!isMounted) return;
         setPageError(error.message || 'Failed to load appointment details');
@@ -156,6 +163,7 @@ export default function useAppointmentDetailData(appointmentId) {
     setAppointment,
     patients,
     doctors,
+    appointmentTypes,
     isLoading,
     pageError,
     relatedAppointments,

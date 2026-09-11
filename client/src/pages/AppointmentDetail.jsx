@@ -35,6 +35,7 @@ export default function AppointmentDetail() {
     setAppointment,
     patients,
     doctors,
+    appointmentTypes,
     isLoading,
     pageError,
     relatedAppointments,
@@ -125,6 +126,7 @@ export default function AppointmentDetail() {
           appointment={appointment}
           patients={patients}
           doctors={doctors}
+          appointmentTypes={appointmentTypes}
           isEditing={isEditing}
           isCompletedAppointment={isCompletedAppointment}
           isSubmitting={isSubmitting}
@@ -171,6 +173,7 @@ export default function AppointmentDetail() {
         onAfterConcludeActionChange={setAfterConcludeAction}
         onClose={handleCloseConcludeModal}
         onSubmit={handleConcludeAppointment}
+        appointmentTypes={appointmentTypes}
       />
 
       <RescheduleAppointmentModal
@@ -182,6 +185,7 @@ export default function AppointmentDetail() {
         date={date}
         time={time}
         duration={duration}
+        appointmentTypes={appointmentTypes}
         onDateChange={setDate}
         onTimeChange={setTime}
         onDurationChange={setDuration}

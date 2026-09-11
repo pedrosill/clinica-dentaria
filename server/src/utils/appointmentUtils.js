@@ -78,7 +78,7 @@ function normalizeAppointmentPayload(payload = {}) {
     date: String(payload.date || '').trim(),
     time: String(payload.time || '').trim(),
     duration: Number(payload.duration) || 30,
-    treatmentType: payload.treatmentType?.trim() || 'Consultation',
+    treatmentType: payload.treatmentType?.trim() || '',
     performedTreatment: payload.performedTreatment?.trim() || null,
     status: payload.status?.trim() || 'scheduled',
     notes: payload.notes?.trim() || null,

@@ -99,13 +99,32 @@ Password: DentalProAdmin123!
 
 The account is created only once and is not duplicated on later restarts. You can override the development values with `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_NAME`, and `DEFAULT_ADMIN_PASSWORD` in `server/.env`.
 
-For production, startup provisioning is disabled by default. Create an administrator interactively instead:
+For production, startup provisioning is disabled and `CREATE_DEFAULT_ADMIN=true` is rejected. Create an administrator interactively while the server is stopped instead:
 
 ```bash
 npm run admin:create --prefix server
 ```
 
-If production startup provisioning is temporarily required, explicitly set `CREATE_DEFAULT_ADMIN=true` and provide `DEFAULT_ADMIN_PASSWORD` in the deployment environment. Replace the default credentials before exposing the application publicly.
+The development defaults are never used by a production startup.
+
+## Production operations
+
+Set `NODE_ENV=production`, an explicit HTTPS `CLIENT_ORIGIN`, `TRUST_PROXY` with the proxy's IP/CIDR (or `loopback` when the proxy is local), and a SQLite `DATABASE_URL`. The server refuses production startup when these values are missing or unsafe. TLS termination must be configured at the trusted proxy; the application sets secure session/CSRF cookies only for HTTPS production traffic.
+
+All state-changing requests require both a permitted `Origin`/`Referer` and a CSRF token. The current frontend obtains the token automatically; other clients must first call `GET /api/auth/csrf`, retain the returned token and cookie, and send `X-CSRF-Token` on `POST`, `PUT`, `PATCH`, and `DELETE` requests.
+
+### SQLite backup and restore
+
+Backups use SQLite's online backup API, so the source is copied consistently while the application may be running. Run them from the repository root or `server/`:
+
+```bash
+npm run db:backup --prefix server
+npm run db:restore --prefix server -- server/backups/dentalpro-...db.enc --target file:./restored.db
+```
+
+`BACKUP_DIR` selects the destination and `BACKUP_RETENTION_COUNT` controls how many matching backups remain (default: 7). Set `BACKUP_ENCRYPTION_KEY` or `BACKUP_ENCRYPTION_KEY_FILE` to enable AES-256-GCM encryption; encryption is mandatory when `NODE_ENV=production`. Keep the key outside the repository and do not assume a cloud provider. A restore validates SQLite integrity and foreign-key consistency before replacing the target. Pass `--replace` for an existing target, stop the server first, and retain the generated `.pre-restore-*.db` safety copy until the restore is accepted.
+
+The operational checklist, scheduling recommendation, and restore drill are documented in [`docs/OPERATIONS_BACKUP.md`](docs/OPERATIONS_BACKUP.md).
 
 ## Build the frontend
 

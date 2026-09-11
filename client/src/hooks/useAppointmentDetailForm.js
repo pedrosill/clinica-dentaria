@@ -3,7 +3,7 @@
 ================================ */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../constants/agendaConstants';
+import { apiRequest } from '../services/api';
 import { formatDateInput } from '../utils/agendaUtils';
 
 /* ================================
@@ -180,12 +180,8 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, {
+      const data = await apiRequest(`/api/appointments/${appointmentId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(patientId),
           doctorId: Number(doctorId),
@@ -196,12 +192,6 @@ export default function useAppointmentDetailForm({
           notes: notes.trim(),
         }),
       });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to update appointment');
-      }
 
       setAppointment(data);
       setIsEditing(false);
@@ -241,12 +231,8 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, {
+      const data = await apiRequest(`/api/appointments/${appointmentId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(appointment.patientId),
           doctorId: Number(appointment.doctorId),
@@ -257,12 +243,6 @@ export default function useAppointmentDetailForm({
           notes: appointment.notes || '',
         }),
       });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to reschedule appointment');
-      }
 
       setAppointment(data);
       setDate(data?.date ? formatDateInput(data.date) : date);
@@ -293,31 +273,13 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+      const data = await apiRequest(`/api/appointments/${appointmentId}/conclude`, {
+        method: 'PATCH',
         body: JSON.stringify({
-          patientId: Number(appointment.patientId),
-          doctorId: Number(appointment.doctorId),
-          date: formatDateInput(appointment.date),
-          time: appointment.time,
-          duration: Number(appointment.duration || 30),
-          treatmentType: appointment.treatmentType || '',
-          notes: appointment.notes || '',
-          status: 'completed',
           performedTreatment: performedTreatment.trim(),
           completionNotes: completionNotes.trim(),
         }),
       });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to conclude appointment');
-      }
 
       setAppointment(data);
       setIsConcludeModalOpen(false);
@@ -341,17 +303,10 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/status`, {
+      const data = await apiRequest(`/api/appointments/${appointmentId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ status: nextStatus }),
       });
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to update appointment status');
-      }
 
       setAppointment(data);
       setSaveSuccess('Appointment status updated successfully.');

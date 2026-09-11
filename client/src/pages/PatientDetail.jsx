@@ -5,6 +5,9 @@ import PatientAppointmentsSection from '../components/patient-detail/PatientAppo
 import ClinicalRecordSection from '../components/patient-detail/ClinicalRecordSection';
 import PatientDetailHeader from '../components/patient-detail/PatientDetailHeader';
 import PatientInfoSection from '../components/patient-detail/PatientInfoSection';
+import PatientGovernanceSection from '../components/patient-detail/PatientGovernanceSection';
+import PatientRecallSection from '../components/patient-detail/PatientRecallSection';
+import PatientWaitlistSection from '../components/patient-detail/PatientWaitlistSection';
 import usePatientDetailData from '../hooks/usePatientDetailData';
 import usePatientDetailForm from '../hooks/usePatientDetailForm';
 import {
@@ -159,6 +162,12 @@ export default function PatientDetail() {
         clinicalRecord={clinicalRecord}
         setClinicalRecord={setClinicalRecord}
       />
+
+      <PatientGovernanceSection patientId={patientId} />
+
+      <PatientRecallSection patientId={patientId} />
+
+      <PatientWaitlistSection patientId={patientId} />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <PatientAppointmentsSection

@@ -5,7 +5,10 @@ import { useMemo } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import SelectDropdown from '../ui/SelectDropdown';
 import Dialog from '../ui/Dialog';
-import { TREATMENT_OPTIONS } from '../../utils/appointmentDetailUtils';
+import {
+  EMPTY_APPOINTMENT_TYPE_OPTION,
+  getAppointmentTypeOptions,
+} from '../../utils/appointmentTypeUtils';
 
 /* ================================
    Component
@@ -13,6 +16,7 @@ import { TREATMENT_OPTIONS } from '../../utils/appointmentDetailUtils';
 export default function ConcludeAppointmentModal({
   isOpen,
   appointment,
+  appointmentTypes,
   isSubmitting,
   performedTreatment,
   completionNotes,
@@ -24,12 +28,14 @@ export default function ConcludeAppointmentModal({
   onSubmit,
 }) {
   const treatmentOptions = useMemo(
-    () =>
-      TREATMENT_OPTIONS.map((option) => ({
-        value: option,
-        label: option,
-      })),
-    []
+    () => {
+      const options = getAppointmentTypeOptions(
+        appointmentTypes,
+        appointment?.performedTreatment || appointment?.treatmentType
+      );
+      return options.length > 0 ? options : [EMPTY_APPOINTMENT_TYPE_OPTION];
+    },
+    [appointment, appointmentTypes]
   );
 
   if (!isOpen) return null;
@@ -72,7 +78,7 @@ export default function ConcludeAppointmentModal({
               Scheduled treatment
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
-              {appointment.treatmentType || 'Consultation'}
+              {appointment.treatmentType || 'Not recorded'}
             </p>
           </div>
 

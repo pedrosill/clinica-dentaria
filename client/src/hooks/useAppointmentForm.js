@@ -2,7 +2,13 @@
    Imports
 ================================ */
 import { useEffect, useMemo, useState } from 'react';
-import { API_BASE_URL, TIME_OPTIONS, TREATMENT_OPTIONS } from '../constants/agendaConstants';
+import { API_BASE_URL, TIME_OPTIONS } from '../constants/agendaConstants';
+import {
+  EMPTY_APPOINTMENT_TYPE_OPTION,
+  getActiveAppointmentTypes,
+  getAppointmentDurationOptions,
+} from '../utils/appointmentTypeUtils';
+import { apiRequest } from '../services/api';
 import {
   buildCalendarDays,
   formatDateInput,
@@ -53,7 +59,7 @@ export default function useAppointmentForm({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [appointmentTime, setAppointmentTime] = useState('09:00');
   const [duration, setDuration] = useState('30');
-  const [treatmentType, setTreatmentType] = useState('Consultation');
+  const [treatmentType, setTreatmentType] = useState('');
   const [notes, setNotes] = useState('');
 
   /* ================================
@@ -67,25 +73,18 @@ export default function useAppointmentForm({
   const [hasLoadedAvailability, setHasLoadedAvailability] = useState(false);
 
   const activeAppointmentTypes = useMemo(
-    () => appointmentTypes.filter((type) => type.isActive !== false),
+    () => getActiveAppointmentTypes(appointmentTypes),
     [appointmentTypes]
   );
 
   const treatmentOptions = useMemo(
-    () => activeAppointmentTypes.length > 0
-      ? activeAppointmentTypes.map((type) => type.name)
-      : TREATMENT_OPTIONS,
+    () => activeAppointmentTypes.map((type) => type.name),
     [activeAppointmentTypes]
   );
 
   const durationOptions = useMemo(() => {
-    const durations = new Set([30, 60, 90, 120]);
-    activeAppointmentTypes.forEach((type) => durations.add(Number(type.duration)));
-
-    return [...durations]
-      .filter((value) => Number.isFinite(value) && value > 0)
-      .sort((first, second) => first - second)
-      .map((value) => ({ value: String(value), label: `${value} min` }));
+    const options = getAppointmentDurationOptions(activeAppointmentTypes);
+    return options.length > 0 ? options : [EMPTY_APPOINTMENT_TYPE_OPTION];
   }, [activeAppointmentTypes]);
 
   /* ================================
@@ -253,8 +252,9 @@ export default function useAppointmentForm({
     setCalendarSelection(baseDate);
     setIsCalendarOpen(false);
     setAppointmentTime('09:00');
-    setDuration('30');
-    setTreatmentType(treatmentOptions[0] || 'Consultation');
+    const firstType = activeAppointmentTypes[0];
+    setDuration(firstType ? String(firstType.duration) : '');
+    setTreatmentType(firstType?.name || '');
     setNotes('');
     setSubmitError('');
   }
@@ -296,7 +296,7 @@ export default function useAppointmentForm({
     setIsCalendarOpen(false);
     setAppointmentTime(appointment.time);
     setDuration(String(appointment.duration || 30));
-    setTreatmentType(appointment.treatmentType || 'Consultation');
+    setTreatmentType(appointment.treatmentType || '');
     setNotes(appointment.notes || '');
     setSubmitError('');
     setIsModalOpen(true);
@@ -377,8 +377,8 @@ export default function useAppointmentForm({
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!patientId || !doctorId || !appointmentDate || !appointmentTime) {
-      setSubmitError('Patient, doctor, date and time are required');
+    if (!patientId || !doctorId || !appointmentDate || !appointmentTime || !treatmentType) {
+      setSubmitError('Patient, doctor, date, time and an active appointment type are required');
       return;
     }
 
@@ -408,26 +408,15 @@ export default function useAppointmentForm({
         notes,
       };
 
-      const response = await fetch(
+      const data = await apiRequest(
         editingAppointmentId
-          ? `${API_BASE_URL}/api/appointments/${editingAppointmentId}`
-          : `${API_BASE_URL}/api/appointments`,
+          ? `/api/appointments/${editingAppointmentId}`
+          : '/api/appointments',
         {
           method: editingAppointmentId ? 'PUT' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
           body: JSON.stringify(payload),
         }
       );
-
-      const rawText = await response.text();
-      const data = rawText ? JSON.parse(rawText) : null;
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to save appointment');
-      }
 
       if (editingAppointmentId) {
         setAppointments((currentAppointments) =>

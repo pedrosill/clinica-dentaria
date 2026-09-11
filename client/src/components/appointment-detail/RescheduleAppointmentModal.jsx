@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, UserRound, X } from 'lucide-react';
 import { API_BASE_URL } from '../../constants/agendaConstants';
 import Dialog from '../ui/Dialog';
-const DURATION_OPTIONS = ['30', '60', '90', '120'];
+import { getAppointmentDurationOptions } from '../../utils/appointmentTypeUtils';
 
 function pad(value) {
   return String(value).padStart(2, '0');
@@ -92,6 +92,7 @@ export default function RescheduleAppointmentModal({
   date,
   time,
   duration,
+  appointmentTypes,
   onDateChange,
   onTimeChange,
   onDurationChange,
@@ -109,6 +110,10 @@ export default function RescheduleAppointmentModal({
     [daySlotOptions]
   );
   const selectedDuration = useMemo(() => String(duration || '30'), [duration]);
+  const durationOptions = useMemo(
+    () => getAppointmentDurationOptions(appointmentTypes, appointment?.duration),
+    [appointment?.duration, appointmentTypes]
+  );
 
   const blockedSlotTimes = useMemo(() => {
     const blocked = new Set();
@@ -490,7 +495,7 @@ export default function RescheduleAppointmentModal({
                         Treatment
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-950">
-                        {appointment.treatmentType || 'Consultation'}
+                        {appointment.treatmentType || 'Not recorded'}
                       </p>
                     </div>
                   </div>
@@ -535,9 +540,9 @@ export default function RescheduleAppointmentModal({
                         disabled={isSubmitting}
                         className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
                       >
-                        {DURATION_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option} min
+                        {durationOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
                           </option>
                         ))}
                       </select>
@@ -583,7 +588,7 @@ export default function RescheduleAppointmentModal({
                                    {getPatientName(item)}
                                 </p>
                                 <p className="mt-1 text-xs font-medium text-slate-500">
-                                  {item.treatmentType || 'Consultation'}
+                                  {item.treatmentType || 'Not recorded'}
                                 </p>
                               </div>
 

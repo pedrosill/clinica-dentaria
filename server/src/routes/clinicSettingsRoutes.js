@@ -1,28 +1,28 @@
 const express = require('express');
 const asyncHandler = require('../utils/asyncHandler');
-const { requireRole } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/auth');
 const controller = require('../controllers/clinicSettingsController');
 
 const router = express.Router();
 
-router.get('/', asyncHandler(controller.getSettings));
-router.put('/', requireRole('admin'), asyncHandler(controller.updateSettings));
-router.post('/closures', requireRole('admin'), asyncHandler(controller.createClosure));
-router.delete('/closures/:closureId', requireRole('admin'), asyncHandler(controller.deleteClosure));
+router.get('/', requirePermission('settings', 'read'), asyncHandler(controller.getSettings));
+router.put('/', requirePermission('settings', 'write'), asyncHandler(controller.updateSettings));
+router.post('/closures', requirePermission('settings', 'write'), asyncHandler(controller.createClosure));
+router.delete('/closures/:closureId', requirePermission('settings', 'write'), asyncHandler(controller.deleteClosure));
 router.put(
   '/providers/:doctorId/schedule',
-  requireRole('admin'),
+  requirePermission('settings', 'write'),
   asyncHandler(controller.updateProviderSchedule)
 );
-router.post('/appointment-types', requireRole('admin'), asyncHandler(controller.createAppointmentType));
+router.post('/appointment-types', requirePermission('settings', 'write'), asyncHandler(controller.createAppointmentType));
 router.put(
   '/appointment-types/:typeId',
-  requireRole('admin'),
+  requirePermission('settings', 'write'),
   asyncHandler(controller.updateAppointmentType)
 );
 router.delete(
   '/appointment-types/:typeId',
-  requireRole('admin'),
+  requirePermission('settings', 'write'),
   asyncHandler(controller.deleteAppointmentType)
 );
 

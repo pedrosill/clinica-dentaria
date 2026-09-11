@@ -8,18 +8,26 @@ generator client {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  displayName  String
-  passwordHash String
-  role         String        @default("receptionist")
-  isActive     Boolean       @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  sessions     UserSession[]
-  clinicalNotes ClinicalNote[] @relation("ClinicalNoteAuthor")
-  treatmentPlansCreated TreatmentPlan[] @relation("TreatmentPlanCreator")
+  id                         Int                    @id @default(autoincrement())
+  email                      String                 @unique
+  displayName                String
+  passwordHash               String
+  role                       String                 @default("receptionist")
+  isActive                   Boolean                @default(true)
+  lastLoginAt                DateTime?
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+  sessions                   UserSession[]
+  doctorProfile              Doctor?
+  clinicalNotes              ClinicalNote[]         @relation("ClinicalNoteAuthor")
+  treatmentPlansCreated      TreatmentPlan[]        @relation("TreatmentPlanCreator")
+  auditEvents                AuditEvent[]           @relation("AuditEventActor")
+  consentsRecorded           ConsentRecord[]        @relation("ConsentRecordRecorder")
+  documentsCreated           PatientDocument[]      @relation("PatientDocumentCreator")
+  dataSubjectRequestsCreated DataSubjectRequest[]   @relation("DataSubjectRequestCreator")
+  retentionPoliciesUpdated   RetentionPolicy[]      @relation("RetentionPolicyUpdater")
+  retentionHoldsCreated      RetentionHold[]        @relation("RetentionHoldCreator")
+  clinicalNoteAddenda        ClinicalNoteAddendum[] @relation("ClinicalNoteAddendumAuthor")
 }
 
 model UserSession {
@@ -36,25 +44,25 @@ model UserSession {
 }
 
 model ClinicSettings {
-  id                  Int              @id @default(1)
-  clinicName          String           @default("DentalPro")
-  timezone            String           @default("Europe/Lisbon")
-  language            String           @default("en")
-  slotIntervalMinutes Int              @default(30)
+  id                  Int               @id @default(1)
+  clinicName          String            @default("DentalPro")
+  timezone            String            @default("Europe/Lisbon")
+  language            String            @default("en")
+  slotIntervalMinutes Int               @default(30)
   schedules           ClinicSchedule[]
   closures            ClinicClosure[]
   appointmentTypes    AppointmentType[]
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 }
 
 model ClinicSchedule {
-  id         Int           @id @default(autoincrement())
+  id         Int            @id @default(autoincrement())
   settingsId Int
   weekday    Int
-  isOpen     Boolean       @default(false)
-  startTime  String        @default("08:00")
-  endTime    String        @default("20:00")
+  isOpen     Boolean        @default(false)
+  startTime  String         @default("08:00")
+  endTime    String         @default("20:00")
   breakStart String?
   breakEnd   String?
   settings   ClinicSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
@@ -63,7 +71,7 @@ model ClinicSchedule {
 }
 
 model ClinicClosure {
-  id         Int           @id @default(autoincrement())
+  id         Int            @id @default(autoincrement())
   settingsId Int
   date       DateTime
   label      String
@@ -74,76 +82,130 @@ model ClinicClosure {
 }
 
 model AppointmentType {
-  id         Int           @id @default(autoincrement())
+  id         Int            @id @default(autoincrement())
   settingsId Int
   name       String
-  duration   Int           @default(30)
-  isActive   Boolean       @default(true)
+  duration   Int            @default(30)
+  isActive   Boolean        @default(true)
   settings   ClinicSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
   @@unique([settingsId, name])
 }
 
 model ProviderSchedule {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   doctorId   Int
   weekday    Int
-  isWorking  Boolean  @default(true)
-  startTime  String   @default("08:00")
-  endTime    String   @default("20:00")
+  isWorking  Boolean @default(true)
+  startTime  String  @default("08:00")
+  endTime    String  @default("20:00")
   breakStart String?
   breakEnd   String?
-  doctor     Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  doctor     Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, weekday])
 }
 
 model Patient {
-  id           Int           @id @default(autoincrement())
-  fullName     String
-  phone        String
-  email        String
-  nif          String        @unique
-  nationality  String
-  dateOfBirth  DateTime?
-  createdAt    DateTime      @default(now())
-  appointments Appointment[]
-  clinicalProfile PatientClinicalProfile?
-  toothChartEntries ToothChartEntry[]
-  clinicalNotes ClinicalNote[]
-  treatmentPlans TreatmentPlan[]
+  id                  Int                     @id @default(autoincrement())
+  fullName            String
+  phone               String
+  email               String
+  nif                 String                  @unique
+  nationality         String
+  dateOfBirth         DateTime?
+  archivedAt          DateTime?
+  createdAt           DateTime                @default(now())
+  appointments        Appointment[]
+  clinicalProfile     PatientClinicalProfile?
+  toothChartEntries   ToothChartEntry[]
+  clinicalNotes       ClinicalNote[]
+  treatmentPlans      TreatmentPlan[]
+  auditEvents         AuditEvent[]
+  consentRecords      ConsentRecord[]
+  documents           PatientDocument[]
+  dataSubjectRequests DataSubjectRequest[]
+  retentionHolds      RetentionHold[]
+  recalls             PatientRecall[]
+  waitlistEntries     WaitlistEntry[]
 }
 
 model Doctor {
-  id           Int           @id @default(autoincrement())
+  id           Int                @id @default(autoincrement())
   name         String
   email        String?
   phone        String?
   nif          String?
-  createdAt    DateTime      @default(now())
+  userId       Int?               @unique
+  createdAt    DateTime           @default(now())
   appointments Appointment[]
   schedules    ProviderSchedule[]
+  recalls          PatientRecall[]
+  waitlistEntries  WaitlistEntry[]
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Appointment {
-  id                 Int      @id @default(autoincrement())
+  id                 Int                 @id @default(autoincrement())
   patientId          Int
-  patient            Patient  @relation(fields: [patientId], references: [id])
+  patient            Patient             @relation(fields: [patientId], references: [id])
   doctorId           Int
-  doctor             Doctor   @relation(fields: [doctorId], references: [id])
+  doctor             Doctor              @relation(fields: [doctorId], references: [id])
   date               DateTime
   time               String // Format: "HH:MM" (e.g., "09:00")
-  duration           Int      @default(30)
+  duration           Int                 @default(30)
   treatmentType      String // Scheduled treatment
   performedTreatment String? // Completed treatment result
-  status             String   @default("scheduled") // scheduled, arrived, completed, cancelled, no_show
+  status             String              @default("scheduled") // scheduled, arrived, completed, cancelled, no_show
   notes              String?
   completionNotes    String?
-  createdAt          DateTime @default(now())
+  archivedAt         DateTime?
+  createdAt          DateTime            @default(now())
   clinicalNote       ClinicalNote?
   treatmentPlanItems TreatmentPlanItem[]
+  recalls            PatientRecall[]
+}
+
+model PatientRecall {
+  id            Int          @id @default(autoincrement())
+  patientId     Int
+  appointmentId Int?
+  doctorId      Int?
+  dueDate       DateTime
+  reason        String
+  status        String       @default("due") // due, scheduled, completed, dismissed
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  completedAt   DateTime?
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  doctor        Doctor?      @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+
+  @@index([patientId, dueDate])
+  @@index([status, dueDate])
+  @@index([doctorId, status, dueDate])
+  @@index([patientId, status, dueDate])
+}
+
+model WaitlistEntry {
+  id            Int       @id @default(autoincrement())
+  patientId     Int
+  doctorId      Int?
+  requestedDate DateTime?
+  reason        String
+  priority      String    @default("normal") // normal, urgent
+  status        String    @default("waiting") // waiting, contacted, booked, removed
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor        Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+
+  @@index([status, priority, requestedDate])
+  @@index([patientId, status, requestedDate])
+  @@index([doctorId, status, requestedDate])
 }
 
 model PatientClinicalProfile {
@@ -161,72 +223,183 @@ model PatientClinicalProfile {
 }
 
 model ToothChartEntry {
-  id         Int      @id @default(autoincrement())
-  patientId  Int
+  id          Int      @id @default(autoincrement())
+  patientId   Int
   toothNumber String
-  surface    String   @default("whole")
-  condition  String
-  status     String   @default("active")
-  notes      String?
-  observedAt DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  surface     String   @default("whole")
+  condition   String
+  status      String   @default("active")
+  notes       String?
+  observedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@unique([patientId, toothNumber, surface])
   @@index([patientId])
 }
 
 model ClinicalNote {
-  id               Int       @id @default(autoincrement())
-  patientId        Int
-  appointmentId    Int?      @unique
-  authorId         Int?
-  chiefComplaint   String    @default("")
-  clinicalFindings String    @default("")
-  diagnosis        String    @default("")
-  treatmentPerformed String  @default("")
-  recommendations  String    @default("")
-  status           String    @default("draft")
-  signedAt         DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  patient          Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  appointment      Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  author           User?     @relation("ClinicalNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  id                 Int                    @id @default(autoincrement())
+  patientId          Int
+  appointmentId      Int?                   @unique
+  authorId           Int?
+  chiefComplaint     String                 @default("")
+  clinicalFindings   String                 @default("")
+  diagnosis          String                 @default("")
+  treatmentPerformed String                 @default("")
+  recommendations    String                 @default("")
+  status             String                 @default("draft")
+  signedAt           DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  patient            Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment        Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  author             User?                  @relation("ClinicalNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  addenda            ClinicalNoteAddendum[]
 
   @@index([patientId, createdAt])
 }
 
+model ClinicalNoteAddendum {
+  id        Int          @id @default(autoincrement())
+  noteId    Int
+  authorId  Int?
+  version   Int
+  body      String
+  createdAt DateTime     @default(now())
+  note      ClinicalNote @relation(fields: [noteId], references: [id], onDelete: Restrict)
+  author    User?        @relation("ClinicalNoteAddendumAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@unique([noteId, version])
+  @@index([noteId, createdAt])
+}
+
 model TreatmentPlan {
-  id          Int      @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   patientId   Int
   createdById Int?
   title       String
-  status      String   @default("draft")
-  notes       String   @default("")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  createdBy   User?    @relation("TreatmentPlanCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  status      String              @default("draft")
+  notes       String              @default("")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  patient     Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy   User?               @relation("TreatmentPlanCreator", fields: [createdById], references: [id], onDelete: SetNull)
   items       TreatmentPlanItem[]
 
   @@index([patientId, status])
 }
 
 model TreatmentPlanItem {
-  id            Int       @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   planId        Int
   appointmentId Int?
   toothNumber   String?
   surface       String?
   procedureName String
-  status        String    @default("planned")
-  priority      Int       @default(1)
-  notes         String    @default("")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  status        String        @default("planned")
+  priority      Int           @default(1)
+  notes         String        @default("")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   plan          TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([planId, status])
+}
+
+model AuditEvent {
+  id           Int      @id @default(autoincrement())
+  actorId      Int?
+  actorRole    String?
+  action       String
+  resource     String
+  resourceId   String?
+  patientId    Int?
+  result       String
+  timestamp    DateTime @default(now())
+  requestId    String?
+  metadataJson String?
+  actor        User?    @relation("AuditEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  patient      Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+  @@index([resource, action, timestamp])
+  @@index([patientId, timestamp])
+  @@index([actorId, timestamp])
+}
+
+model ConsentRecord {
+  id                 Int       @id @default(autoincrement())
+  patientId          Int
+  purpose            String
+  version            String
+  status             String    @default("granted")
+  grantedAt          DateTime  @default(now())
+  withdrawnAt        DateTime?
+  recordedById       Int?
+  signatureReference String?
+  patient            Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  recordedBy         User?     @relation("ConsentRecordRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([patientId, status])
+}
+
+model PatientDocument {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  storageKey  String?
+  createdById Int?
+  createdAt   DateTime @default(now())
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy   User?    @relation("PatientDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([patientId, createdAt])
+}
+
+model DataSubjectRequest {
+  id             Int       @id @default(autoincrement())
+  patientId      Int
+  requestType    String
+  status         String    @default("open")
+  description    String?
+  requestedAt    DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdById    Int?
+  resolvedAt     DateTime?
+  resolutionNote String?
+  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy      User?     @relation("DataSubjectRequestCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([patientId, status])
+  @@index([status, requestedAt])
+}
+
+model RetentionPolicy {
+  id           Int      @id @default(autoincrement())
+  resourceType String   @unique
+  durationDays Int?
+  isActive     Boolean  @default(false)
+  description  String?
+  updatedById  Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  updatedBy    User?    @relation("RetentionPolicyUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model RetentionHold {
+  id           Int       @id @default(autoincrement())
+  patientId    Int?
+  resourceType String
+  reason       String
+  startsAt     DateTime  @default(now())
+  releasedAt   DateTime?
+  createdById  Int?
+  patient      Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  createdBy    User?     @relation("RetentionHoldCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([patientId, resourceType, releasedAt])
 }

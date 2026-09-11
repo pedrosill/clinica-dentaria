@@ -11,6 +11,9 @@ import AppointmentDetail from './pages/AppointmentDetail';
 import PatientDetail from './pages/PatientDetail';
 import DoctorDetail from './pages/DoctorDetail';
 import Settings from './pages/Settings';
+import Recalls from './pages/Recalls';
+import Waitlist from './pages/Waitlist';
+import Reports from './pages/Reports';
 import Login from './pages/Login';
 import AuthProvider from './context/AuthContext';
 import LanguageProvider from './context/LanguageContext';
@@ -56,6 +59,9 @@ function ProtectedRoutes() {
               <Route path="/doctors" element={<Doctors />} />
               <Route path="/doctors/:doctorId" element={<DoctorDetail />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/recalls" element={<Recalls />} />
+              <Route path="/waitlist" element={<Waitlist />} />
+              <Route path="/reports" element={<Reports />} />
             </Routes>
           </div>
         </main>

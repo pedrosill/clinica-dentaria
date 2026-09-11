@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { API_BASE_URL, DEFAULT_DOCTOR_FORM } from '../constants/doctorsConstants';
+import { DEFAULT_DOCTOR_FORM } from '../constants/doctorsConstants';
+import { apiRequest } from '../services/api';
 
 export default function useDoctorForm(setDoctors) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,25 +71,15 @@ export default function useDoctorForm(setDoctors) {
         specialty: form.specialty.trim(),
       };
 
-      const response = await fetch(
+      const data = await apiRequest(
         editingDoctorId
-          ? `${API_BASE_URL}/api/doctors/${editingDoctorId}`
-          : `${API_BASE_URL}/api/doctors`,
+          ? `/api/doctors/${editingDoctorId}`
+          : '/api/doctors',
         {
           method: editingDoctorId ? 'PUT' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
           body: JSON.stringify(payload),
         }
       );
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to save doctor');
-      }
 
       if (editingDoctorId) {
         setDoctors((currentDoctors) =>
@@ -130,16 +121,9 @@ export default function useDoctorForm(setDoctors) {
       setSubmitError('');
       setSuccessMessage('');
 
-      const response = await fetch(`${API_BASE_URL}/api/doctors/${doctorPendingDelete.id}`, {
+      await apiRequest(`/api/doctors/${doctorPendingDelete.id}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to delete doctor');
-      }
 
       setDoctors((currentDoctors) =>
         currentDoctors.filter((doctor) => doctor.id !== doctorPendingDelete.id)

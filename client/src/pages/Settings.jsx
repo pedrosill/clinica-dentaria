@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarClock,
   CheckCircle2,
@@ -15,6 +15,8 @@ import useAuth from '../context/useAuth';
 import useLanguage from '../context/useLanguage';
 import { LANGUAGE_OPTIONS } from '../context/languageConstants';
 import { getDoctors } from '../services/doctors';
+import { changePassword } from '../services/auth';
+import UserManagementSection from '../components/settings/UserManagementSection';
 import {
   archiveAppointmentType,
   createAppointmentType,
@@ -86,21 +88,38 @@ export default function Settings() {
   const [closureForm, setClosureForm] = useState({ date: '', label: '' });
   const [typeForm, setTypeForm] = useState({ name: '', duration: '30' });
   const [typeDrafts, setTypeDrafts] = useState({});
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const settingsRequestRef = useRef(0);
+  const hasUnsavedLanguageChange = useRef(false);
 
   const loadSettings = useCallback(async () => {
+    const requestId = settingsRequestRef.current + 1;
+    settingsRequestRef.current = requestId;
+    if (!canManage) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError('');
 
     try {
       const [settingsData, doctorsData] = await Promise.all([getClinicSettings(), getDoctors()]);
+      if (requestId !== settingsRequestRef.current) return;
       setSettings(settingsData);
       setScheduleDraft(buildScheduleDraft(settingsData.schedules));
-      setClinicForm({ clinicName: settingsData.clinicName, timezone: settingsData.timezone, language: settingsData.language || 'en' });
-      setLanguage(settingsData.language || 'en');
+      setClinicForm((current) => ({
+        clinicName: settingsData.clinicName,
+        timezone: settingsData.timezone,
+        language: hasUnsavedLanguageChange.current ? current.language : settingsData.language || 'en',
+      }));
+      if (!hasUnsavedLanguageChange.current) {
+        setLanguage(settingsData.language || 'en');
+      }
       setDoctors(doctorsData);
       setProviderDrafts(
         Object.fromEntries(
@@ -116,11 +135,12 @@ export default function Settings() {
         )
       );
     } catch (requestError) {
-      setError(requestError.message || 'Failed to load clinic settings');
+      if (requestId !== settingsRequestRef.current) return;
+      setError(requestError.message || t('Failed to load clinic settings'));
     } finally {
-      setIsLoading(false);
+      if (requestId === settingsRequestRef.current) setIsLoading(false);
     }
-  }, [setLanguage]);
+  }, [canManage, setLanguage, t]);
 
   useEffect(() => {
     // Loading external settings is intentionally initiated when this page mounts.
@@ -151,19 +171,51 @@ export default function Settings() {
     try {
       setIsSaving(true);
       setError('');
+      const selectedLanguage = event.currentTarget.elements.language?.value || clinicForm.language;
       const updated = await updateClinicSettings({
         ...clinicForm,
+        language: selectedLanguage,
         slotIntervalMinutes: 30,
         schedules: scheduleDraft,
       });
       setSettings(updated);
       setScheduleDraft(buildScheduleDraft(updated.schedules));
-      setLanguage(updated.language || clinicForm.language);
+      hasUnsavedLanguageChange.current = false;
+      setClinicForm((current) => ({
+        ...current,
+        language: updated.language || selectedLanguage,
+      }));
+      setLanguage(updated.language || selectedLanguage);
       showSuccess(t('Clinic schedule saved. Availability now uses these hours.'));
     } catch (requestError) {
-      setError(requestError.message || 'Failed to save clinic settings');
+      setError(requestError.message || t('Failed to save clinic settings'));
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleChangePassword(event) {
+    event.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setSuccess('');
+      setError(t('New password and confirmation do not match.'));
+      return;
+    }
+
+    try {
+      setIsPasswordSaving(true);
+      setError('');
+      await changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      showSuccess(t('Password changed successfully. Other signed-in sessions were signed out.'));
+    } catch (requestError) {
+      setSuccess('');
+      setError(requestError.message || t('Failed to change password'));
+    } finally {
+      setIsPasswordSaving(false);
     }
   }
 
@@ -178,7 +230,7 @@ export default function Settings() {
       setClosureForm({ date: '', label: '' });
       showSuccess(t('Closure added. No appointments can be booked on that date.'));
     } catch (requestError) {
-      setError(requestError.message || 'Failed to add closure');
+      setError(requestError.message || t('Failed to add closure'));
     } finally {
       setIsSaving(false);
     }
@@ -196,7 +248,7 @@ export default function Settings() {
       }));
       showSuccess(t('Closure removed.'));
     } catch (requestError) {
-      setError(requestError.message || 'Failed to remove closure');
+      setError(requestError.message || t('Failed to remove closure'));
     } finally {
       setIsSaving(false);
     }
@@ -220,7 +272,7 @@ export default function Settings() {
       setTypeForm({ name: '', duration: '30' });
       showSuccess(t('Appointment type added.'));
     } catch (requestError) {
-      setError(requestError.message || 'Failed to add appointment type');
+      setError(requestError.message || t('Failed to add appointment type'));
     } finally {
       setIsSaving(false);
     }
@@ -238,7 +290,7 @@ export default function Settings() {
       }));
       showSuccess(t('Appointment type saved.'));
     } catch (requestError) {
-      setError(requestError.message || 'Failed to save appointment type');
+      setError(requestError.message || t('Failed to save appointment type'));
     } finally {
       setIsSaving(false);
     }
@@ -256,7 +308,7 @@ export default function Settings() {
       }));
       showSuccess(t('Appointment type archived. Existing appointments are unchanged.'));
     } catch (requestError) {
-      setError(requestError.message || 'Failed to archive appointment type');
+      setError(requestError.message || t('Failed to archive appointment type'));
     } finally {
       setIsSaving(false);
     }
@@ -271,7 +323,7 @@ export default function Settings() {
       setSettings(updated);
       showSuccess(t('Provider schedule saved.'));
     } catch (requestError) {
-      setError(requestError.message || 'Failed to save provider schedule');
+      setError(requestError.message || t('Failed to save provider schedule'));
     } finally {
       setIsSaving(false);
     }
@@ -294,6 +346,7 @@ export default function Settings() {
       {error ? <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div> : null}
       {success ? <div className="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{success}</div> : null}
       {!canManage ? <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">{t('Only administrators can change clinic settings.')}</div> : null}
+      {canManage ? <UserManagementSection currentUserId={user?.id} /> : null}
 
       <form onSubmit={handleSaveClinicSettings} className="clinic-panel rounded-3xl p-6 md:p-8">
         <div className="flex items-start gap-3">
@@ -304,7 +357,7 @@ export default function Settings() {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm font-medium text-slate-700">{t('Clinic name')}<input className={inputClass} value={clinicForm.clinicName} onChange={(event) => setClinicForm({ ...clinicForm, clinicName: event.target.value })} disabled={!canManage} /></label>
           <label className="space-y-2 text-sm font-medium text-slate-700">{t('Timezone')}<input className={inputClass} value={clinicForm.timezone} onChange={(event) => setClinicForm({ ...clinicForm, timezone: event.target.value })} disabled={!canManage} /></label>
-          <label className="space-y-2 text-sm font-medium text-slate-700">{t('Language')}<select data-testid="language-select" className={inputClass} value={clinicForm.language} onChange={(event) => setClinicForm({ ...clinicForm, language: event.target.value })} disabled={!canManage || isSaving}>{LANGUAGE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select></label>
+      <label className="space-y-2 text-sm font-medium text-slate-700">{t('Language')}<select name="language" data-testid="language-select" className={inputClass} value={clinicForm.language} onChange={(event) => { const nextLanguage = event.target.value; hasUnsavedLanguageChange.current = true; setClinicForm((current) => ({ ...current, language: nextLanguage })); setLanguage(nextLanguage); }} disabled={!canManage}>{LANGUAGE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select></label>
         </div>
 
         <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-300">
@@ -315,9 +368,9 @@ export default function Settings() {
                 const label = WEEKDAYS.find((item) => item.weekday === day.weekday)?.label;
                 return <tr key={day.weekday}>
                   <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-900">{t(label)}</td>
-                  <td className="px-4 py-3"><input type="checkbox" checked={day.isOpen} onChange={(event) => updateDay(day.weekday, { isOpen: event.target.checked })} disabled={!canManage} className="h-4 w-4 accent-teal-700" aria-label={`${label} open`} /></td>
-                  <td className="px-4 py-3"><div className="flex min-w-64 gap-2"><input type="time" step="1800" className={inputClass} value={day.startTime} onChange={(event) => updateDay(day.weekday, { startTime: event.target.value })} disabled={!canManage || !day.isOpen} /><span className="self-center text-slate-400">to</span><input type="time" step="1800" className={inputClass} value={day.endTime} onChange={(event) => updateDay(day.weekday, { endTime: event.target.value })} disabled={!canManage || !day.isOpen} /></div></td>
-                  <td className="px-4 py-3"><div className="flex min-w-64 gap-2"><input type="time" step="1800" className={inputClass} value={day.breakStart} onChange={(event) => updateDay(day.weekday, { breakStart: event.target.value })} disabled={!canManage || !day.isOpen} /><span className="self-center text-slate-400">to</span><input type="time" step="1800" className={inputClass} value={day.breakEnd} onChange={(event) => updateDay(day.weekday, { breakEnd: event.target.value })} disabled={!canManage || !day.isOpen} /></div></td>
+                  <td className="px-4 py-3"><input type="checkbox" checked={day.isOpen} onChange={(event) => updateDay(day.weekday, { isOpen: event.target.checked })} disabled={!canManage} className="h-4 w-4 accent-teal-700" aria-label={`${t(label)} ${t('Open')}`} /></td>
+                  <td className="px-4 py-3"><div className="flex min-w-64 gap-2"><input type="time" step="1800" className={inputClass} value={day.startTime} onChange={(event) => updateDay(day.weekday, { startTime: event.target.value })} disabled={!canManage || !day.isOpen} /><span className="self-center text-slate-400">{t('to')}</span><input type="time" step="1800" className={inputClass} value={day.endTime} onChange={(event) => updateDay(day.weekday, { endTime: event.target.value })} disabled={!canManage || !day.isOpen} /></div></td>
+                  <td className="px-4 py-3"><div className="flex min-w-64 gap-2"><input type="time" step="1800" className={inputClass} value={day.breakStart} onChange={(event) => updateDay(day.weekday, { breakStart: event.target.value })} disabled={!canManage || !day.isOpen} /><span className="self-center text-slate-400">{t('to')}</span><input type="time" step="1800" className={inputClass} value={day.breakEnd} onChange={(event) => updateDay(day.weekday, { breakEnd: event.target.value })} disabled={!canManage || !day.isOpen} /></div></td>
                 </tr>;
               })}
             </tbody>
@@ -330,22 +383,22 @@ export default function Settings() {
         <section className="clinic-panel rounded-3xl p-6 md:p-8">
           <div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700"><Clock3 className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold text-slate-900">{t('Closures and holidays')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{t('Block a specific date without changing the weekly schedule.')}</p></div></div>
           <form onSubmit={handleAddClosure} className="mt-6 grid gap-3 sm:grid-cols-[1fr_1.4fr_auto]"><input required type="date" className={inputClass} value={closureForm.date} onChange={(event) => setClosureForm({ ...closureForm, date: event.target.value })} disabled={!canManage || isSaving} /><input required placeholder={t('Reason, e.g. Christmas')} className={inputClass} value={closureForm.label} onChange={(event) => setClosureForm({ ...closureForm, label: event.target.value })} disabled={!canManage || isSaving} /><button type="submit" disabled={!canManage || isSaving} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"><Plus className="h-4 w-4" />{t('Add')}</button></form>
-          <div className="mt-5 space-y-2">{settings?.closures?.length ? settings.closures.map((closure) => <div key={closure.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm"><div><span className="font-semibold text-slate-900">{closure.date}</span><span className="ml-2 text-slate-600">{closure.label}</span></div><button type="button" onClick={() => handleDeleteClosure(closure.id)} disabled={!canManage || isSaving} className="rounded-lg p-2 text-slate-500 hover:bg-white hover:text-red-700 disabled:opacity-50" aria-label={`Remove ${closure.label}`}><Trash2 className="h-4 w-4" /></button></div>) : <p className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">{t('No special closures configured.')}</p>}</div>
+          <div className="mt-5 space-y-2">{settings?.closures?.length ? settings.closures.map((closure) => <div key={closure.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm"><div><span className="font-semibold text-slate-900">{closure.date}</span><span className="ml-2 text-slate-600">{closure.label}</span></div><button type="button" onClick={() => handleDeleteClosure(closure.id)} disabled={!canManage || isSaving} className="rounded-lg p-2 text-slate-500 hover:bg-white hover:text-red-700 disabled:opacity-50" aria-label={`${t('Remove')} ${closure.label}`}><Trash2 className="h-4 w-4" /></button></div>) : <p className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">{t('No special closures configured.')}</p>}</div>
         </section>
 
         <section className="clinic-panel rounded-3xl p-6 md:p-8">
           <div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700"><Stethoscope className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold text-slate-900">{t('Appointment types')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{t('Templates set the default duration used by new bookings.')}</p></div></div>
-          <form onSubmit={handleAddType} className="mt-6 grid gap-3 sm:grid-cols-[1fr_110px_auto]"><input required placeholder={t('Appointment type')} className={inputClass} value={typeForm.name} onChange={(event) => setTypeForm({ ...typeForm, name: event.target.value })} disabled={!canManage || isSaving} /><select className={inputClass} value={typeForm.duration} onChange={(event) => setTypeForm({ ...typeForm, duration: event.target.value })} disabled={!canManage || isSaving}>{[30, 60, 90, 120].map((duration) => <option key={duration} value={duration}>{duration} min</option>)}</select><button type="submit" disabled={!canManage || isSaving} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"><Plus className="h-4 w-4" />{t('Add')}</button></form>
-          <div className="mt-5 space-y-2">{activeTypes.map((type) => <div key={type.id} className="grid gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 sm:grid-cols-[1fr_110px_auto_auto]"><input className={inputClass} value={typeDrafts[type.id]?.name || ''} onChange={(event) => setTypeDrafts({ ...typeDrafts, [type.id]: { ...typeDrafts[type.id], name: event.target.value } })} disabled={!canManage || isSaving} /><select className={inputClass} value={typeDrafts[type.id]?.duration || String(type.duration)} onChange={(event) => setTypeDrafts({ ...typeDrafts, [type.id]: { ...typeDrafts[type.id], duration: event.target.value } })} disabled={!canManage || isSaving}>{[30, 60, 90, 120].map((duration) => <option key={duration} value={duration}>{duration} min</option>)}</select><button type="button" onClick={() => handleSaveType(type.id)} disabled={!canManage || isSaving} className="inline-flex items-center justify-center rounded-xl bg-teal-700 px-3 py-2 text-white hover:bg-teal-800 disabled:opacity-50" aria-label={`Save ${type.name}`}><Save className="h-4 w-4" /></button><button type="button" onClick={() => handleArchiveType(type.id)} disabled={!canManage || isSaving} className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-3 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50" aria-label={`Archive ${type.name}`}><Trash2 className="h-4 w-4" /></button></div>)}</div>
+          <form onSubmit={handleAddType} className="mt-6 grid gap-3 sm:grid-cols-[1fr_110px_auto]"><input required placeholder={t('Appointment type')} className={inputClass} value={typeForm.name} onChange={(event) => setTypeForm({ ...typeForm, name: event.target.value })} disabled={!canManage || isSaving} /><select className={inputClass} value={typeForm.duration} onChange={(event) => setTypeForm({ ...typeForm, duration: event.target.value })} disabled={!canManage || isSaving}>{[30, 60, 90, 120].map((duration) => <option key={duration} value={duration}>{duration} {t('min')}</option>)}</select><button type="submit" disabled={!canManage || isSaving} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"><Plus className="h-4 w-4" />{t('Add')}</button></form>
+          <div className="mt-5 space-y-2">{activeTypes.map((type) => <div key={type.id} className="grid gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 sm:grid-cols-[1fr_110px_auto_auto]"><input className={inputClass} value={typeDrafts[type.id]?.name || ''} onChange={(event) => setTypeDrafts({ ...typeDrafts, [type.id]: { ...typeDrafts[type.id], name: event.target.value } })} disabled={!canManage || isSaving} /><select className={inputClass} value={typeDrafts[type.id]?.duration || String(type.duration)} onChange={(event) => setTypeDrafts({ ...typeDrafts, [type.id]: { ...typeDrafts[type.id], duration: event.target.value } })} disabled={!canManage || isSaving}>{[30, 60, 90, 120].map((duration) => <option key={duration} value={duration}>{duration} {t('min')}</option>)}</select><button type="button" onClick={() => handleSaveType(type.id)} disabled={!canManage || isSaving} className="inline-flex items-center justify-center rounded-xl bg-teal-700 px-3 py-2 text-white hover:bg-teal-800 disabled:opacity-50" aria-label={`${t('Save')} ${type.name}`}><Save className="h-4 w-4" /></button><button type="button" onClick={() => handleArchiveType(type.id)} disabled={!canManage || isSaving} className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-3 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50" aria-label={`${t('Archive')} ${type.name}`}><Trash2 className="h-4 w-4" /></button></div>)}</div>
         </section>
       </div>
 
       <section className="clinic-panel rounded-3xl p-6 md:p-8">
-        <div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700"><Stethoscope className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold text-slate-900">Provider availability</h2><p className="mt-1 text-sm leading-6 text-slate-600">Override the clinic schedule for individual doctors when their working days differ.</p></div></div><Link to="/doctors" className="hidden items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:inline-flex">Doctors<ExternalLink className="h-4 w-4" /></Link></div>
-        <div className="mt-6 space-y-4">{doctors.length ? doctors.map((doctor) => <details key={doctor.id} className="rounded-2xl border border-slate-300 bg-slate-50 p-4"><summary className="cursor-pointer list-none text-sm font-semibold text-slate-900">{doctor.name}<span className="ml-2 text-xs font-normal text-slate-500">Configure weekly availability</span></summary><div className="mt-4 overflow-x-auto rounded-xl border border-slate-300 bg-white"><table className="min-w-full divide-y divide-slate-200 text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left font-semibold text-slate-700">Day</th><th className="px-3 py-2 text-left font-semibold text-slate-700">Works</th><th className="px-3 py-2 text-left font-semibold text-slate-700">Hours</th></tr></thead><tbody className="divide-y divide-slate-200">{(providerDrafts[doctor.id] || []).map((day) => <tr key={day.weekday}><td className="px-3 py-2 font-medium text-slate-800">{WEEKDAYS.find((item) => item.weekday === day.weekday)?.label}</td><td className="px-3 py-2"><input type="checkbox" checked={day.isWorking} onChange={(event) => setProviderDrafts({ ...providerDrafts, [doctor.id]: providerDrafts[doctor.id].map((item) => item.weekday === day.weekday ? { ...item, isWorking: event.target.checked } : item) })} disabled={!canManage || isSaving} className="h-4 w-4 accent-teal-700" aria-label={`${doctor.name} works ${WEEKDAYS.find((item) => item.weekday === day.weekday)?.label}`} /></td><td className="px-3 py-2"><div className="flex min-w-64 gap-2"><input type="time" step="1800" className={inputClass} value={day.startTime} onChange={(event) => setProviderDrafts({ ...providerDrafts, [doctor.id]: providerDrafts[doctor.id].map((item) => item.weekday === day.weekday ? { ...item, startTime: event.target.value } : item) })} disabled={!canManage || isSaving || !day.isWorking} /><span className="self-center text-slate-400">to</span><input type="time" step="1800" className={inputClass} value={day.endTime} onChange={(event) => setProviderDrafts({ ...providerDrafts, [doctor.id]: providerDrafts[doctor.id].map((item) => item.weekday === day.weekday ? { ...item, endTime: event.target.value } : item) })} disabled={!canManage || isSaving || !day.isWorking} /></div></td></tr>)}</tbody></table></div><button type="button" onClick={() => handleSaveProviderSchedule(doctor.id)} disabled={!canManage || isSaving} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />Save {doctor.name} schedule</button></details>) : <p className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">Add a doctor first to configure provider availability.</p>}</div>
+        <div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700"><Stethoscope className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold text-slate-900">{t('Provider availability')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{t('Override the clinic schedule for individual doctors when their working days differ.')}</p></div></div><Link to="/doctors" className="hidden items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:inline-flex">{t('Doctors')}<ExternalLink className="h-4 w-4" /></Link></div>
+        <div className="mt-6 space-y-4">{doctors.length ? doctors.map((doctor) => <details key={doctor.id} className="rounded-2xl border border-slate-300 bg-slate-50 p-4"><summary className="cursor-pointer list-none text-sm font-semibold text-slate-900">{doctor.name}<span className="ml-2 text-xs font-normal text-slate-500">{t('Configure weekly availability')}</span></summary><div className="mt-4 overflow-x-auto rounded-xl border border-slate-300 bg-white"><table className="min-w-full divide-y divide-slate-200 text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left font-semibold text-slate-700">{t('Day')}</th><th className="px-3 py-2 text-left font-semibold text-slate-700">{t('Works')}</th><th className="px-3 py-2 text-left font-semibold text-slate-700">{t('Hours')}</th></tr></thead><tbody className="divide-y divide-slate-200">{(providerDrafts[doctor.id] || []).map((day) => <tr key={day.weekday}><td className="px-3 py-2 font-medium text-slate-800">{t(WEEKDAYS.find((item) => item.weekday === day.weekday)?.label)}</td><td className="px-3 py-2"><input type="checkbox" checked={day.isWorking} onChange={(event) => setProviderDrafts({ ...providerDrafts, [doctor.id]: providerDrafts[doctor.id].map((item) => item.weekday === day.weekday ? { ...item, isWorking: event.target.checked } : item) })} disabled={!canManage || isSaving} className="h-4 w-4 accent-teal-700" aria-label={`${doctor.name} ${t('works on')} ${t(WEEKDAYS.find((item) => item.weekday === day.weekday)?.label)}`} /></td><td className="px-3 py-2"><div className="flex min-w-64 gap-2"><input type="time" step="1800" className={inputClass} value={day.startTime} onChange={(event) => setProviderDrafts({ ...providerDrafts, [doctor.id]: providerDrafts[doctor.id].map((item) => item.weekday === day.weekday ? { ...item, startTime: event.target.value } : item) })} disabled={!canManage || isSaving || !day.isWorking} /><span className="self-center text-slate-400">{t('to')}</span><input type="time" step="1800" className={inputClass} value={day.endTime} onChange={(event) => setProviderDrafts({ ...providerDrafts, [doctor.id]: providerDrafts[doctor.id].map((item) => item.weekday === day.weekday ? { ...item, endTime: event.target.value } : item) })} disabled={!canManage || isSaving || !day.isWorking} /></div></td></tr>)}</tbody></table></div><button type="button" onClick={() => handleSaveProviderSchedule(doctor.id)} disabled={!canManage || isSaving} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save provider schedule for')} {doctor.name}</button></details>) : <p className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">{t('Add a doctor first to configure provider availability.')}</p>}</div>
       </section>
 
-      <section className="clinic-panel rounded-3xl p-6 md:p-8"><div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700"><ShieldCheck className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold text-slate-900">Signed-in account</h2><p className="mt-1 text-sm leading-6 text-slate-600">{user?.displayName} · {user?.email} · <span className="capitalize">{user?.role}</span></p></div></div><div className="mt-5 flex flex-wrap gap-3 text-xs text-slate-600"><span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-emerald-800"><CheckCircle2 className="h-4 w-4" />Settings are protected by role</span><span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-slate-700"><Clock3 className="h-4 w-4" />Slot interval: 30 minutes</span></div></section>
+      <section className="clinic-panel rounded-3xl p-6 md:p-8"><div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700"><ShieldCheck className="h-5 w-5" /></div><div><h2 className="text-xl font-semibold text-slate-900">{t('Signed-in account')}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{user?.displayName} · {user?.email} · <span className="capitalize">{user?.role}</span></p></div></div><form onSubmit={handleChangePassword} className="mt-6 grid max-w-xl gap-3"><label className="text-sm font-medium text-slate-700">{t('Current password')}<input required type="password" autoComplete="current-password" className={inputClass} value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} disabled={isPasswordSaving} /></label><label className="text-sm font-medium text-slate-700">{t('New password')}<input required minLength={12} type="password" autoComplete="new-password" className={inputClass} value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} disabled={isPasswordSaving} /><span className="mt-1 block text-xs font-normal text-slate-500">{t('Use at least 12 characters.')}</span></label><label className="text-sm font-medium text-slate-700">{t('Confirm new password')}<input required minLength={12} type="password" autoComplete="new-password" className={inputClass} value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })} disabled={isPasswordSaving} /></label><button type="submit" disabled={isPasswordSaving} className="mt-2 inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60">{isPasswordSaving ? t('Changing password…') : t('Change password')}</button></form><div className="mt-5 flex flex-wrap gap-3 text-xs text-slate-600"><span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-emerald-800"><CheckCircle2 className="h-4 w-4" />{t('Other sessions are revoked after a change')}</span><span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-slate-700"><Clock3 className="h-4 w-4" />{t('Slot interval: 30 minutes')}</span></div></section>
     </div>
   );
 }

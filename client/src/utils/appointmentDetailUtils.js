@@ -1,16 +1,4 @@
 /* ================================
-   Constants: treatment options
-================================ */
-export const TREATMENT_OPTIONS = [
-  'Consultation',
-  'Surgery',
-  'Cleaning',
-  'Root Canal',
-  'Crown Fitting',
-  'Braces',
-];
-
-/* ================================
    Constants: time options
 ================================ */
 export const TIME_OPTIONS = Array.from({ length: 24 * 2 }, (_, index) => {

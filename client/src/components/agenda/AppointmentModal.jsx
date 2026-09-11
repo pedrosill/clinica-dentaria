@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
 import { getPatientDisplayName } from '../../utils/agendaUtils';
 import SelectDropdown from '../ui/SelectDropdown';
+import { EMPTY_APPOINTMENT_TYPE_OPTION } from '../../utils/appointmentTypeUtils';
 import Dialog from '../ui/Dialog';
 
 export default function AppointmentModal({
@@ -65,10 +66,10 @@ export default function AppointmentModal({
     [patientSearchResults, recommendedPatientIds]
   );
 
-  const treatmentSelectOptions = treatmentOptions.map((option) => ({
+  const treatmentSelectOptions = treatmentOptions.length > 0 ? treatmentOptions.map((option) => ({
     value: option,
     label: option,
-  }));
+  })) : [EMPTY_APPOINTMENT_TYPE_OPTION];
 
   const timeSelectOptions = timeOptions.map((option) => {
     const time = typeof option === 'string' ? option : option.time;

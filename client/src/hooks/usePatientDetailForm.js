@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-
-const API_BASE_URL = 'http://localhost:5000';
+import { apiRequest } from '../services/api';
 
 function formatDateInput(dateValue) {
   const value = new Date(dateValue);
@@ -138,12 +137,8 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, {
+      const data = await apiRequest(`/api/appointments/${appointmentId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(patientId),
           doctorId: Number(doctorId),
@@ -157,12 +152,6 @@ export default function useAppointmentDetailForm({
           completionNotes: appointment.completionNotes || '',
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to update appointment');
-      }
 
       setAppointment(data);
       setIsEditing(false);
@@ -188,12 +177,8 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, {
+      const data = await apiRequest(`/api/appointments/${appointmentId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify({
           patientId: Number(patientId || appointment.patientId),
           doctorId: Number(doctorId || appointment.doctorId),
@@ -207,12 +192,6 @@ export default function useAppointmentDetailForm({
           completionNotes: appointment.completionNotes || '',
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to reschedule appointment');
-      }
 
       setAppointment(data);
       setIsRescheduleModalOpen(false);
@@ -237,26 +216,16 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/appointments/${appointmentId}/conclude`,
+      const data = await apiRequest(
+        `/api/appointments/${appointmentId}/conclude`,
         {
           method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+          body: JSON.stringify({
             performedTreatment,
             completionNotes,
           }),
         }
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Failed to conclude appointment');
-      }
 
       setAppointment(data);
       setIsConcludeModalOpen(false);

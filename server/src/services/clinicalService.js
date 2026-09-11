@@ -1,6 +1,7 @@
 const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
 const { parseNumericId } = require('../utils/parse');
+const { assertPermission } = require('../utils/authorization');
 
 const VALID_TOOTH_NUMBERS = new Set([
   ...[1, 2, 3, 4].flatMap((quadrant) =>
@@ -60,15 +61,48 @@ function validateEnum(value, allowed, label) {
   return normalized;
 }
 
-async function ensurePatient(patientId) {
+async function ensurePatient(patientId, user, action = 'read') {
+  assertPermission(user, 'clinical', action);
   const id = parseNumericId(patientId, 'patient id');
-  const patient = await prisma.patient.findUnique({ where: { id }, select: { id: true } });
+  const patient = await prisma.patient.findFirst({
+    where: {
+      id,
+      archivedAt: null,
+      ...(user.role === 'dentist'
+        ? {
+            appointments: {
+              some: { doctorId: user.doctorId || -1, archivedAt: null },
+            },
+          }
+        : {}),
+    },
+    select: { id: true },
+  });
   if (!patient) throw new HttpError(404, 'Patient not found');
   return id;
 }
 
-async function getClinicalRecord(patientId) {
-  const id = await ensurePatient(patientId);
+async function ensureAppointmentForPatient(appointmentId, patientId, user) {
+  const id = parseNumericId(appointmentId, 'appointment id');
+  const appointment = await prisma.appointment.findUnique({
+    where: { id },
+    select: { id: true, patientId: true, doctorId: true, archivedAt: true },
+  });
+
+  if (!appointment || appointment.archivedAt) {
+    throw new HttpError(404, 'Appointment not found');
+  }
+  if (appointment.patientId !== patientId) {
+    throw new HttpError(400, 'Appointment does not belong to this patient');
+  }
+  if (user.role === 'dentist' && Number(user.doctorId) !== Number(appointment.doctorId)) {
+    throw new HttpError(403, 'Dentists may only access appointments assigned to them');
+  }
+  return appointment;
+}
+
+async function getClinicalRecord(patientId, user) {
+  const id = await ensurePatient(patientId, user, 'read');
   const [profile, toothChart, notes, treatmentPlans] = await Promise.all([
     prisma.patientClinicalProfile.findUnique({ where: { patientId: id } }),
     prisma.toothChartEntry.findMany({
@@ -80,6 +114,7 @@ async function getClinicalRecord(patientId) {
       include: {
         author: { select: { id: true, displayName: true } },
         appointment: { select: { id: true, date: true, time: true, treatmentType: true } },
+        addenda: { orderBy: { version: 'asc' } },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -109,8 +144,8 @@ async function getClinicalRecord(patientId) {
   };
 }
 
-async function updateClinicalProfile(patientId, payload = {}) {
-  const id = await ensurePatient(patientId);
+async function updateClinicalProfile(patientId, payload = {}, user) {
+  const id = await ensurePatient(patientId, user, 'write');
   const data = {
     allergies: optionalString(payload.allergies),
     medications: optionalString(payload.medications),
@@ -127,8 +162,8 @@ async function updateClinicalProfile(patientId, payload = {}) {
   });
 }
 
-async function upsertToothChartEntry(patientId, payload = {}) {
-  const id = await ensurePatient(patientId);
+async function upsertToothChartEntry(patientId, payload = {}, user) {
+  const id = await ensurePatient(patientId, user, 'write');
   const toothNumber = stringValue(payload.toothNumber);
   const surface = validateEnum(payload.surface || 'whole', VALID_SURFACES, 'tooth surface');
   const condition = validateEnum(payload.condition, VALID_TOOTH_CONDITIONS, 'tooth condition');
@@ -159,8 +194,8 @@ async function upsertToothChartEntry(patientId, payload = {}) {
   });
 }
 
-async function deleteToothChartEntry(patientId, entryId) {
-  const patient = await ensurePatient(patientId);
+async function deleteToothChartEntry(patientId, entryId, user) {
+  const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(entryId, 'tooth chart entry id');
   const entry = await prisma.toothChartEntry.findFirst({ where: { id, patientId: patient } });
   if (!entry) throw new HttpError(404, 'Tooth chart entry not found');
@@ -168,22 +203,19 @@ async function deleteToothChartEntry(patientId, entryId) {
   return { message: 'Tooth chart entry removed successfully' };
 }
 
-async function createClinicalNote(patientId, payload = {}, authorId = null) {
-  const id = await ensurePatient(patientId);
+async function createClinicalNote(patientId, payload = {}, user) {
+  const id = await ensurePatient(patientId, user, 'write');
   const status = validateEnum(payload.status || 'draft', VALID_NOTE_STATUSES, 'clinical note status');
   const appointmentId = payload.appointmentId ? parseNumericId(payload.appointmentId, 'appointment id') : null;
 
   if (appointmentId) {
-    const appointment = await prisma.appointment.findUnique({ where: { id: appointmentId } });
-    if (!appointment || appointment.patientId !== id) {
-      throw new HttpError(400, 'Appointment does not belong to this patient');
-    }
+    await ensureAppointmentForPatient(appointmentId, id, user);
   }
 
   const data = {
     patientId: id,
     appointmentId,
-    authorId: authorId ? parseNumericId(authorId, 'author id') : null,
+    authorId: user?.id ? parseNumericId(user.id, 'author id') : null,
     chiefComplaint: optionalString(payload.chiefComplaint),
     clinicalFindings: optionalString(payload.clinicalFindings),
     diagnosis: optionalString(payload.diagnosis),
@@ -203,40 +235,68 @@ async function createClinicalNote(patientId, payload = {}, authorId = null) {
   }
 }
 
-async function updateClinicalNote(noteId, payload = {}, authorId = null) {
+async function updateClinicalNote(patientId, noteId, payload = {}, user) {
+  const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(noteId, 'clinical note id');
-  const existing = await prisma.clinicalNote.findUnique({ where: { id } });
-  if (!existing) throw new HttpError(404, 'Clinical note not found');
+  const existing = await prisma.clinicalNote.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      patientId: true,
+      appointmentId: true,
+      authorId: true,
+      status: true,
+      chiefComplaint: true,
+      clinicalFindings: true,
+      diagnosis: true,
+      treatmentPerformed: true,
+      recommendations: true,
+    },
+  });
+  if (!existing || existing.patientId !== patient) throw new HttpError(404, 'Clinical note not found');
   if (existing.status === 'final') throw new HttpError(409, 'Final clinical notes cannot be edited');
 
   const status = validateEnum(payload.status || existing.status, VALID_NOTE_STATUSES, 'clinical note status');
-  const appointmentId = payload.appointmentId ? parseNumericId(payload.appointmentId, 'appointment id') : null;
+  const appointmentId = payload.appointmentId === undefined || payload.appointmentId === null || payload.appointmentId === ''
+    ? existing.appointmentId
+    : parseNumericId(payload.appointmentId, 'appointment id');
 
   if (appointmentId) {
-    const appointment = await prisma.appointment.findUnique({ where: { id: appointmentId } });
-    if (!appointment || appointment.patientId !== existing.patientId) {
-      throw new HttpError(400, 'Appointment does not belong to this patient');
-    }
+    await ensureAppointmentForPatient(appointmentId, patient, user);
   }
 
   return prisma.clinicalNote.update({
     where: { id },
     data: {
       appointmentId,
-      authorId: authorId ? parseNumericId(authorId, 'author id') : existing.authorId,
-      chiefComplaint: optionalString(payload.chiefComplaint),
-      clinicalFindings: optionalString(payload.clinicalFindings),
-      diagnosis: optionalString(payload.diagnosis),
-      treatmentPerformed: optionalString(payload.treatmentPerformed),
-      recommendations: optionalString(payload.recommendations),
+      authorId: user?.id ? parseNumericId(user.id, 'author id') : existing.authorId,
+      chiefComplaint: optionalString(payload.chiefComplaint ?? existing.chiefComplaint),
+      clinicalFindings: optionalString(payload.clinicalFindings ?? existing.clinicalFindings),
+      diagnosis: optionalString(payload.diagnosis ?? existing.diagnosis),
+      treatmentPerformed: optionalString(payload.treatmentPerformed ?? existing.treatmentPerformed),
+      recommendations: optionalString(payload.recommendations ?? existing.recommendations),
       status,
       signedAt: status === 'final' ? new Date() : null,
     },
   });
 }
 
-async function createTreatmentPlan(patientId, payload = {}, createdById = null) {
-  const id = await ensurePatient(patientId);
+async function createClinicalNoteAddendum(patientId, noteId, payload = {}, user) {
+  const patient = await ensurePatient(patientId, user, 'write');
+  const id = parseNumericId(noteId, 'clinical note id');
+  const note = await prisma.clinicalNote.findFirst({ where: { id, patientId: patient }, select: { id: true, status: true } });
+  if (!note) throw new HttpError(404, 'Clinical note not found');
+  if (note.status !== 'final') throw new HttpError(400, 'Addenda are only available for final clinical notes');
+  const body = optionalString(payload.body, 5000);
+  if (!body) throw new HttpError(400, 'Addendum text is required');
+  const latest = await prisma.clinicalNoteAddendum.findFirst({ where: { noteId: id }, orderBy: { version: 'desc' }, select: { version: true } });
+  return prisma.clinicalNoteAddendum.create({
+    data: { noteId: id, authorId: user.id, version: (latest?.version || 0) + 1, body },
+  });
+}
+
+async function createTreatmentPlan(patientId, payload = {}, user) {
+  const id = await ensurePatient(patientId, user, 'write');
   const title = stringValue(payload.title);
   if (!title || title.length > 160) throw new HttpError(400, 'Treatment plan title is required');
   const status = validateEnum(payload.status || 'draft', VALID_PLAN_STATUSES, 'treatment plan status');
@@ -244,7 +304,7 @@ async function createTreatmentPlan(patientId, payload = {}, createdById = null) 
   return prisma.treatmentPlan.create({
     data: {
       patientId: id,
-      createdById: createdById ? parseNumericId(createdById, 'creator id') : null,
+      createdById: user?.id ? parseNumericId(user.id, 'creator id') : null,
       title,
       status,
       notes: optionalString(payload.notes),
@@ -253,10 +313,11 @@ async function createTreatmentPlan(patientId, payload = {}, createdById = null) 
   });
 }
 
-async function updateTreatmentPlan(planId, payload = {}) {
+async function updateTreatmentPlan(patientId, planId, payload = {}, user) {
+  const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(planId, 'treatment plan id');
   const existing = await prisma.treatmentPlan.findUnique({ where: { id } });
-  if (!existing) throw new HttpError(404, 'Treatment plan not found');
+  if (!existing || existing.patientId !== patient) throw new HttpError(404, 'Treatment plan not found');
   const title = stringValue(payload.title || existing.title);
   if (!title || title.length > 160) throw new HttpError(400, 'Treatment plan title is required');
   const status = validateEnum(payload.status || existing.status, VALID_PLAN_STATUSES, 'treatment plan status');
@@ -268,10 +329,11 @@ async function updateTreatmentPlan(planId, payload = {}) {
   });
 }
 
-async function createTreatmentPlanItem(planId, payload = {}) {
+async function createTreatmentPlanItem(patientId, planId, payload = {}, user) {
+  const patient = await ensurePatient(patientId, user, 'write');
   const normalizedPlanId = parseNumericId(planId, 'treatment plan id');
   const plan = await prisma.treatmentPlan.findUnique({ where: { id: normalizedPlanId } });
-  if (!plan) throw new HttpError(404, 'Treatment plan not found');
+  if (!plan || plan.patientId !== patient) throw new HttpError(404, 'Treatment plan not found');
 
   const procedureName = stringValue(payload.procedureName);
   if (!procedureName || procedureName.length > 160) throw new HttpError(400, 'Procedure name is required');
@@ -282,10 +344,15 @@ async function createTreatmentPlanItem(planId, payload = {}) {
   const priority = Number(payload.priority || 1);
   if (!Number.isInteger(priority) || priority < 1 || priority > 9) throw new HttpError(400, 'Priority must be between 1 and 9');
 
+  const appointmentId = payload.appointmentId
+    ? parseNumericId(payload.appointmentId, 'appointment id')
+    : null;
+  if (appointmentId) await ensureAppointmentForPatient(appointmentId, patient, user);
+
   return prisma.treatmentPlanItem.create({
     data: {
       planId: normalizedPlanId,
-      appointmentId: payload.appointmentId ? parseNumericId(payload.appointmentId, 'appointment id') : null,
+      appointmentId,
       toothNumber,
       surface,
       procedureName,
@@ -296,33 +363,62 @@ async function createTreatmentPlanItem(planId, payload = {}) {
   });
 }
 
-async function updateTreatmentPlanItem(itemId, payload = {}) {
+async function updateTreatmentPlanItem(patientId, itemId, payload = {}, user) {
+  const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(itemId, 'treatment plan item id');
-  const existing = await prisma.treatmentPlanItem.findUnique({ where: { id } });
-  if (!existing) throw new HttpError(404, 'Treatment plan item not found');
+  const existing = await prisma.treatmentPlanItem.findUnique({
+    where: { id },
+    include: { plan: true },
+  });
+  if (!existing || existing.plan.patientId !== patient) throw new HttpError(404, 'Treatment plan item not found');
 
   const procedureName = stringValue(payload.procedureName || existing.procedureName);
   if (!procedureName || procedureName.length > 160) throw new HttpError(400, 'Procedure name is required');
   const status = validateEnum(payload.status || existing.status, VALID_PLAN_ITEM_STATUSES, 'treatment item status');
   const priority = Number(payload.priority || existing.priority);
   if (!Number.isInteger(priority) || priority < 1 || priority > 9) throw new HttpError(400, 'Priority must be between 1 and 9');
+  const toothNumber = payload.toothNumber === undefined
+    ? existing.toothNumber
+    : payload.toothNumber
+      ? stringValue(payload.toothNumber)
+      : null;
+  if (toothNumber && !VALID_TOOTH_NUMBERS.has(toothNumber)) throw new HttpError(400, 'Invalid FDI tooth number');
+  const surface = payload.surface === undefined
+    ? existing.surface
+    : payload.surface
+      ? validateEnum(payload.surface, VALID_SURFACES, 'tooth surface')
+      : null;
+  const appointmentId = payload.appointmentId === undefined
+    ? existing.appointmentId
+    : payload.appointmentId
+      ? parseNumericId(payload.appointmentId, 'appointment id')
+      : null;
+  if (appointmentId) await ensureAppointmentForPatient(appointmentId, patient, user);
 
   return prisma.treatmentPlanItem.update({
     where: { id },
     data: {
       procedureName,
-      toothNumber: payload.toothNumber ? stringValue(payload.toothNumber) : existing.toothNumber,
-      surface: payload.surface ? validateEnum(payload.surface, VALID_SURFACES, 'tooth surface') : existing.surface,
+      toothNumber,
+      surface,
       status,
       priority,
       notes: optionalString(payload.notes ?? existing.notes, 2000),
-      appointmentId: payload.appointmentId ? parseNumericId(payload.appointmentId, 'appointment id') : existing.appointmentId,
+      appointmentId,
     },
   });
 }
 
-async function deleteTreatmentPlanItem(itemId) {
+async function deleteTreatmentPlanItem(patientId, itemId, user) {
+  const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(itemId, 'treatment plan item id');
+  const existing = await prisma.treatmentPlanItem.findUnique({
+    where: { id },
+    include: { plan: true },
+  });
+  if (!existing || existing.plan.patientId !== patient) {
+    throw new HttpError(404, 'Treatment plan item not found');
+  }
   try {
     await prisma.treatmentPlanItem.delete({ where: { id } });
     return { message: 'Treatment plan item removed successfully' };
@@ -339,6 +435,7 @@ module.exports = {
   deleteToothChartEntry,
   createClinicalNote,
   updateClinicalNote,
+  createClinicalNoteAddendum,
   createTreatmentPlan,
   updateTreatmentPlan,
   createTreatmentPlanItem,

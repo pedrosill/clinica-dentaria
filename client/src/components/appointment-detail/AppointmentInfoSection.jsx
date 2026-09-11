@@ -4,12 +4,11 @@
 import { useMemo } from 'react';
 import { CalendarDays, Save } from 'lucide-react';
 import SelectDropdown from '../ui/SelectDropdown';
+import { formatLongDate, getStatusClasses, getStatusLabel } from '../../utils/appointmentDetailUtils';
 import {
-  formatLongDate,
-  getStatusClasses,
-  getStatusLabel,
-  TREATMENT_OPTIONS,
-} from '../../utils/appointmentDetailUtils';
+  EMPTY_APPOINTMENT_TYPE_OPTION,
+  getAppointmentTypeOptions,
+} from '../../utils/appointmentTypeUtils';
 import { getPatientDisplayName } from '../../utils/agendaUtils';
 
 /* ================================
@@ -19,6 +18,7 @@ export default function AppointmentInfoSection({
   appointment,
   patients,
   doctors,
+  appointmentTypes,
   isEditing,
   isCompletedAppointment,
   isSubmitting,
@@ -52,12 +52,11 @@ export default function AppointmentInfoSection({
   );
 
   const treatmentOptions = useMemo(
-    () =>
-      TREATMENT_OPTIONS.map((option) => ({
-        value: option,
-        label: option,
-      })),
-    []
+    () => {
+      const options = getAppointmentTypeOptions(appointmentTypes, appointment?.treatmentType);
+      return options.length > 0 ? options : [EMPTY_APPOINTMENT_TYPE_OPTION];
+    },
+    [appointment?.treatmentType, appointmentTypes]
   );
 
   return (
@@ -167,7 +166,7 @@ export default function AppointmentInfoSection({
                 Scheduled treatment
               </p>
               <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.treatmentType || 'Consultation'}
+                {appointment.treatmentType || 'Not recorded'}
               </p>
             </div>
 

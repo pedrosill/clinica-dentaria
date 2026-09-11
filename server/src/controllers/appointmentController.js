@@ -2,7 +2,7 @@ const appointmentService = require('../services/appointmentService');
 
 async function getAppointments(req, res, next) {
   try {
-    const appointments = await appointmentService.getAppointments();
+    const appointments = await appointmentService.getAppointments(req.user);
     res.json(appointments);
   } catch (error) {
     next(error);
@@ -11,7 +11,7 @@ async function getAppointments(req, res, next) {
 
 async function getAppointmentById(req, res, next) {
   try {
-    const appointment = await appointmentService.getAppointmentById(req.params.appointmentId);
+    const appointment = await appointmentService.getAppointmentById(req.params.appointmentId, req.user);
     res.json(appointment);
   } catch (error) {
     next(error);
@@ -25,6 +25,7 @@ async function getAppointmentAvailability(req, res, next) {
       date: req.query.date,
       duration: req.query.duration,
       excludeAppointmentId: req.query.excludeAppointmentId,
+      user: req.user,
     });
 
     res.json(data);
@@ -40,6 +41,7 @@ async function getRescheduleOptions(req, res, next) {
       appointmentId: req.params.appointmentId,
       date: req.query.date,
       duration: req.query.duration,
+      user: req.user,
     });
 
     res.json(data);
@@ -50,7 +52,7 @@ async function getRescheduleOptions(req, res, next) {
 
 async function createAppointment(req, res, next) {
   try {
-    const appointment = await appointmentService.createAppointment(req.body);
+    const appointment = await appointmentService.createAppointment(req.body, req.user);
     res.status(201).json(appointment);
   } catch (error) {
     next(error);
@@ -61,7 +63,8 @@ async function updateAppointment(req, res, next) {
   try {
     const appointment = await appointmentService.updateAppointment(
       req.params.appointmentId,
-      req.body
+      req.body,
+      req.user
     );
     res.json(appointment);
   } catch (error) {
@@ -73,7 +76,8 @@ async function concludeAppointment(req, res, next) {
   try {
     const appointment = await appointmentService.concludeAppointment(
       req.params.appointmentId,
-      req.body
+      req.body,
+      req.user
     );
     res.json(appointment);
   } catch (error) {
@@ -83,7 +87,7 @@ async function concludeAppointment(req, res, next) {
 
 async function deleteAppointment(req, res, next) {
   try {
-    const result = await appointmentService.deleteAppointment(req.params.appointmentId);
+    const result = await appointmentService.deleteAppointment(req.params.appointmentId, req.user);
     res.json(result);
   } catch (error) {
     next(error);
@@ -94,7 +98,8 @@ async function updateAppointmentStatus(req, res, next) {
   try {
     const appointment = await appointmentService.updateAppointmentStatus(
       req.params.appointmentId,
-      req.body
+      req.body,
+      req.user
     );
     res.json(appointment);
   } catch (error) {

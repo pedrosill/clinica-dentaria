@@ -1,11 +1,11 @@
 const clinicSettingsService = require('../services/clinicSettingsService');
 
 async function getSettings(req, res) {
-  res.json(await clinicSettingsService.getClinicSettings());
+  res.json(await clinicSettingsService.getClinicSettings(req.user));
 }
 
 async function updateSettings(req, res) {
-  res.json(await clinicSettingsService.updateClinicSettings(req.body));
+  res.json(await clinicSettingsService.updateClinicSettings(req.body, req.user));
 }
 
 async function createClosure(req, res) {
@@ -18,7 +18,7 @@ async function deleteClosure(req, res) {
 
 async function updateProviderSchedule(req, res) {
   res.json(
-    await clinicSettingsService.updateProviderSchedule(req.params.doctorId, req.body)
+    await clinicSettingsService.updateProviderSchedule(req.params.doctorId, req.body, req.user)
   );
 }
 

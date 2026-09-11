@@ -2,6 +2,35 @@ const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
 const { parseNumericId } = require('../utils/parse');
 const { normalizePatientPayload } = require('../utils/patientUtils');
+const { assertPermission } = require('../utils/authorization');
+
+function dentistPatientWhere(user) {
+  return user?.role === 'dentist'
+    ? {
+        appointments: {
+          some: {
+            doctorId: user.doctorId || -1,
+            archivedAt: null,
+          },
+        },
+      }
+    : {};
+}
+
+async function ensurePatientAccess(patientId, user, { write = false } = {}) {
+  assertPermission(user, 'patient', write ? 'write' : 'read');
+  const id = parseNumericId(patientId, 'patient id');
+  const patient = await prisma.patient.findFirst({
+    where: { id, archivedAt: null, ...dentistPatientWhere(user) },
+    select: { id: true },
+  });
+
+  if (!patient) {
+    throw new HttpError(404, 'Patient not found');
+  }
+
+  return id;
+}
 
 function validatePortugueseNif(nif, nationality) {
   if (String(nationality).trim().toLowerCase() !== 'portuguese') {
@@ -35,21 +64,28 @@ async function ensureUniquePatientNif(nif, excludedPatientId = null) {
   }
 }
 
-async function getPatients() {
+async function getPatients(user) {
+  assertPermission(user, 'patient', 'read');
   return prisma.patient.findMany({
+    where: { archivedAt: null, ...dentistPatientWhere(user) },
     orderBy: {
       createdAt: 'desc',
     },
   });
 }
 
-async function getPatientById(patientId) {
-  const id = parseNumericId(patientId, 'patient id');
+async function getPatientById(patientId, user) {
+  const id = await ensurePatientAccess(patientId, user);
+  const appointmentWhere = {
+    archivedAt: null,
+    ...(user?.role === 'dentist' ? { doctorId: user.doctorId || -1 } : {}),
+  };
 
   const patient = await prisma.patient.findUnique({
     where: { id },
     include: {
       appointments: {
+        where: appointmentWhere,
         orderBy: [{ date: 'desc' }, { time: 'desc' }],
       },
     },
@@ -62,7 +98,8 @@ async function getPatientById(patientId) {
   return patient;
 }
 
-async function createPatient(payload) {
+async function createPatient(payload, user) {
+  assertPermission(user, 'patient', 'write');
   const normalized = normalizePatientPayload(payload);
 
   if (
@@ -93,8 +130,8 @@ async function createPatient(payload) {
   });
 }
 
-async function updatePatient(patientId, payload) {
-  const id = parseNumericId(patientId, 'patient id');
+async function updatePatient(patientId, payload, user) {
+  const id = await ensurePatientAccess(patientId, user, { write: true });
   const normalized = normalizePatientPayload(payload);
 
   if (
@@ -111,7 +148,7 @@ async function updatePatient(patientId, payload) {
   }
 
   const existingPatient = await prisma.patient.findUnique({
-    where: { id },
+    where: { id, archivedAt: null },
   });
 
   if (!existingPatient) {
@@ -134,10 +171,11 @@ async function updatePatient(patientId, payload) {
   });
 }
 
-async function deletePatient(patientId) {
+async function deletePatient(patientId, user) {
+  assertPermission(user, 'patient', 'archive');
   const id = parseNumericId(patientId, 'patient id');
 
-  const existingPatient = await prisma.patient.findUnique({
+  const existingPatient = await prisma.patient.findFirst({
     where: { id },
     include: {
       appointments: true,
@@ -148,16 +186,28 @@ async function deletePatient(patientId) {
     throw new HttpError(404, 'Patient not found');
   }
 
-  if (existingPatient.appointments.length > 0) {
-    throw new HttpError(400, 'Cannot delete a patient with appointments');
+  if (existingPatient.archivedAt) {
+    throw new HttpError(404, 'Patient not found');
   }
 
-  await prisma.patient.delete({
-    where: { id },
-  });
+  const archivedAt = new Date();
+  await prisma.$transaction([
+    prisma.patient.update({
+      where: { id },
+      data: { archivedAt },
+    }),
+    prisma.appointment.updateMany({
+      where: {
+        patientId: id,
+        archivedAt: null,
+        status: { in: ['scheduled', 'arrived'] },
+      },
+      data: { status: 'cancelled', archivedAt },
+    }),
+  ]);
 
   return {
-    message: 'Patient deleted successfully',
+    message: 'Patient archived successfully',
   };
 }
 

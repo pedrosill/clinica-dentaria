@@ -1,20 +1,29 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import { apiRequest } from './api';
 
 export async function createPatient(payload) {
-  const response = await fetch(`${API_BASE_URL}/api/patients`, {
-    credentials: 'include',
+  return apiRequest('/api/patients', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(payload),
   });
+}
 
-  const data = await response.json().catch(() => null);
+export function getPatientConsents(patientId) {
+  return apiRequest(`/api/patients/${patientId}/consents`);
+}
 
-  if (!response.ok) {
-    throw new Error(data?.message || 'Failed to create patient');
-  }
+export function createPatientConsent(patientId, payload) {
+  return apiRequest(`/api/patients/${patientId}/consents`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
 
-  return data;
+export function withdrawPatientConsent(patientId, consentId) {
+  return apiRequest(`/api/patients/${patientId}/consents/${consentId}/withdraw`, {
+    method: 'POST',
+  });
+}
+
+export function exportPatientRecord(patientId) {
+  return apiRequest(`/api/patients/${patientId}/export`);
 }

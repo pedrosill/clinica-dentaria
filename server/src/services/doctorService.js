@@ -1,14 +1,18 @@
 const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
 const { parseNumericId } = require('../utils/parse');
+const { assertPermission } = require('../utils/authorization');
 
-async function getDoctors() {
+async function getDoctors(user) {
+  assertPermission(user, 'doctor', 'read');
   return prisma.doctor.findMany({
+    where: user.role === 'dentist' ? { userId: user.id } : {},
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
 }
 
-async function getDoctorById(doctorId) {
+async function getDoctorById(doctorId, user) {
+  assertPermission(user, 'doctor', 'read');
   const id = parseNumericId(doctorId, 'doctor id');
 
   const doctor = await prisma.doctor.findUnique({
@@ -18,11 +22,15 @@ async function getDoctorById(doctorId) {
   if (!doctor) {
     throw new HttpError(404, 'Doctor not found');
   }
+  if (user.role === 'dentist' && doctor.userId !== user.id) {
+    throw new HttpError(403, 'Dentists may only access their own doctor profile');
+  }
 
   return doctor;
 }
 
-async function createDoctor(payload) {
+async function createDoctor(payload, user) {
+  assertPermission(user, 'doctor', 'write');
   const name = String(payload.name || '').trim();
   const email = payload.email?.trim() || null;
   const phone = payload.phone?.trim() || null;
@@ -42,7 +50,8 @@ async function createDoctor(payload) {
   });
 }
 
-async function updateDoctor(doctorId, payload) {
+async function updateDoctor(doctorId, payload, user) {
+  assertPermission(user, 'doctor', 'write');
   const id = parseNumericId(doctorId, 'doctor id');
   const name = String(payload.name || '').trim();
   const email = payload.email?.trim() || null;
@@ -72,7 +81,8 @@ async function updateDoctor(doctorId, payload) {
   });
 }
 
-async function deleteDoctor(doctorId) {
+async function deleteDoctor(doctorId, user) {
+  assertPermission(user, 'doctor', 'archive');
   const id = parseNumericId(doctorId, 'doctor id');
 
   const existingDoctor = await prisma.doctor.findUnique({

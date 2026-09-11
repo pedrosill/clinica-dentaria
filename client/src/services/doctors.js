@@ -1,58 +1,29 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-
-async function parseResponse(response, fallbackMessage) {
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(data?.message || fallbackMessage);
-  }
-
-  return data;
-}
+import { apiRequest } from './api';
 
 export async function getDoctors() {
-  const response = await fetch(`${API_BASE_URL}/api/doctors`, { credentials: 'include' });
-  return parseResponse(response, 'Failed to load doctors');
+  return apiRequest('/api/doctors');
 }
 
 export async function getDoctorById(doctorId) {
-  const response = await fetch(`${API_BASE_URL}/api/doctors/${doctorId}`, {
-    credentials: 'include',
-  });
-  return parseResponse(response, 'Failed to load doctor');
+  return apiRequest(`/api/doctors/${doctorId}`);
 }
 
 export async function createDoctor(payload) {
-  const response = await fetch(`${API_BASE_URL}/api/doctors`, {
-    credentials: 'include',
+  return apiRequest('/api/doctors', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(payload),
   });
-
-  return parseResponse(response, 'Failed to create doctor');
 }
 
 export async function updateDoctor(doctorId, payload) {
-  const response = await fetch(`${API_BASE_URL}/api/doctors/${doctorId}`, {
-    credentials: 'include',
+  return apiRequest(`/api/doctors/${doctorId}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(payload),
   });
-
-  return parseResponse(response, 'Failed to update doctor');
 }
 
 export async function deleteDoctor(doctorId) {
-  const response = await fetch(`${API_BASE_URL}/api/doctors/${doctorId}`, {
-    credentials: 'include',
+  return apiRequest(`/api/doctors/${doctorId}`, {
     method: 'DELETE',
   });
-
-  return parseResponse(response, 'Failed to delete doctor');
 }

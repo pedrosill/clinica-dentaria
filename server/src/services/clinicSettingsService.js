@@ -2,6 +2,7 @@ const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
 const { parseDateOnly, parseNumericId } = require('../utils/parse');
 const { isValidAppointmentDuration } = require('../utils/appointmentUtils');
+const { assertPermission } = require('../utils/authorization');
 
 const SETTINGS_ID = 1;
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -111,7 +112,8 @@ async function ensureClinicSettings() {
   }
 }
 
-async function getClinicSettings() {
+async function getClinicSettings(user) {
+  if (user) assertPermission(user, 'settings', 'read');
   await ensureClinicSettings();
 
   const settings = await prisma.clinicSettings.findUnique({
@@ -124,6 +126,7 @@ async function getClinicSettings() {
   });
 
   const providerSchedules = await prisma.providerSchedule.findMany({
+    where: user.role === 'dentist' ? { doctor: { userId: user.id } } : {},
     include: { doctor: true },
     orderBy: [{ doctorId: 'asc' }, { weekday: 'asc' }],
   });
@@ -144,7 +147,8 @@ async function getClinicSettings() {
   };
 }
 
-async function updateClinicSettings(payload = {}) {
+async function updateClinicSettings(payload = {}, user) {
+  assertPermission(user, 'settings', 'write');
   const clinicName = String(payload.clinicName || '').trim();
   const timezone = String(payload.timezone || '').trim();
   const requestedLanguage = payload.language === undefined
@@ -196,7 +200,7 @@ async function updateClinicSettings(payload = {}) {
     }
   });
 
-  return getClinicSettings();
+  return getClinicSettings(user);
 }
 
 async function createClosure(payload = {}) {
@@ -271,7 +275,8 @@ async function getDoctorScheduleForDate({ doctorId, date }) {
   };
 }
 
-async function updateProviderSchedule(doctorId, payload = {}) {
+async function updateProviderSchedule(doctorId, payload = {}, user) {
+  assertPermission(user, 'settings', 'write');
   const normalizedDoctorId = parseNumericId(doctorId, 'doctor id');
   const days = Array.isArray(payload.days) ? payload.days : [];
 
@@ -305,7 +310,7 @@ async function updateProviderSchedule(doctorId, payload = {}) {
     }
   });
 
-  return getClinicSettings();
+  return getClinicSettings(user);
 }
 
 async function createAppointmentType(payload = {}) {

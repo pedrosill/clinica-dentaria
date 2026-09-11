@@ -120,6 +120,7 @@ test('switches the clinic interface between English and European Portuguese', as
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByTestId('login-submit').click();
   await expect(page.getByTestId('language-select')).toBeVisible();
+  await expect(page.getByTestId('language-select')).toBeEnabled();
 
   await page.getByTestId('language-select').selectOption('pt-PT');
   await page.getByTestId('save-clinic-settings').click();
@@ -130,6 +131,7 @@ test('switches the clinic interface between English and European Portuguese', as
   await page.reload();
   await expect(page.getByRole('link', { name: 'Definições', exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT');
+  await expect(page.getByTestId('language-select')).toBeEnabled();
 
   await page.getByTestId('language-select').selectOption('en');
   await page.getByTestId('save-clinic-settings').click();

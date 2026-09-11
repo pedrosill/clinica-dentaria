@@ -11,13 +11,12 @@ const DEVELOPMENT_DEFAULTS = {
 function getDefaultAdminConfig(env = process.env) {
   const runtimeEnvironment = env.NODE_ENV || NODE_ENV;
   const isDevelopment = runtimeEnvironment === 'development';
-  const isExplicitlyEnabled = env.CREATE_DEFAULT_ADMIN === 'true';
 
-  if (!isDevelopment && !isExplicitlyEnabled) {
+  if (!isDevelopment) {
     return null;
   }
 
-  const password = env.DEFAULT_ADMIN_PASSWORD || (isDevelopment ? DEVELOPMENT_DEFAULTS.password : null);
+  const password = env.DEFAULT_ADMIN_PASSWORD || DEVELOPMENT_DEFAULTS.password;
 
   if (!password) {
     return null;
@@ -35,6 +34,12 @@ async function ensureDefaultAdmin({
   createUserFn = createUser,
   env = process.env,
 } = {}) {
+  if ((env.NODE_ENV || NODE_ENV) === 'production' && env.CREATE_DEFAULT_ADMIN === 'true') {
+    throw new Error(
+      'CREATE_DEFAULT_ADMIN is disabled in production; create an administrator with npm run admin:create --prefix server'
+    );
+  }
+
   const config = getDefaultAdminConfig(env);
 
   if (!config) {

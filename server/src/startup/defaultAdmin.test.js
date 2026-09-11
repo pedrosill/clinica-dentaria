@@ -44,23 +44,22 @@ test('default administrator is not duplicated when a user already exists', async
   assert.equal(createCalled, false);
 });
 
-test('non-development startup provisioning requires explicit opt-in and a password', () => {
+test('production startup provisioning is disabled even when explicitly requested', async () => {
   assert.equal(
     getDefaultAdminConfig({ NODE_ENV: 'production', CREATE_DEFAULT_ADMIN: 'true' }),
     null
   );
 
-  assert.deepEqual(
-    getDefaultAdminConfig({
-      NODE_ENV: 'production',
-      CREATE_DEFAULT_ADMIN: 'true',
-      DEFAULT_ADMIN_PASSWORD: 'a-production-password',
-      DEFAULT_ADMIN_EMAIL: 'production-admin@example.com',
+  await assert.rejects(
+    ensureDefaultAdmin({
+      prismaClient: { user: { count: async () => 0 } },
+      createUserFn: async () => ({ email: 'unexpected@example.test' }),
+      env: {
+        NODE_ENV: 'production',
+        CREATE_DEFAULT_ADMIN: 'true',
+        DEFAULT_ADMIN_PASSWORD: 'a-production-password',
+      },
     }),
-    {
-      email: 'production-admin@example.com',
-      displayName: DEVELOPMENT_DEFAULTS.displayName,
-      password: 'a-production-password',
-    }
+    /disabled in production/
   );
 });

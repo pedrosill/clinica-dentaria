@@ -1,14 +1,14 @@
 const express = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const doctorController = require('../controllers/doctorController');
-const { requireRole } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', asyncHandler(doctorController.getDoctors));
-router.get('/:id', asyncHandler(doctorController.getDoctorById));
-router.post('/', requireRole('admin'), asyncHandler(doctorController.createDoctor));
-router.put('/:id', requireRole('admin'), asyncHandler(doctorController.updateDoctor));
-router.delete('/:id', requireRole('admin'), asyncHandler(doctorController.deleteDoctor));
+router.get('/', requirePermission('doctor', 'read'), asyncHandler(doctorController.getDoctors));
+router.get('/:id', requirePermission('doctor', 'read'), asyncHandler(doctorController.getDoctorById));
+router.post('/', requirePermission('doctor', 'write'), asyncHandler(doctorController.createDoctor));
+router.put('/:id', requirePermission('doctor', 'write'), asyncHandler(doctorController.updateDoctor));
+router.delete('/:id', requirePermission('doctor', 'archive'), asyncHandler(doctorController.deleteDoctor));
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 
 const SESSION_COOKIE_NAME = 'dentalpro_session';
+const CSRF_COOKIE_NAME = 'dentalpro_csrf';
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 const PASSWORD_SALT_BYTES = 16;
 const PASSWORD_KEY_LENGTH = 64;
@@ -36,6 +37,22 @@ function createSessionToken() {
   return crypto.randomBytes(32).toString('base64url');
 }
 
+function createCsrfToken() {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+function verifyCsrfToken(token, expectedToken) {
+  if (!token || !expectedToken) return false;
+
+  const actualBuffer = Buffer.from(String(token));
+  const expectedBuffer = Buffer.from(String(expectedToken));
+
+  return (
+    actualBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(actualBuffer, expectedBuffer)
+  );
+}
+
 function hashSessionToken(token) {
   return crypto.createHash('sha256').update(String(token)).digest('hex');
 }
@@ -50,9 +67,25 @@ function parseCookies(cookieHeader = '') {
     .map((part) => part.trim().split('='))
     .filter(([name, value]) => name && value)
     .reduce((cookies, [name, ...valueParts]) => {
-      cookies[name] = decodeURIComponent(valueParts.join('='));
+      try {
+        cookies[name] = decodeURIComponent(valueParts.join('='));
+      } catch {
+        cookies[name] = '';
+      }
       return cookies;
     }, {});
+}
+
+function serializeCsrfCookie(token, { clear = false, secure = false } = {}) {
+  const parts = [
+    `${CSRF_COOKIE_NAME}=${clear ? '' : encodeURIComponent(token)}`,
+    'Path=/',
+    'SameSite=Lax',
+  ];
+
+  if (secure) parts.push('Secure');
+  parts.push(`Max-Age=${clear ? 0 : Math.floor(SESSION_DURATION_MS / 1000)}`);
+  return parts.join('; ');
 }
 
 function serializeSessionCookie(token, { clear = false, secure = false } = {}) {
@@ -69,14 +102,18 @@ function serializeSessionCookie(token, { clear = false, secure = false } = {}) {
 }
 
 module.exports = {
+  CSRF_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   SESSION_DURATION_MS,
+  createCsrfToken,
   createSessionToken,
   getSessionExpiry,
   hashPassword,
   hashSessionToken,
   normalizeEmail,
   parseCookies,
+  serializeCsrfCookie,
   serializeSessionCookie,
+  verifyCsrfToken,
   verifyPassword,
 };
