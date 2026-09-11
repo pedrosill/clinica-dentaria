@@ -11,7 +11,7 @@ Last reviewed: 2026-09-11
 | Authentication and user management | HTTP-only session login/logout, protected routes, roles, default administrator bootstrap, signed-in self-service password change with session revocation, and admin UI to list/create/activate/deactivate users (with self-deactivation prevented) | `server/src/routes/authRoutes.js`, `server/src/routes/userRoutes.js`, `server/src/services/authService.js`, `client/src/components/settings/UserManagementSection.jsx`, `client/src/services/users.js`, `server/src/integration/auth.integration.test.js` |
 | Dashboard | Patient count/search and upcoming active appointments | `client/src/pages/Dashboard.jsx`, `client/src/utils/dashboardUtils.js` |
 | Agenda | Week/month views, 30-minute booking grid, booked/free/unavailable states, 08:00–19:30 starts | `client/src/pages/Agenda.jsx`, `server/src/services/appointmentService.js` |
-| Appointments | Create, edit active appointments, reschedule, conclude, status changes, conflict checks | `client/src/pages/AppointmentDetail.jsx`, `server/src/services/appointmentService.js` |
+| Appointments | Create, edit active appointments, reschedule, conclude, check-in, no-show, cancellation, status changes, conflict checks | `client/src/pages/AppointmentDetail.jsx`, `client/src/components/appointment-detail/CancelAppointmentModal.jsx`, `server/src/services/appointmentService.js` |
 | Patients | Search, create/edit/delete, appointment history and patient detail | `client/src/pages/Patients.jsx`, `server/src/services/patientService.js` |
 | Recall/follow-up | Persistent due-date queue, patient history, create/update workflow, role and dentist scope, duplicate and archive guards | `server/src/services/recallService.js`, `client/src/pages/Recalls.jsx`, `server/src/integration/recalls.integration.test.js` |
 | Waitlist | Persistent patient queue with optional requested date/doctor, priority, status transitions, duplicate and archive guards, role and dentist scope, compact patient history, and audit events | `server/src/services/waitlistService.js`, `client/src/pages/Waitlist.jsx`, `server/src/integration/waitlist.integration.test.js` |
@@ -26,7 +26,6 @@ Last reviewed: 2026-09-11
 | Area | Existing foundation | Next increment |
 | --- | --- | --- |
 | Localization | Global provider and persisted `en` / `pt-PT` setting | Translate remaining screens, locale-aware dates, and add locale regression coverage |
-| Appointment status | Status API and server guards exist | Add visible check-in/no-show/cancel actions and enforce a complete transition policy |
 | Clinical workflow | Patient clinical workspace, final-note locking, and versioned addenda exist | Link appointment conclusion to a draft/final clinical note and expose note editing where allowed |
 | Document governance | Consent records, document metadata, structured export, and data-subject request tracking exist | Private binary storage/downloads, signatures, expiry, and document version history are still missing |
 | Retention governance | Disabled-by-default policies, holds, preview, and explicit admin application exist | Clinic-approved durations and any deletion/anonymization executor are still missing |
