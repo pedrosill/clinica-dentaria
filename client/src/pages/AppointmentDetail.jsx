@@ -39,6 +39,7 @@ export default function AppointmentDetail() {
     pageError,
     relatedAppointments,
     isCompletedAppointment,
+    isTerminalAppointment,
   } = useAppointmentDetailData(appointmentId);
 
   const {
@@ -81,7 +82,7 @@ export default function AppointmentDetail() {
     appointmentId,
     appointment,
     setAppointment,
-    isCompletedAppointment,
+    isTerminalAppointment,
   });
 
   if (isLoading) {
@@ -98,6 +99,7 @@ export default function AppointmentDetail() {
         appointment={appointment}
         isEditing={isEditing}
         isCompletedAppointment={isCompletedAppointment}
+        isTerminalAppointment={isTerminalAppointment}
         navigate={navigate}
         location={location}
         onStartEdit={handleStartEdit}
@@ -147,6 +149,7 @@ export default function AppointmentDetail() {
           <AppointmentWorkflowCard
             appointment={appointment}
             isCompletedAppointment={isCompletedAppointment}
+            isTerminalAppointment={isTerminalAppointment}
             onStartReschedule={handleStartReschedule}
             onOpenConcludeModal={handleOpenConcludeModal}
           />

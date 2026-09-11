@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../constants/patientDetailConstants';
 import { getAppointmentDateTime, startOfDay } from '../utils/patientDetailUtils';
+import { isActiveAppointmentStatus } from '../utils/agendaUtils';
 
 /* ================================
    Hook: patient detail data
@@ -86,7 +87,7 @@ export default function usePatientDetailData(patientId) {
     return appointments
       .filter((appointment) => {
         const appointmentDateTime = getAppointmentDateTime(appointment);
-        return appointmentDateTime >= today && appointment.status !== 'completed';
+        return appointmentDateTime >= today && isActiveAppointmentStatus(appointment.status);
       })
       .sort((first, second) => getAppointmentDateTime(first) - getAppointmentDateTime(second));
   }, [appointments, today]);

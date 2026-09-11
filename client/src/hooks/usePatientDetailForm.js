@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react';
 const API_BASE_URL = 'http://localhost:5000';
 
 function formatDateInput(dateValue) {
-  return new Date(dateValue).toISOString().split('T')[0];
+  const value = new Date(dateValue);
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default function useAppointmentDetailForm({

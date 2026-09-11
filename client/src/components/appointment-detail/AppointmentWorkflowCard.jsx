@@ -10,6 +10,7 @@ import { getStatusClasses, getStatusLabel } from '../../utils/appointmentDetailU
 export default function AppointmentWorkflowCard({
   appointment,
   isCompletedAppointment,
+  isTerminalAppointment,
   onStartReschedule,
   onOpenConcludeModal,
 }) {
@@ -42,7 +43,7 @@ export default function AppointmentWorkflowCard({
           </span>
         </div>
 
-        {!isCompletedAppointment ? (
+        {!isTerminalAppointment ? (
           <button
             type="button"
             onClick={onStartReschedule}
@@ -52,7 +53,7 @@ export default function AppointmentWorkflowCard({
           </button>
         ) : null}
 
-        {!isCompletedAppointment ? (
+        {!isTerminalAppointment ? (
           <button
             type="button"
             onClick={onOpenConcludeModal}
@@ -62,8 +63,10 @@ export default function AppointmentWorkflowCard({
             Conclude Appointment
           </button>
         ) : (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            This appointment has already been concluded.
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            {isCompletedAppointment
+              ? 'This appointment has already been concluded.'
+              : 'This appointment is closed and cannot be edited or rescheduled.'}
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ export default function AppointmentDetailHeader({
   appointment,
   isEditing,
   isCompletedAppointment,
+  isTerminalAppointment,
   navigate,
   location,
   onStartEdit,
@@ -52,7 +53,7 @@ export default function AppointmentDetailHeader({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          {!isEditing && !isCompletedAppointment ? (
+          {!isEditing && !isTerminalAppointment ? (
             <button
               type="button"
               onClick={onStartEdit}
@@ -63,7 +64,7 @@ export default function AppointmentDetailHeader({
             </button>
           ) : null}
 
-          {!isCompletedAppointment ? (
+          {!isTerminalAppointment ? (
             <button
               type="button"
               onClick={onStartReschedule}
@@ -73,7 +74,7 @@ export default function AppointmentDetailHeader({
             </button>
           ) : null}
 
-          {!isCompletedAppointment ? (
+          {!isTerminalAppointment ? (
             <button
               type="button"
               onClick={onOpenConcludeModal}

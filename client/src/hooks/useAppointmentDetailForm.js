@@ -18,7 +18,7 @@ export default function useAppointmentDetailForm({
   appointmentId,
   appointment,
   setAppointment,
-  isCompletedAppointment,
+  isTerminalAppointment,
 }) {
   const navigate = useNavigate();
 
@@ -94,7 +94,7 @@ export default function useAppointmentDetailForm({
      Handlers: edit workflow
   ================================ */
   function handleStartEdit() {
-    if (!appointment || isCompletedAppointment) return;
+    if (!appointment || isTerminalAppointment) return;
 
     resetFormFromAppointment();
     setSubmitError('');
@@ -115,7 +115,7 @@ export default function useAppointmentDetailForm({
      Handlers: conclude modal
   ================================ */
   function handleOpenConcludeModal() {
-    if (!appointment || isCompletedAppointment) return;
+    if (!appointment || isTerminalAppointment) return;
 
     setSubmitError('');
     setSaveSuccess('');
@@ -139,7 +139,7 @@ export default function useAppointmentDetailForm({
      of the appointment data.
   ================================ */
   function handleStartReschedule() {
-    if (!appointment || isCompletedAppointment) return;
+    if (!appointment || isTerminalAppointment) return;
 
     setSubmitError('');
     setSaveSuccess('');

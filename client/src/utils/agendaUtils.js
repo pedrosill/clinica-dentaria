@@ -161,6 +161,14 @@ export function getStatusLabel(status) {
   return 'Scheduled';
 }
 
+export function isActiveAppointmentStatus(status) {
+  return status === 'scheduled' || status === 'arrived';
+}
+
+export function isTerminalAppointmentStatus(status) {
+  return status === 'completed' || status === 'cancelled' || status === 'no_show';
+}
+
 export function getPatientDetailPath(patientIdValue) {
   const normalizedId = Number(patientIdValue);
   return Number.isNaN(normalizedId) ? '/patients' : `/patients/${normalizedId}`;

@@ -3,7 +3,10 @@
 ================================ */
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../constants/agendaConstants';
-import { getAppointmentDateTime } from '../utils/agendaUtils';
+import {
+  getAppointmentDateTime,
+  isTerminalAppointmentStatus,
+} from '../utils/agendaUtils';
 
 /* ================================
    Hook: appointment detail data
@@ -124,6 +127,10 @@ export default function useAppointmentDetailData(appointmentId) {
     return appointment?.status === 'completed';
   }, [appointment]);
 
+  const isTerminalAppointment = useMemo(() => {
+    return isTerminalAppointmentStatus(appointment?.status);
+  }, [appointment]);
+
   /* ================================
      Derived: related appointments
      Related means:
@@ -153,5 +160,6 @@ export default function useAppointmentDetailData(appointmentId) {
     pageError,
     relatedAppointments,
     isCompletedAppointment,
+    isTerminalAppointment,
   };
 }

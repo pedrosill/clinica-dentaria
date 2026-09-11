@@ -4,7 +4,8 @@
 import {
   getAppointmentDateTime,
   getPatientDisplayName,
-} from './agendaUtils';
+  isActiveAppointmentStatus,
+} from './agendaUtils.js';
 
 /* ================================
    Helpers: formatting
@@ -51,14 +52,12 @@ export function filterDashboardPatients(patients, searchTerm) {
 ================================ */
 export function buildDashboardUpcomingAppointments(appointments) {
   const now = new Date();
-  const activeStatuses = new Set(['scheduled', 'arrived']);
-
   return [...appointments]
     .filter((appointment) => {
       const status = appointment.status || 'scheduled';
       const appointmentDateTime = getAppointmentDateTime(appointment);
 
-      return activeStatuses.has(status) && appointmentDateTime >= now;
+      return isActiveAppointmentStatus(status) && appointmentDateTime >= now;
     })
     .sort((first, second) => getAppointmentDateTime(first) - getAppointmentDateTime(second))
     .slice(0, 4);

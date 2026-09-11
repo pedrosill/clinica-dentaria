@@ -3,9 +3,17 @@ const HttpError = require('../utils/httpError');
 const { parseNumericId, parseDateOnly } = require('../utils/parse');
 const {
   isValidThirtyMinuteTimeSlot,
+  isValidClinicAppointmentTime,
   isValidAppointmentDuration,
   normalizeAppointmentPayload,
 } = require('../utils/appointmentUtils');
+const {
+  SLOT_INTERVAL_MINUTES,
+  addMinutes,
+  formatTimeOnly,
+  getClinicDayBounds,
+  buildAvailabilitySlots,
+} = require('../utils/appointmentScheduling');
 
 const appointmentListInclude = {
   patient: true,
@@ -26,12 +34,6 @@ const appointmentDetailInclude = {
   },
 };
 
-const SLOT_INTERVAL_MINUTES = 10;
-const DEFAULT_DAY_START = '08:00';
-const DEFAULT_DAY_END = '18:00';
-const RECOMMENDATION_HORIZON_DAYS = 30;
-const ACTIVE_RESCHEDULING_STATUSES = ['scheduled', 'arrived'];
-
 function toDateOnlyString(dateValue) {
   const date = new Date(dateValue);
   const year = date.getFullYear();
@@ -51,165 +53,6 @@ function minutesToTime(totalMinutes) {
   return `${hours}:${minutes}`;
 }
 
-function addDays(dateString, offsetDays) {
-  const date = new Date(`${dateString}T00:00:00`);
-  date.setDate(date.getDate() + offsetDays);
-  return toDateOnlyString(date);
-}
-
-function buildInterval(date, startTime, duration) {
-  const start = new Date(`${date}T${startTime}:00`);
-  const end = new Date(start.getTime() + Number(duration || 30) * 60 * 1000);
-
-  return { start, end };
-}
-
-function intervalsOverlap(first, second) {
-  return first.start < second.end && first.end > second.start;
-}
-
-async function getDoctorAppointmentsForDate({
-  doctorId,
-  date,
-  excludeAppointmentId = null,
-}) {
-  return prisma.appointment.findMany({
-    where: {
-      doctorId: Number(doctorId),
-      date: new Date(`${date}T00:00:00`),
-      status: {
-        in: ACTIVE_RESCHEDULING_STATUSES,
-      },
-      ...(excludeAppointmentId
-        ? {
-            NOT: {
-              id: Number(excludeAppointmentId),
-            },
-          }
-        : {}),
-    },
-    include: {
-      patient: true,
-    },
-    orderBy: {
-      time: 'asc',
-    },
-  });
-}
-
-function mapBookedIntervals(appointments, date) {
-  return appointments.map((appointment) => {
-    const duration = Number(appointment.duration || 30);
-    const interval = buildInterval(date, appointment.time, duration);
-
-    return {
-      appointmentId: appointment.id,
-      start: appointment.time,
-      end: minutesToTime(timeToMinutes(appointment.time) + duration),
-      duration,
-      status: appointment.status,
-      patient: appointment.patient
-        ? {
-            id: appointment.patient.id,
-            name: `${appointment.patient.firstName} ${appointment.patient.lastName}`.trim(),
-          }
-        : null,
-      _start: interval.start,
-      _end: interval.end,
-    };
-  });
-}
-
-function buildSelectableSlots({
-  date,
-  duration,
-  bookedIntervals,
-  dayStart = DEFAULT_DAY_START,
-  dayEnd = DEFAULT_DAY_END,
-}) {
-  const requestedDuration = Number(duration || 30);
-  const slots = [];
-  const startMinutes = timeToMinutes(dayStart);
-  const endMinutes = timeToMinutes(dayEnd);
-
-  for (
-    let cursor = startMinutes;
-    cursor + requestedDuration <= endMinutes;
-    cursor += SLOT_INTERVAL_MINUTES
-  ) {
-    const start = minutesToTime(cursor);
-    const end = minutesToTime(cursor + requestedDuration);
-
-    const candidate = buildInterval(date, start, requestedDuration);
-
-    const overlaps = bookedIntervals.some((booked) =>
-      intervalsOverlap(candidate, {
-        start: booked._start,
-        end: booked._end,
-      })
-    );
-
-    if (!overlaps) {
-      slots.push({
-        start,
-        end,
-        duration: requestedDuration,
-      });
-    }
-  }
-
-  return slots;
-}
-
-async function findRecommendedSlot({
-  doctorId,
-  appointmentId,
-  inspectedDate,
-  duration,
-  selectableSlots,
-}) {
-  if (selectableSlots.length > 0) {
-    return {
-      type: 'inspected_day_best',
-      date: inspectedDate,
-      start: selectableSlots[0].start,
-      end: selectableSlots[0].end,
-      duration: Number(duration || 30),
-      reason: 'Earliest available slot on inspected date',
-    };
-  }
-
-  for (let offset = 1; offset <= RECOMMENDATION_HORIZON_DAYS; offset += 1) {
-    const nextDate = addDays(inspectedDate, offset);
-
-    const appointments = await getDoctorAppointmentsForDate({
-      doctorId,
-      date: nextDate,
-      excludeAppointmentId: appointmentId,
-    });
-
-    const bookedIntervals = mapBookedIntervals(appointments, nextDate);
-    const slots = buildSelectableSlots({
-      date: nextDate,
-      duration,
-      bookedIntervals,
-    });
-
-    if (slots.length > 0) {
-      return {
-        type: 'next_available',
-        date: nextDate,
-        start: slots[0].start,
-        end: slots[0].end,
-        duration: Number(duration || 30),
-        reason: 'Earliest available slot for the same doctor',
-      };
-    }
-  }
-
-  return null;
-}
-
 async function getRescheduleOptions({ appointmentId, date, duration }) {
   const id = parseNumericId(appointmentId, 'appointment id');
 
@@ -227,7 +70,7 @@ async function getRescheduleOptions({ appointmentId, date, duration }) {
     throw new HttpError(404, 'Appointment not found');
   }
 
-  if (['completed', 'cancelled', 'no_show'].includes(appointment.status)) {
+  if (TERMINAL_APPOINTMENT_STATUSES.includes(appointment.status)) {
     throw new HttpError(
       409,
       'Reschedule inspection is not allowed for this appointment status'
@@ -286,7 +129,7 @@ async function getRescheduleOptions({ appointmentId, date, duration }) {
     inspection: {
       date: inspectedDate,
       doctorId: appointment.doctorId,
-      slotIntervalMinutes: RESCHEDULE_SLOT_STEP_MINUTES,
+      slotIntervalMinutes: SLOT_INTERVAL_MINUTES,
       requestedDuration,
       workingDayStart: availability.clinicOpenTime,
       workingDayEnd: availability.clinicCloseTime,
@@ -309,11 +152,9 @@ async function getRescheduleOptions({ appointmentId, date, duration }) {
   };
 }
 
-const CLINIC_OPEN_HOUR = 8;
-const CLINIC_CLOSE_HOUR = 20;
-const RESCHEDULE_SLOT_STEP_MINUTES = 30;
 const RESCHEDULE_SCAN_LIMIT_DAYS = 60;
-const BLOCKING_STATUSES = ['cancelled', 'no_show'];
+const ACTIVE_SCHEDULING_STATUSES = ['scheduled', 'arrived'];
+const TERMINAL_APPOINTMENT_STATUSES = ['completed', 'cancelled', 'no_show'];
 
 function buildDateTime(date, time) {
   return new Date(`${date}T${String(time)}:00`);
@@ -327,36 +168,8 @@ function formatDateOnly(dateValue) {
   return `${year}-${month}-${day}`;
 }
 
-function formatTimeOnly(dateValue) {
-  const hours = String(dateValue.getHours()).padStart(2, '0');
-  const minutes = String(dateValue.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function addMinutes(dateValue, minutes) {
-  return new Date(dateValue.getTime() + minutes * 60 * 1000);
-}
-
 function startOfDate(date) {
   return new Date(`${date}T00:00:00`);
-}
-
-function getClinicDayBounds(date) {
-  const dayStart = new Date(`${date}T00:00:00`);
-  const clinicOpen = new Date(dayStart);
-  clinicOpen.setHours(CLINIC_OPEN_HOUR, 0, 0, 0);
-
-  const clinicClose = new Date(dayStart);
-  clinicClose.setHours(CLINIC_CLOSE_HOUR, 0, 0, 0);
-
-  return {
-    clinicOpen,
-    clinicClose,
-  };
-}
-
-function isBlockedStatus(status) {
-  return BLOCKING_STATUSES.includes(status);
 }
 
 function toScheduleItem(appointment, date) {
@@ -399,7 +212,7 @@ async function getDoctorAppointmentsForDate({
       doctorId: normalizedDoctorId,
       date: startOfDate(normalizedDate),
       status: {
-        notIn: BLOCKING_STATUSES,
+        in: ACTIVE_SCHEDULING_STATUSES,
       },
       ...(normalizedExcludeAppointmentId
         ? {
@@ -445,7 +258,7 @@ async function findAppointmentConflict({
           }
         : {}),
       status: {
-        notIn: BLOCKING_STATUSES,
+        in: ACTIVE_SCHEDULING_STATUSES,
       },
     },
     include: {
@@ -525,35 +338,15 @@ async function getAvailableStartTimes({
   });
 
   const { clinicOpen, clinicClose } = getClinicDayBounds(normalizedDate);
-  const availableStartTimes = [];
-  const slotOptions = [];
-
-  for (
-    let slotStart = new Date(clinicOpen);
-    slotStart < clinicClose;
-    slotStart = addMinutes(slotStart, RESCHEDULE_SLOT_STEP_MINUTES)
-  ) {
-    const slotEnd = addMinutes(slotStart, normalizedDuration);
-
-    const overlapsExistingAppointment = schedule.bookedAppointments.some(
-      (appointment) => appointment.start < slotEnd && appointment.end > slotStart
-    );
-
-    const status = slotEnd > clinicClose
-      ? 'unavailable'
-      : overlapsExistingAppointment
-        ? 'booked'
-        : 'free';
-
-    slotOptions.push({
-      time: formatTimeOnly(slotStart),
-      status,
-    });
-
-    if (status === 'free') {
-      availableStartTimes.push(formatTimeOnly(slotStart));
-    }
-  }
+  const slotOptions = buildAvailabilitySlots({
+    clinicOpen,
+    clinicClose,
+    duration: normalizedDuration,
+    bookedAppointments: schedule.bookedAppointments,
+  });
+  const availableStartTimes = slotOptions
+    .filter((slot) => slot.status === 'free')
+    .map((slot) => slot.time);
 
   return {
     doctorId: normalizedDoctorId,
@@ -665,10 +458,13 @@ function validateAppointmentPayload(payload, { legacyTime } = {}) {
 
   parseDateOnly(payload.date, 'appointment date');
 
-  if (!isValidThirtyMinuteTimeSlot(payload.time) && payload.time !== legacyTime) {
+  const preservesUnchangedLegacyTime =
+    payload.time === legacyTime && !isValidThirtyMinuteTimeSlot(payload.time);
+
+  if (!isValidClinicAppointmentTime(payload.time, payload.duration) && !preservesUnchangedLegacyTime) {
     throw new HttpError(
       400,
-      'Appointment time must use 30-minute slots such as 09:00 or 09:30'
+      'Appointment time must be a valid 30-minute clinic slot between 08:00 and 19:30'
     );
   }
 
@@ -786,6 +582,13 @@ async function updateAppointment(appointmentId, payload) {
     throw new HttpError(404, 'Appointment not found');
   }
 
+  if (TERMINAL_APPOINTMENT_STATUSES.includes(existingAppointment.status)) {
+    throw new HttpError(
+      409,
+      'Completed, cancelled, and no-show appointments cannot be edited or rescheduled'
+    );
+  }
+
   validateAppointmentPayload(normalized, {
     legacyTime: existingAppointment.time,
   });
@@ -825,7 +628,10 @@ async function updateAppointment(appointmentId, payload) {
         payload.performedTreatment !== undefined
           ? normalized.performedTreatment
           : existingAppointment.performedTreatment,
-      status: normalized.status || existingAppointment.status || 'scheduled',
+      status:
+        payload.status !== undefined
+          ? normalized.status
+          : existingAppointment.status || 'scheduled',
       notes: normalized.notes,
       completionNotes:
         payload.completionNotes !== undefined

@@ -53,8 +53,8 @@ export default function DashboardUpcomingAppointments({ appointments }) {
           ))
         ) : (
           <StateCard
-            title="No appointments yet"
-            description="Upcoming appointments will appear here."
+            title="No upcoming appointments"
+            description="Future scheduled appointments will appear here."
             variant="empty"
           />
         )}

@@ -1,3 +1,6 @@
+const CLINIC_OPEN_MINUTES = 8 * 60;
+const CLINIC_CLOSE_MINUTES = 20 * 60;
+
 function isValidThirtyMinuteTimeSlot(time) {
   if (typeof time !== 'string') {
     return false;
@@ -21,6 +24,26 @@ function isValidThirtyMinuteTimeSlot(time) {
   }
 
   return [0, 30].includes(minutes);
+}
+
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function isValidClinicAppointmentTime(time, duration = 30) {
+  if (!isValidThirtyMinuteTimeSlot(time)) {
+    return false;
+  }
+
+  const startMinutes = timeToMinutes(time);
+  const normalizedDuration = Number(duration || 30);
+
+  return (
+    startMinutes >= CLINIC_OPEN_MINUTES &&
+    startMinutes < CLINIC_CLOSE_MINUTES &&
+    startMinutes + normalizedDuration <= CLINIC_CLOSE_MINUTES
+  );
 }
 
 function isValidAppointmentDuration(duration) {
@@ -49,7 +72,10 @@ function normalizeAppointmentPayload(payload = {}) {
 }
 
 module.exports = {
+  CLINIC_OPEN_MINUTES,
+  CLINIC_CLOSE_MINUTES,
   isValidThirtyMinuteTimeSlot,
+  isValidClinicAppointmentTime,
   isValidAppointmentDuration,
   normalizeAppointmentPayload,
 };
