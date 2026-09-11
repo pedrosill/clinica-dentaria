@@ -94,6 +94,10 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
   await page.getByRole('tab', { name: 'Search patients', exact: true }).click();
   await page.getByPlaceholder('Search all patients by name, phone, email or NIF').fill('Browser Test Patient');
   await page.getByRole('link', { name: 'Open patient', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByLabel('Full name').fill('Browser Test Patient');
+  await page.getByRole('button', { name: 'Save patient', exact: true }).click();
+  await expect(page.getByText('Patient updated successfully.', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Clinical record', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Clinical record', exact: true })).toBeVisible();
 

@@ -21,10 +21,11 @@ export default function PatientInfoSection({
       {isEditing ? (
         <form onSubmit={onSubmit} className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           <div className="space-y-2 md:col-span-2 xl:col-span-6">
-            <label className="text-sm font-medium text-slate-700">{t('Full name')}</label>
+            <label htmlFor="patient-full-name" className="text-sm font-medium text-slate-700">{t('Full name')}</label>
             <input
               type="text"
               name="fullName"
+              id="patient-full-name"
               value={form.fullName}
               onChange={onChange}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
@@ -32,10 +33,11 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-2">
-            <label className="text-sm font-medium text-slate-700">{t('Phone')}</label>
+            <label htmlFor="patient-phone" className="text-sm font-medium text-slate-700">{t('Phone')}</label>
             <input
               type="text"
               name="phone"
+              id="patient-phone"
               value={form.phone}
               onChange={onChange}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
@@ -43,10 +45,11 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-2">
-            <label className="text-sm font-medium text-slate-700">{t('Email')}</label>
+            <label htmlFor="patient-email" className="text-sm font-medium text-slate-700">{t('Email')}</label>
             <input
               type="email"
               name="email"
+              id="patient-email"
               value={form.email}
               onChange={onChange}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
@@ -54,10 +57,11 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-2">
-            <label className="text-sm font-medium text-slate-700">{t('NIF')}</label>
+            <label htmlFor="patient-nif" className="text-sm font-medium text-slate-700">{t('NIF')}</label>
             <input
               type="text"
               name="nif"
+              id="patient-nif"
               value={form.nif}
               onChange={onChange}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
@@ -65,10 +69,11 @@ export default function PatientInfoSection({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-3">
-            <label className="text-sm font-medium text-slate-700">{t('Nationality')}</label>
+            <label htmlFor="patient-nationality" className="text-sm font-medium text-slate-700">{t('Nationality')}</label>
             <input
               type="text"
               name="nationality"
+              id="patient-nationality"
               value={form.nationality}
               onChange={onChange}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"

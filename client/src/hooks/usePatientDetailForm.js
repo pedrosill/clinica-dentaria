@@ -1,286 +1,146 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../services/api';
+import useLanguage from '../context/useLanguage';
 
-function formatDateInput(dateValue) {
-  const value = new Date(dateValue);
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function buildPatientForm(patient) {
+  return {
+    fullName: patient?.fullName || '',
+    phone: patient?.phone || '',
+    email: patient?.email || '',
+    nif: patient?.nif || '',
+    nationality: patient?.nationality || '',
+  };
 }
 
-export default function useAppointmentDetailForm({
-  appointmentId,
-  appointment,
-  setAppointment,
-  isCompletedAppointment,
-}) {
+export default function usePatientDetailForm(patientId, patient, setPatient) {
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+  const [form, setForm] = useState(() => buildPatientForm(patient));
   const [isEditing, setIsEditing] = useState(false);
-  const [isConcludeModalOpen, setIsConcludeModalOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState('');
-  const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [patientId, setPatientId] = useState('');
-  const [doctorId, setDoctorId] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('09:00');
-  const [duration, setDuration] = useState('30');
-  const [treatmentType, setTreatmentType] = useState('Consultation');
-  const [notes, setNotes] = useState('');
-
-  const [performedTreatment, setPerformedTreatment] = useState('Consultation');
-  const [completionNotes, setCompletionNotes] = useState('');
-  const [afterConcludeAction, setAfterConcludeAction] = useState('finish');
-
-  function syncFormState(nextAppointment) {
-    if (!nextAppointment) return;
-
-    setPatientId(String(nextAppointment.patientId));
-    setDoctorId(String(nextAppointment.doctorId));
-    setDate(formatDateInput(nextAppointment.date));
-    setTime(nextAppointment.time || '09:00');
-    setDuration(String(nextAppointment.duration || 30));
-    setTreatmentType(nextAppointment.treatmentType || 'Consultation');
-    setNotes(nextAppointment.notes || '');
-  }
-
-  function syncConcludeState(nextAppointment) {
-    if (!nextAppointment) return;
-
-    setPerformedTreatment(
-      nextAppointment.performedTreatment ||
-        nextAppointment.treatmentType ||
-        'Consultation'
-    );
-    setCompletionNotes(nextAppointment.completionNotes || '');
-    setAfterConcludeAction('finish');
-  }
+  const [submitError, setSubmitError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!appointment) return;
-    // The form is intentionally synchronized after the async appointment fetch completes.
+    if (!patient) return;
+
+    // Keep the form aligned with the latest server record after a save or reload.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    syncFormState(appointment);
-    syncConcludeState(appointment);
-  }, [appointment]);
+    setForm(buildPatientForm(patient));
+  }, [patient]);
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  }
 
   function handleStartEdit() {
-    if (!appointment || isCompletedAppointment) return;
+    if (!patient) return;
 
-    syncFormState(appointment);
-    setIsEditing(true);
-    setIsConcludeModalOpen(false);
-    setIsRescheduleModalOpen(false);
-    setSaveSuccess('');
+    setForm(buildPatientForm(patient));
     setSubmitError('');
+    setSuccessMessage('');
+    setIsEditing(true);
   }
 
   function handleCancelEdit() {
-    if (!appointment) return;
-
-    syncFormState(appointment);
+    setForm(buildPatientForm(patient));
+    setSubmitError('');
+    setSuccessMessage('');
     setIsEditing(false);
-    setSaveSuccess('');
-    setSubmitError('');
   }
 
-  function handleOpenConcludeModal() {
-    if (!appointment) return;
-
-    syncConcludeState(appointment);
-    setIsEditing(false);
-    setIsRescheduleModalOpen(false);
-    setIsConcludeModalOpen(true);
-    setSaveSuccess('');
-    setSubmitError('');
-  }
-
-  function handleCloseConcludeModal() {
-    if (isSubmitting) return;
-
-    syncConcludeState(appointment);
-    setIsConcludeModalOpen(false);
-    setSubmitError('');
-  }
-
-  function handleStartReschedule() {
-    if (!appointment || isCompletedAppointment) return;
-
-    syncFormState(appointment);
-    setIsEditing(false);
-    setIsConcludeModalOpen(false);
-    setIsRescheduleModalOpen(true);
-    setSaveSuccess('');
-    setSubmitError('');
-  }
-
-  function handleCloseRescheduleModal() {
-    if (isSubmitting) return;
-
-    syncFormState(appointment);
-    setIsRescheduleModalOpen(false);
-    setSubmitError('');
-  }
-
-  async function handleSave(event) {
+  async function handleSavePatient(event) {
     event.preventDefault();
 
-    if (!patientId || !doctorId || !date || !time) {
-      setSubmitError('Patient, doctor, date and time are required');
+    if (!patientId) return;
+
+    if (
+      !form.fullName.trim() ||
+      !form.phone.trim() ||
+      !form.email.trim() ||
+      !form.nif.trim() ||
+      !form.nationality.trim()
+    ) {
+      setSubmitError(t('Full name, phone, email, NIF and nationality are required'));
+      return;
+    }
+
+    if (form.nationality.trim().toLowerCase() === 'portuguese' && !/^\d{9}$/.test(form.nif.trim())) {
+      setSubmitError(t('Portuguese NIF must contain exactly 9 digits'));
       return;
     }
 
     try {
       setIsSubmitting(true);
       setSubmitError('');
-      setSaveSuccess('');
+      setSuccessMessage('');
 
-      const data = await apiRequest(`/api/appointments/${appointmentId}`, {
+      const data = await apiRequest(`/api/patients/${patientId}`, {
         method: 'PUT',
         body: JSON.stringify({
-          patientId: Number(patientId),
-          doctorId: Number(doctorId),
-          date,
-          time,
-          duration: Number(duration || 30),
-          treatmentType,
-          notes,
-          status: appointment.status,
-          performedTreatment: appointment.performedTreatment || '',
-          completionNotes: appointment.completionNotes || '',
+          ...form,
+          fullName: form.fullName.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim().toLowerCase(),
+          nif: form.nif.trim(),
+          nationality: form.nationality.trim(),
         }),
       });
 
-      setAppointment(data);
+      setPatient(data);
+      setForm(buildPatientForm(data));
       setIsEditing(false);
-      setIsRescheduleModalOpen(false);
-      setSaveSuccess('Appointment saved successfully.');
+      setSuccessMessage(t('Patient updated successfully.'));
     } catch (error) {
-      setSubmitError(error.message || 'Failed to update appointment');
+      setSubmitError(error.message || t('Failed to update patient'));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleRescheduleAppointment(event) {
-    event.preventDefault();
-
-    if (!date || !time) {
-      setSubmitError('Date and time are required');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setSubmitError('');
-      setSaveSuccess('');
-
-      const data = await apiRequest(`/api/appointments/${appointmentId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          patientId: Number(patientId || appointment.patientId),
-          doctorId: Number(doctorId || appointment.doctorId),
-          date,
-          time,
-          duration: Number(duration || 30),
-          treatmentType: appointment.treatmentType,
-          notes: appointment.notes || '',
-          status: appointment.status,
-          performedTreatment: appointment.performedTreatment || '',
-          completionNotes: appointment.completionNotes || '',
-        }),
-      });
-
-      setAppointment(data);
-      setIsRescheduleModalOpen(false);
-      setSaveSuccess('Appointment rescheduled successfully.');
-    } catch (error) {
-      setSubmitError(error.message || 'Failed to reschedule appointment');
-    } finally {
-      setIsSubmitting(false);
-    }
+  function handleOpenDeleteModal() {
+    setSubmitError('');
+    setSuccessMessage('');
+    setIsDeleteModalOpen(true);
   }
 
-  async function handleConcludeAppointment(event) {
-    event.preventDefault();
+  function handleCloseDeleteModal() {
+    if (isSubmitting) return;
+    setIsDeleteModalOpen(false);
+  }
 
-    if (!performedTreatment) {
-      setSubmitError('Performed treatment is required');
-      return;
-    }
+  async function handleDeletePatient() {
+    if (!patientId) return;
 
     try {
       setIsSubmitting(true);
       setSubmitError('');
-      setSaveSuccess('');
-
-      const data = await apiRequest(
-        `/api/appointments/${appointmentId}/conclude`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({
-            performedTreatment,
-            completionNotes,
-          }),
-        }
-      );
-
-      setAppointment(data);
-      setIsConcludeModalOpen(false);
-      setSaveSuccess(
-        afterConcludeAction === 'followup'
-          ? 'Appointment concluded. You can reschedule the follow-up below.'
-          : 'Appointment concluded successfully.'
-      );
-
-      if (afterConcludeAction === 'followup') {
-        syncFormState(data);
-        setIsRescheduleModalOpen(true);
-      }
+      await apiRequest(`/api/patients/${patientId}`, { method: 'DELETE' });
+      setIsDeleteModalOpen(false);
+      navigate('/patients');
     } catch (error) {
-      setSubmitError(error.message || 'Failed to conclude appointment');
+      setSubmitError(error.message || t('Failed to archive patient'));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return {
+    form,
     isEditing,
-    isConcludeModalOpen,
-    isRescheduleModalOpen,
-    saveSuccess,
-    submitError,
     isSubmitting,
-    patientId,
-    doctorId,
-    date,
-    time,
-    duration,
-    treatmentType,
-    notes,
-    performedTreatment,
-    completionNotes,
-    afterConcludeAction,
-    setPatientId,
-    setDoctorId,
-    setDate,
-    setTime,
-    setDuration,
-    setTreatmentType,
-    setNotes,
-    setPerformedTreatment,
-    setCompletionNotes,
-    setAfterConcludeAction,
+    submitError,
+    successMessage,
+    isDeleteModalOpen,
+    handleChange,
     handleStartEdit,
     handleCancelEdit,
-    handleOpenConcludeModal,
-    handleCloseConcludeModal,
-    handleStartReschedule,
-    handleCloseRescheduleModal,
-    handleSave,
-    handleRescheduleAppointment,
-    handleConcludeAppointment,
+    handleSavePatient,
+    handleOpenDeleteModal,
+    handleCloseDeleteModal,
+    handleDeletePatient,
   };
 }
