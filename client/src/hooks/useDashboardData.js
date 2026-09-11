@@ -2,6 +2,7 @@
    Imports
 ================================ */
 import { useEffect, useMemo, useState } from 'react';
+import useLanguage from '../context/useLanguage';
 import { API_BASE_URL } from '../constants/agendaConstants';
 import {
   buildDashboardUpcomingAppointments,
@@ -12,6 +13,7 @@ import {
    Hook: dashboard page state
 ================================ */
 export default function useDashboardData() {
+  const { t } = useLanguage();
   /* ================================
      State: raw fetched data
   ================================ */
@@ -44,11 +46,11 @@ export default function useDashboardData() {
         ]);
 
         if (!patientsResponse.ok) {
-          throw new Error('Failed to load patients');
+          throw new Error(t('Failed to load patients'));
         }
 
         if (!appointmentsResponse.ok) {
-          throw new Error('Failed to load appointments');
+          throw new Error(t('Failed to load appointments'));
         }
 
         const [patientsData, appointmentsData] = await Promise.all([
@@ -62,7 +64,7 @@ export default function useDashboardData() {
         setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
       } catch (error) {
         if (!isMounted) return;
-        setPageError(error.message || 'Failed to load dashboard');
+        setPageError(error.message || t('Failed to load dashboard'));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -75,7 +77,7 @@ export default function useDashboardData() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   /* ================================
      Derived: filtered patient list

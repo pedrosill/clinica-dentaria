@@ -2,6 +2,7 @@
    Imports
 ================================ */
 import { useEffect, useMemo, useState } from 'react';
+import useLanguage from '../context/useLanguage';
 import { API_BASE_URL } from '../constants/patientDetailConstants';
 import { getAppointmentDateTime, startOfDay } from '../utils/patientDetailUtils';
 import { isActiveAppointmentStatus } from '../utils/agendaUtils';
@@ -11,6 +12,7 @@ import { getClinicalRecord } from '../services/clinical';
    Hook: patient detail data
 ================================ */
 export default function usePatientDetailData(patientId) {
+  const { t } = useLanguage();
   /* ================================
      State: fetched data
   ================================ */
@@ -32,7 +34,7 @@ export default function usePatientDetailData(patientId) {
         setPatient(null);
         setAppointments([]);
         setClinicalRecord(null);
-        setPageError('Invalid patient id');
+        setPageError(t('Invalid patient id'));
         setIsLoading(false);
         return;
       }
@@ -69,7 +71,7 @@ export default function usePatientDetailData(patientId) {
         setClinicalRecord(clinicalData);
       } catch (error) {
         if (!isMounted) return;
-        setPageError(error.message || 'Failed to load patient details');
+        setPageError(error.message || t('Failed to load patient details'));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -82,7 +84,7 @@ export default function usePatientDetailData(patientId) {
     return () => {
       isMounted = false;
     };
-  }, [patientId]);
+  }, [patientId, t]);
 
   /* ================================
      Derived: reference day

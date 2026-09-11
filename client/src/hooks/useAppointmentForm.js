@@ -17,6 +17,7 @@ import {
   isSameDay,
   startOfDay,
 } from '../utils/agendaUtils';
+import useLanguage from '../context/useLanguage';
 
 const CLINIC_TIME_OPTIONS = TIME_OPTIONS.filter(
   (time) => time >= '08:00' && time <= '19:30'
@@ -34,6 +35,7 @@ export default function useAppointmentForm({
   setAppointments,
   setSelectedDate,
 }) {
+  const { t } = useLanguage();
   /* ================================
      State: modal and form mode
   ================================ */
@@ -196,7 +198,7 @@ export default function useAppointmentForm({
         const data = await response.json().catch(() => null);
 
         if (!response.ok) {
-          throw new Error(data?.message || 'Failed to load doctor availability');
+          throw new Error(data?.message || t('Failed to load doctor availability'));
         }
 
         const nextSlots = Array.isArray(data?.slots) ? data.slots : [];
@@ -205,8 +207,8 @@ export default function useAppointmentForm({
         setAvailabilityError(
           data?.isClosed
             ? data.closureLabel
-              ? `Clinic closed: ${data.closureLabel}`
-              : 'Clinic closed on the selected date'
+              ? `${t('Clinic closed')}: ${data.closureLabel}`
+              : t('Clinic closed on the selected date')
             : ''
         );
 
@@ -221,7 +223,7 @@ export default function useAppointmentForm({
       } catch (error) {
         if (error.name === 'AbortError') return;
         setAvailabilitySlots([]);
-        setAvailabilityError(error.message || 'Failed to load doctor availability');
+        setAvailabilityError(error.message || t('Failed to load doctor availability'));
       } finally {
         if (!controller.signal.aborted) {
           setIsAvailabilityLoading(false);
@@ -232,7 +234,7 @@ export default function useAppointmentForm({
     loadAvailability();
 
     return () => controller.abort();
-  }, [appointmentDate, doctorId, duration, editingAppointmentId, isModalOpen]);
+  }, [appointmentDate, doctorId, duration, editingAppointmentId, isModalOpen, t]);
 
   /* ================================
      Helpers: reset form state
@@ -378,7 +380,7 @@ export default function useAppointmentForm({
     event.preventDefault();
 
     if (!patientId || !doctorId || !appointmentDate || !appointmentTime || !treatmentType) {
-      setSubmitError('Patient, doctor, date, time and an active appointment type are required');
+      setSubmitError(t('Patient, doctor, date, time and an active appointment type are required'));
       return;
     }
 
@@ -390,7 +392,7 @@ export default function useAppointmentForm({
     const keepsLegacyTime = existingAppointment?.time === normalizedTime;
 
     if (!/^\d{2}:(00|30)$/.test(normalizedTime) && !keepsLegacyTime) {
-      setSubmitError('Please choose a 30-minute time slot such as 09:00 or 09:30');
+      setSubmitError(t('Please choose a 30-minute time slot such as 09:00 or 09:30'));
       return;
     }
 
@@ -435,7 +437,7 @@ export default function useAppointmentForm({
       setSelectedDate(startOfDay(new Date(`${payload.date}T00:00:00`)));
       closeModal();
     } catch (error) {
-      setSubmitError(error.message || 'Failed to save appointment');
+      setSubmitError(error.message || t('Failed to save appointment'));
     } finally {
       setIsSubmitting(false);
     }

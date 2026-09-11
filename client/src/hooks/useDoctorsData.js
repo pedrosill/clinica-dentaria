@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import useLanguage from '../context/useLanguage';
 import { API_BASE_URL } from '../constants/doctorsConstants';
 import { matchesDoctorSearch } from '../utils/doctorsUtils';
 
 export default function useDoctorsData(searchTerm) {
+  const { t } = useLanguage();
   const [doctors, setDoctors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
@@ -30,7 +32,7 @@ export default function useDoctorsData(searchTerm) {
         setDoctors(Array.isArray(data) ? data : []);
       } catch (error) {
         if (!isMounted) return;
-        setPageError(error.message || 'Failed to load doctors');
+        setPageError(error.message || t('Failed to load doctors'));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -43,7 +45,7 @@ export default function useDoctorsData(searchTerm) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   const filteredDoctors = useMemo(() => {
     return doctors.filter((doctor) => matchesDoctorSearch(doctor, searchTerm));

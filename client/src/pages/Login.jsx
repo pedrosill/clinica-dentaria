@@ -34,7 +34,7 @@ export default function Login() {
       const destination = `${from?.pathname || '/'}${from?.search || ''}`;
       navigate(destination, { replace: true });
     } catch (submitError) {
-      setError(submitError.message || 'Unable to sign in');
+      setError(submitError.message || t('Unable to sign in'));
     } finally {
       setIsSubmitting(false);
     }

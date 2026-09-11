@@ -104,7 +104,7 @@ export default function Patients() {
         setAppointments(appointmentsData);
       } catch (error) {
         if (!isMounted) return;
-        setPageError(error.message || 'Failed to load patient workflow data');
+        setPageError(error.message || t('Failed to load patient workflow data'));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -117,7 +117,7 @@ export default function Patients() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   /* ================================
      Derived state: patients
@@ -221,7 +221,7 @@ export default function Patients() {
       setPatients((current) => [newPatient, ...current]);
       setIsCreateModalOpen(false);
     } catch (error) {
-      setCreateSubmitError(error.message || 'Failed to create patient');
+      setCreateSubmitError(error.message || t('Failed to create patient'));
     } finally {
       setIsCreateSubmitting(false);
     }

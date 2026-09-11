@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../constants/agendaConstants';
+import useLanguage from '../context/useLanguage';
 
 export default function useAgendaData() {
+  const { t } = useLanguage();
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -25,7 +27,7 @@ export default function useAgendaData() {
         ]);
 
         if (!appointmentsResponse.ok || !patientsResponse.ok || !doctorsResponse.ok || !settingsResponse.ok) {
-          throw new Error('Failed to load agenda data');
+          throw new Error(t('Failed to load agenda data'));
         }
 
         const [appointmentsData, patientsData, doctorsData, settingsData] = await Promise.all([
@@ -43,7 +45,7 @@ export default function useAgendaData() {
         setClinicSettings(settingsData);
       } catch (error) {
         if (!isMounted) return;
-        setPageError(error.message || 'Failed to load agenda data');
+        setPageError(error.message || t('Failed to load agenda data'));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -56,7 +58,7 @@ export default function useAgendaData() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   return {
     appointments,
