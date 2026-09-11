@@ -136,6 +136,7 @@ The project is currently in active development and includes:
 - dashboard and agenda pages
 - authenticated role-based access
 - configurable clinic hours, breaks, closures, provider schedules, and appointment types
+- patient clinical profiles, an interactive FDI odontogram, clinical notes, and treatment plans
 - SQLite development data seeding. [file:16]
 
-Billing, clinical charting, treatment plans, patient reminders, and patient-portal features remain future-version work. [file:16]
+Billing, patient reminders, and patient-portal features remain future-version work. Clinical imaging, periodontal charting, prescriptions, and external communication integrations remain future extensions. [file:16]

@@ -18,6 +18,8 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   sessions     UserSession[]
+  clinicalNotes ClinicalNote[] @relation("ClinicalNoteAuthor")
+  treatmentPlansCreated TreatmentPlan[] @relation("TreatmentPlanCreator")
 }
 
 model UserSession {
@@ -107,6 +109,10 @@ model Patient {
   dateOfBirth  DateTime?
   createdAt    DateTime      @default(now())
   appointments Appointment[]
+  clinicalProfile PatientClinicalProfile?
+  toothChartEntries ToothChartEntry[]
+  clinicalNotes ClinicalNote[]
+  treatmentPlans TreatmentPlan[]
 }
 
 model Doctor {
@@ -135,4 +141,91 @@ model Appointment {
   notes              String?
   completionNotes    String?
   createdAt          DateTime @default(now())
+  clinicalNote       ClinicalNote?
+  treatmentPlanItems TreatmentPlanItem[]
+}
+
+model PatientClinicalProfile {
+  id                    Int      @id @default(autoincrement())
+  patientId             Int      @unique
+  allergies             String   @default("")
+  medications           String   @default("")
+  medicalConditions     String   @default("")
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  dentalNotes           String   @default("")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  patient               Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model ToothChartEntry {
+  id         Int      @id @default(autoincrement())
+  patientId  Int
+  toothNumber String
+  surface    String   @default("whole")
+  condition  String
+  status     String   @default("active")
+  notes      String?
+  observedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, toothNumber, surface])
+  @@index([patientId])
+}
+
+model ClinicalNote {
+  id               Int       @id @default(autoincrement())
+  patientId        Int
+  appointmentId    Int?      @unique
+  authorId         Int?
+  chiefComplaint   String    @default("")
+  clinicalFindings String    @default("")
+  diagnosis        String    @default("")
+  treatmentPerformed String  @default("")
+  recommendations  String    @default("")
+  status           String    @default("draft")
+  signedAt         DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  patient          Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment      Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  author           User?     @relation("ClinicalNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([patientId, createdAt])
+}
+
+model TreatmentPlan {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  createdById Int?
+  title       String
+  status      String   @default("draft")
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy   User?    @relation("TreatmentPlanCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  items       TreatmentPlanItem[]
+
+  @@index([patientId, status])
+}
+
+model TreatmentPlanItem {
+  id            Int       @id @default(autoincrement())
+  planId        Int
+  appointmentId Int?
+  toothNumber   String?
+  surface       String?
+  procedureName String
+  status        String    @default("planned")
+  priority      Int       @default(1)
+  notes         String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  plan          TreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([planId, status])
 }

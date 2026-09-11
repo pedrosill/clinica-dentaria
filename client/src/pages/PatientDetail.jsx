@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import PatientAppointmentsSection from '../components/patient-detail/PatientAppointmentsSection';
+import ClinicalRecordSection from '../components/patient-detail/ClinicalRecordSection';
 import PatientDetailHeader from '../components/patient-detail/PatientDetailHeader';
 import PatientInfoSection from '../components/patient-detail/PatientInfoSection';
 import usePatientDetailData from '../hooks/usePatientDetailData';
@@ -28,6 +29,9 @@ export default function PatientDetail() {
   const {
     patient,
     setPatient,
+    clinicalRecord,
+    setClinicalRecord,
+    appointments,
     isLoading,
     pageError,
     upcomingAppointments,
@@ -147,6 +151,13 @@ export default function PatientDetail() {
         onChange={handleChange}
         onSubmit={handleSavePatient}
         formatDisplayDate={formatDisplayDate}
+      />
+
+      <ClinicalRecordSection
+        patientId={patientId}
+        appointments={appointments}
+        clinicalRecord={clinicalRecord}
+        setClinicalRecord={setClinicalRecord}
       />
 
       <div className="grid gap-6 xl:grid-cols-2">

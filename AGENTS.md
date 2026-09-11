@@ -52,6 +52,14 @@ These rules are product requirements, not merely UI preferences. Enforce them in
 - Availability, appointment creation, and rescheduling must all resolve the same clinic/provider schedule for the requested date. Do not reintroduce hard-coded hours or treatment-duration lists in client forms.
 - Appointment types may be archived, but existing appointments retain their saved treatment text and duration.
 
+## Clinical records
+
+- Patient clinical data is stored separately from operational contact details: medical/dental profile, tooth chart entries, clinical notes, and treatment plans.
+- The odontogram uses two-digit FDI tooth numbers and tooth-level surface entries. Keep the tooth chart interactive, but always provide labels and a structured editor so the data remains accessible and auditable.
+- Clinical notes start as drafts and become immutable when finalized. Do not silently overwrite final notes; return a clear conflict response.
+- Treatment plans contain ordered, tooth-linked procedure items and must remain independent from billing until billing is explicitly brought into scope.
+- Clinical endpoints must verify the patient relationship for linked appointments and validate tooth numbers, surfaces, conditions, statuses, and text lengths on the server.
+
 When changing scheduling behavior, inspect and update the complete path: client form state, availability request, server controller, appointment service, conflict validation, persistence, and refresh behavior. Do not fix one screen with a second set of subtly different slot constants.
 
 ## Date and time handling

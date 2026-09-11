@@ -33,10 +33,18 @@ const clinicSettingsMigrationPath = path.join(
   '20260911170000_add_clinic_settings',
   'migration.sql'
 );
+const clinicalRecordsMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911190000_add_clinical_records',
+  'migration.sql'
+);
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(clinicSettingsMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(clinicalRecordsMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
@@ -81,6 +89,11 @@ test.before(async () => {
 
 test.beforeEach(async () => {
   await prisma.appointment.deleteMany();
+  await prisma.treatmentPlanItem.deleteMany();
+  await prisma.treatmentPlan.deleteMany();
+  await prisma.clinicalNote.deleteMany();
+  await prisma.toothChartEntry.deleteMany();
+  await prisma.patientClinicalProfile.deleteMany();
   await prisma.userSession.deleteMany();
   await prisma.user.deleteMany();
   await prisma.patient.deleteMany();
@@ -276,6 +289,98 @@ test('weekly hours, breaks, and provider availability control booking slots', as
   );
   assert.equal(providerClosedAvailability.body.isClosed, true);
   assert.equal(providerClosedAvailability.body.slots.length, 0);
+});
+
+test('clinical record supports profile, odontogram, notes, and treatment plans', async () => {
+  const initialRecord = await request(`/api/patients/${patients[0].id}/clinical`);
+  assert.equal(initialRecord.response.status, 200);
+  assert.equal(initialRecord.body.toothChart.length, 0);
+  assert.equal(initialRecord.body.notes.length, 0);
+
+  const profileResult = await request(`/api/patients/${patients[0].id}/clinical/profile`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      allergies: 'Latex',
+      medications: 'None',
+      medicalConditions: 'No relevant conditions',
+      emergencyContactName: 'Emergency Contact',
+      emergencyContactPhone: '9100000099',
+      dentalNotes: 'Dental anxiety noted',
+    }),
+  });
+  assert.equal(profileResult.response.status, 200);
+  assert.equal(profileResult.body.allergies, 'Latex');
+
+  const toothResult = await request(`/api/patients/${patients[0].id}/clinical/teeth`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      toothNumber: '16',
+      surface: 'occlusal',
+      condition: 'caries',
+      status: 'active',
+      notes: 'Review on next visit',
+    }),
+  });
+  assert.equal(toothResult.response.status, 200);
+  assert.equal(toothResult.body.toothNumber, '16');
+
+  const appointmentResult = await request('/api/appointments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(appointmentPayload({ time: '10:00' })),
+  });
+  assert.equal(appointmentResult.response.status, 201);
+
+  const noteResult = await request(`/api/patients/${patients[0].id}/clinical/notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      appointmentId: appointmentResult.body.id,
+      chiefComplaint: 'Sensitivity',
+      clinicalFindings: 'Caries on tooth 16',
+      diagnosis: 'Occlusal caries',
+      treatmentPerformed: 'Assessment completed',
+      recommendations: 'Discuss restoration options',
+    }),
+  });
+  assert.equal(noteResult.response.status, 201);
+  assert.equal(noteResult.body.status, 'draft');
+
+  const finalNoteResult = await request(`/api/patients/${patients[0].id}/clinical/notes/${noteResult.body.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...noteResult.body, status: 'final' }),
+  });
+  assert.equal(finalNoteResult.response.status, 200);
+  assert.equal(finalNoteResult.body.status, 'final');
+
+  const lockedNoteResult = await request(`/api/patients/${patients[0].id}/clinical/notes/${noteResult.body.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...finalNoteResult.body, status: 'draft' }),
+  });
+  assert.equal(lockedNoteResult.response.status, 409);
+
+  const planResult = await request(`/api/patients/${patients[0].id}/clinical/treatment-plans`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Initial restorative plan', notes: 'Review with patient' }),
+  });
+  assert.equal(planResult.response.status, 201);
+
+  const itemResult = await request(`/api/patients/${patients[0].id}/clinical/treatment-plans/${planResult.body.id}/items`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ procedureName: 'Composite restoration', toothNumber: '16', surface: 'occlusal', priority: 1 }),
+  });
+  assert.equal(itemResult.response.status, 201);
+
+  const finalRecord = await request(`/api/patients/${patients[0].id}/clinical`);
+  assert.equal(finalRecord.body.toothChart.length, 1);
+  assert.equal(finalRecord.body.notes.length, 1);
+  assert.equal(finalRecord.body.treatmentPlans[0].items.length, 1);
 });
 
 test('clinic settings control closures and appointment templates', async () => {

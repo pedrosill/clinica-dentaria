@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL } from '../constants/patientDetailConstants';
 import { getAppointmentDateTime, startOfDay } from '../utils/patientDetailUtils';
 import { isActiveAppointmentStatus } from '../utils/agendaUtils';
+import { getClinicalRecord } from '../services/clinical';
 
 /* ================================
    Hook: patient detail data
@@ -15,6 +16,7 @@ export default function usePatientDetailData(patientId) {
   ================================ */
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [clinicalRecord, setClinicalRecord] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState('');
 
@@ -29,6 +31,7 @@ export default function usePatientDetailData(patientId) {
         if (!isMounted) return;
         setPatient(null);
         setAppointments([]);
+        setClinicalRecord(null);
         setPageError('Invalid patient id');
         setIsLoading(false);
         return;
@@ -38,9 +41,12 @@ export default function usePatientDetailData(patientId) {
         setIsLoading(true);
         setPageError('');
 
-      const response = await fetch(`${API_BASE_URL}/api/patients/${patientId}`, {
-        credentials: 'include',
-      });
+      const [response, clinicalData] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/patients/${patientId}`, {
+          credentials: 'include',
+        }),
+        getClinicalRecord(patientId),
+      ]);
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => null);
@@ -60,6 +66,7 @@ export default function usePatientDetailData(patientId) {
 
         setPatient(normalizedPatient);
         setAppointments(normalizedAppointments);
+        setClinicalRecord(clinicalData);
       } catch (error) {
         if (!isMounted) return;
         setPageError(error.message || 'Failed to load patient details');
@@ -107,6 +114,8 @@ export default function usePatientDetailData(patientId) {
   return {
     patient,
     setPatient,
+    clinicalRecord,
+    setClinicalRecord,
     appointments,
     setAppointments,
     isLoading,
