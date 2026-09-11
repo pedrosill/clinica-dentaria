@@ -5,15 +5,6 @@ const {
   buildPlaceholderFullName,
 } = require('../utils/patientUtils');
 
-function combineLegacyName(firstName, lastName, patientId) {
-  const combined = [String(firstName || '').trim(), String(lastName || '').trim()]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-
-  return combined || buildPlaceholderFullName(patientId);
-}
-
 async function backfillPatientIdentityFields() {
   const patients = await prisma.patient.findMany({
     select: {
@@ -36,7 +27,7 @@ async function backfillPatientIdentityFields() {
         id: patient.id,
       },
       data: {
-        fullName: normalizedFullName || combineLegacyName(patient.firstName, patient.lastName, patient.id),
+        fullName: normalizedFullName || buildPlaceholderFullName(patient.id),
         email: normalizedEmail || buildPlaceholderEmail(patient.id),
         nif: normalizedNif || buildPlaceholderNif(patient.id),
         nationality: normalizedNationality || 'Portuguese',

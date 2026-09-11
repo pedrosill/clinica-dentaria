@@ -97,7 +97,7 @@ export default function AppointmentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+    <div data-testid="appointment-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -131,6 +131,7 @@ export default function AppointmentModal({
               <label className="text-sm font-medium text-slate-800">Patient</label>
               <div className="relative">
                 <input
+                  data-testid="appointment-patient"
                   type="text"
                   value={patientSearch}
                   placeholder="Search by name or phone"
@@ -204,6 +205,7 @@ export default function AppointmentModal({
               <label className="text-sm font-medium text-slate-800">Doctor</label>
               <div className="relative">
                 <input
+                  data-testid="appointment-doctor"
                   type="text"
                   value={doctorSearch}
                   placeholder="Search by doctor name, email or phone"
@@ -279,6 +281,7 @@ export default function AppointmentModal({
                 <button
                   type="button"
                   onClick={onCalendarToggle}
+                  data-testid="appointment-date-toggle"
                   aria-expanded={isCalendarOpen}
                   className="mt-3 flex w-full items-center justify-between rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-left transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-200"
                 >
@@ -315,6 +318,7 @@ export default function AppointmentModal({
                       <button
                         key={day.toISOString()}
                         type="button"
+                        data-testid={`appointment-date-${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`}
                         onClick={() => onCalendarDateSelect(day)}
                         className={`flex h-9 items-center justify-center rounded-xl border text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-teal-200 ${
                           isSelected
@@ -418,6 +422,7 @@ export default function AppointmentModal({
             <button
               type="submit"
               disabled={isSubmitting}
+              data-testid="appointment-submit"
               className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting

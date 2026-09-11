@@ -22,6 +22,7 @@ export default function AgendaHeader({
         <button
           type="button"
           onClick={onCreateAppointment}
+          data-testid="add-appointment"
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
         >
           <Plus className="h-4 w-4" />

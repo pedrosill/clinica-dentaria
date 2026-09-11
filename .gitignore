@@ -11,3 +11,7 @@ dist/
 
 .vscode/
 .DS_Store
+
+test-results/
+playwright-report/
+server/prisma/dentalpro-browser-*.db

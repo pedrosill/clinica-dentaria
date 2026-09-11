@@ -1,3 +1,5 @@
+import { getPatientDisplayName } from '../../utils/agendaUtils';
+
 export default function AgendaDayDetails({
   selectedDate,
   appointments,
@@ -38,7 +40,7 @@ export default function AgendaDayDetails({
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="space-y-2">
                   <p className="text-base font-semibold text-slate-950">
-                    {appointment.time} · {appointment.patient.firstName} {appointment.patient.lastName}
+                    {appointment.time} · {getPatientDisplayName(appointment.patient)}
                   </p>
                   <p className="text-sm font-medium text-slate-700">{appointment.treatmentType}</p>
                   <p className="text-sm text-slate-600">{appointment.patient.phone}</p>

@@ -38,6 +38,7 @@ export default function SelectDropdown({
           type="button"
           disabled={disabled}
           onClick={() => setIsOpen((current) => !current)}
+          data-testid={`select-${label.toLowerCase().replace(/\s+/g, '-')}`}
           className="flex w-full items-center justify-between rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-left text-sm text-slate-800 shadow-sm transition hover:bg-white focus:border-teal-700 focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
           aria-haspopup="listbox"
           aria-expanded={isOpen}
