@@ -16,6 +16,7 @@ async function signIn(page, path) {
 
 test('creates and deactivates a receptionist from Settings', async ({ page }) => {
   await signIn(page, '/settings');
+  await page.getByRole('tab', { name: 'Team', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'User management', exact: true })).toBeVisible();
 
   const uniqueEmail = `browser.receptionist.${Date.now()}@example.test`;
