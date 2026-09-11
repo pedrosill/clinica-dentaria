@@ -9,6 +9,7 @@ import DashboardPatientsTable from '../components/dashboard/DashboardPatientsTab
 import DashboardStatsCard from '../components/dashboard/DashboardStatsCard';
 import DashboardUpcomingAppointments from '../components/dashboard/DashboardUpcomingAppointments';
 import useDashboardData from '../hooks/useDashboardData';
+import useLanguage from '../context/useLanguage';
 
 /* ================================
    Page: dashboard
@@ -17,6 +18,7 @@ import useDashboardData from '../hooks/useDashboardData';
    shaping live in hooks and utils.
 ================================ */
 export default function Dashboard() {
+  const { t } = useLanguage();
   const {
     patients,
     searchTerm,
@@ -51,8 +53,8 @@ export default function Dashboard() {
 
           <DashboardStatsCard
             icon={<Users className="h-5 w-5" />}
-            title="Patient count"
-            description="Current registered patients"
+            title={t('Patient count')}
+            description={t('Current registered patients')}
             value={patients.length}
           />
         </div>

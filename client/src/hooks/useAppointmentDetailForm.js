@@ -333,6 +333,35 @@ export default function useAppointmentDetailForm({
     }
   }
 
+  async function handleStatusChange(nextStatus) {
+    if (!appointmentId || !appointment || isTerminalAppointment) return;
+
+    try {
+      setIsSubmitting(true);
+      setSubmitError('');
+      setSaveSuccess('');
+
+      const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.message || 'Failed to update appointment status');
+      }
+
+      setAppointment(data);
+      setSaveSuccess('Appointment status updated successfully.');
+    } catch (error) {
+      setSubmitError(error.message || 'Failed to update appointment status');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return {
     isEditing,
     isConcludeModalOpen,
@@ -369,5 +398,6 @@ export default function useAppointmentDetailForm({
     handleSave,
     handleRescheduleAppointment,
     handleConcludeAppointment,
+    handleStatusChange,
   };
 }

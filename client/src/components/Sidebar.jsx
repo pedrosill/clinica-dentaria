@@ -4,6 +4,7 @@
 import { CalendarDays, LayoutDashboard, Settings, Stethoscope, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import useAuth from '../context/useAuth';
+import useLanguage from '../context/useLanguage';
 
 /* ================================
    Navigation items
@@ -41,6 +42,7 @@ const navigationItems = [
 ================================ */
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const initials = String(user?.displayName || 'U')
     .split(/\s+/)
     .map((part) => part[0])
@@ -55,11 +57,11 @@ export default function Sidebar() {
            Brand block
         ================================ */}
         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-          <p className="text-sm font-medium text-teal-700">Clinic workspace</p>
+          <p className="text-sm font-medium text-teal-700">{t('Clinic workspace')}</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
             DentalPro
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">Clinical Suite</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">{t('Clinical Suite')}</p>
         </div>
 
         {/* ================================
@@ -83,7 +85,7 @@ export default function Sidebar() {
                 }
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
               </NavLink>
             );
           })}
@@ -107,7 +109,7 @@ export default function Sidebar() {
             onClick={logout}
             className="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
           >
-            Sign out
+            {t('Sign out')}
           </button>
         </div>
       </div>

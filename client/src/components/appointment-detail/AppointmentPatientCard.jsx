@@ -4,11 +4,13 @@
 import { Link } from 'react-router-dom';
 import { UserRound } from 'lucide-react';
 import { getPatientDisplayName } from '../../utils/agendaUtils';
+import useLanguage from '../../context/useLanguage';
 
 /* ================================
    Component
 ================================ */
 export default function AppointmentPatientCard({ appointment }) {
+  const { t } = useLanguage();
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center gap-3">
@@ -17,8 +19,8 @@ export default function AppointmentPatientCard({ appointment }) {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Patient</h2>
-          <p className="text-sm text-slate-500">Linked patient information</p>
+          <h2 className="text-lg font-semibold text-slate-900">{t('Patient')}</h2>
+          <p className="text-sm text-slate-500">{t('Linked patient information')}</p>
         </div>
       </div>
 
@@ -28,7 +30,7 @@ export default function AppointmentPatientCard({ appointment }) {
             {getPatientDisplayName(appointment.patient)}
           </p>
           <p className="mt-1 text-sm text-slate-500">
-            {appointment.patient?.phone || 'No phone number available'}
+            {appointment.patient?.phone || t('No phone number available')}
           </p>
         </div>
 
@@ -36,7 +38,7 @@ export default function AppointmentPatientCard({ appointment }) {
           to={`/patients/${appointment.patientId}`}
           className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
         >
-          Open patient record
+          {t('Open patient record')}
         </Link>
       </div>
     </section>

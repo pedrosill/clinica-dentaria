@@ -4,11 +4,13 @@
 import { Link } from 'react-router-dom';
 import { Clock3 } from 'lucide-react';
 import { formatShortDate } from '../../utils/appointmentDetailUtils';
+import useLanguage from '../../context/useLanguage';
 
 /* ================================
    Component
 ================================ */
 export default function AppointmentRelatedList({ relatedAppointments }) {
+  const { t } = useLanguage();
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center gap-3">
@@ -17,8 +19,8 @@ export default function AppointmentRelatedList({ relatedAppointments }) {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Related appointments</h2>
-          <p className="text-sm text-slate-500">Recent appointments for this patient</p>
+          <h2 className="text-lg font-semibold text-slate-900">{t('Related appointments')}</h2>
+          <p className="text-sm text-slate-500">{t('Recent appointments for this patient')}</p>
         </div>
       </div>
 
@@ -40,7 +42,7 @@ export default function AppointmentRelatedList({ relatedAppointments }) {
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-            <p className="text-sm font-medium text-slate-700">No other appointments found</p>
+            <p className="text-sm font-medium text-slate-700">{t('No other appointments found')}</p>
           </div>
         )}
       </div>

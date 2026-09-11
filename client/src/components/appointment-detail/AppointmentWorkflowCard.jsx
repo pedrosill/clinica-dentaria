@@ -1,8 +1,9 @@
 /* ================================
    Imports
 ================================ */
-import { CheckCircle2, FileText } from 'lucide-react';
+import { CheckCircle2, FileText, UserCheck, XCircle } from 'lucide-react';
 import { getStatusClasses, getStatusLabel } from '../../utils/appointmentDetailUtils';
+import useLanguage from '../../context/useLanguage';
 
 /* ================================
    Component
@@ -13,7 +14,10 @@ export default function AppointmentWorkflowCard({
   isTerminalAppointment,
   onStartReschedule,
   onOpenConcludeModal,
+  onStatusChange,
+  isSubmitting,
 }) {
+  const { t } = useLanguage();
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center gap-3">
@@ -22,9 +26,9 @@ export default function AppointmentWorkflowCard({
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Workflow actions</h2>
+          <h2 className="text-lg font-semibold text-slate-900">{t('Workflow actions')}</h2>
           <p className="text-sm text-slate-500">
-            Conclude the visit or move directly into follow-up scheduling.
+            {t('Update attendance, conclude the visit, or move directly into follow-up scheduling.')}
           </p>
         </div>
       </div>
@@ -44,12 +48,37 @@ export default function AppointmentWorkflowCard({
         </div>
 
         {!isTerminalAppointment ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {appointment.status === 'scheduled' ? (
+              <button
+                type="button"
+                onClick={() => onStatusChange('arrived')}
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800 transition hover:bg-sky-100 disabled:opacity-60"
+              >
+                <UserCheck className="h-4 w-4" />
+                {t('Mark as arrived')}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => onStatusChange('no_show')}
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800 transition hover:bg-rose-100 disabled:opacity-60"
+            >
+              <XCircle className="h-4 w-4" />
+              {t('Mark as no-show')}
+            </button>
+          </div>
+        ) : null}
+
+        {!isTerminalAppointment ? (
           <button
             type="button"
             onClick={onStartReschedule}
             className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            Reschedule appointment
+            {t('Reschedule appointment')}
           </button>
         ) : null}
 
@@ -60,13 +89,13 @@ export default function AppointmentWorkflowCard({
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
           >
             <CheckCircle2 className="h-4 w-4" />
-            Conclude Appointment
+            {t('Conclude Appointment')}
           </button>
         ) : (
           <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             {isCompletedAppointment
-              ? 'This appointment has already been concluded.'
-              : 'This appointment is closed and cannot be edited or rescheduled.'}
+              ? t('This appointment has already been concluded.')
+              : t('This appointment is closed and cannot be edited or rescheduled')}
           </div>
         )}
       </div>

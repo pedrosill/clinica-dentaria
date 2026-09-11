@@ -112,3 +112,27 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
   await expect(page.getByText('Treatment plan item added.', { exact: true })).toBeVisible();
   await expect(page.getByText(/Composite restoration · Tooth 16/)).toBeVisible();
 });
+
+test('switches the clinic interface between English and European Portuguese', async ({ page }) => {
+  await page.goto('/settings');
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByTestId('login-email').fill('browser.admin@example.test');
+  await page.getByTestId('login-password').fill('browser-password-123');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('language-select')).toBeVisible();
+
+  await page.getByTestId('language-select').selectOption('pt-PT');
+  await page.getByTestId('save-clinic-settings').click();
+  await expect(page.getByRole('link', { name: 'Definições', exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT');
+  await expect(page.getByRole('heading', { name: 'Configuração da clínica', exact: true })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('link', { name: 'Definições', exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT');
+
+  await page.getByTestId('language-select').selectOption('en');
+  await page.getByTestId('save-clinic-settings').click();
+  await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+});

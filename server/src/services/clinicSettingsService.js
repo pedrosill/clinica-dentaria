@@ -6,6 +6,7 @@ const { isValidAppointmentDuration } = require('../utils/appointmentUtils');
 const SETTINGS_ID = 1;
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const SLOT_MINUTES = 30;
+const SUPPORTED_LANGUAGES = new Set(['en', 'pt-PT']);
 
 const DEFAULT_SCHEDULES = [
   { weekday: 0, isOpen: true, startTime: '08:00', endTime: '20:00' },
@@ -131,6 +132,7 @@ async function getClinicSettings() {
     id: settings.id,
     clinicName: settings.clinicName,
     timezone: settings.timezone,
+    language: settings.language || 'en',
     slotIntervalMinutes: settings.slotIntervalMinutes,
     schedules: settings.schedules,
     closures: settings.closures.map((closure) => ({
@@ -145,6 +147,9 @@ async function getClinicSettings() {
 async function updateClinicSettings(payload = {}) {
   const clinicName = String(payload.clinicName || '').trim();
   const timezone = String(payload.timezone || '').trim();
+  const requestedLanguage = payload.language === undefined
+    ? null
+    : String(payload.language || '').trim();
   const schedules = Array.isArray(payload.schedules) ? payload.schedules : [];
 
   if (!clinicName || clinicName.length > 120) {
@@ -153,6 +158,10 @@ async function updateClinicSettings(payload = {}) {
 
   if (!timezone || timezone.length > 80) {
     throw new HttpError(400, 'Timezone is required and must be 80 characters or fewer');
+  }
+
+  if (requestedLanguage !== null && !SUPPORTED_LANGUAGES.has(requestedLanguage)) {
+    throw new HttpError(400, 'Language must be English or Portuguese (Portugal)');
   }
 
   if (Number(payload.slotIntervalMinutes || SLOT_MINUTES) !== SLOT_MINUTES) {
@@ -164,12 +173,13 @@ async function updateClinicSettings(payload = {}) {
   }
 
   const normalizedSchedules = schedules.map((schedule, index) => normalizeSchedule(schedule, index));
-  await ensureClinicSettings();
+  const existingSettings = await ensureClinicSettings();
+  const language = requestedLanguage || existingSettings.language || 'en';
 
   await prisma.$transaction(async (transaction) => {
     await transaction.clinicSettings.update({
       where: { id: SETTINGS_ID },
-      data: { clinicName, timezone, slotIntervalMinutes: SLOT_MINUTES },
+      data: { clinicName, timezone, language, slotIntervalMinutes: SLOT_MINUTES },
     });
 
     for (const schedule of normalizedSchedules) {
@@ -351,6 +361,7 @@ async function deleteAppointmentType(typeId) {
 module.exports = {
   DEFAULT_APPOINTMENT_TYPES,
   DEFAULT_SCHEDULES,
+  SUPPORTED_LANGUAGES,
   ensureClinicSettings,
   getClinicSettings,
   updateClinicSettings,

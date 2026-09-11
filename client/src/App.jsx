@@ -13,7 +13,9 @@ import DoctorDetail from './pages/DoctorDetail';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import AuthProvider from './context/AuthContext';
+import LanguageProvider from './context/LanguageContext';
 import useAuth from './context/useAuth';
+import useLanguage from './context/useLanguage';
 
 /* ================================
    Shared states
@@ -23,12 +25,13 @@ import useAuth from './context/useAuth';
 ================================ */
 function ProtectedRoutes() {
   const { isLoading, user } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-        <p className="text-sm font-medium text-slate-600">Loading clinic workspace…</p>
+        <p className="text-sm font-medium text-slate-600">{t('Loading clinic workspace…')}</p>
       </div>
     );
   }
@@ -64,10 +67,12 @@ function ProtectedRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<ProtectedRoutes />} />
-      </Routes>
+      <LanguageProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<ProtectedRoutes />} />
+        </Routes>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

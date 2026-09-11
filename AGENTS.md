@@ -122,3 +122,6 @@ For a scheduling change, also exercise the relevant API endpoint and manually ve
 - Keep `package-lock.json` files in sync when dependencies change.
 - Before committing, inspect `git status` and the staged file list. The root `.gitignore` is the project-wide safety net, while the nested client/server ignore files remain valid for their respective folders.
 - Use descriptive commits that explain the user-visible change, such as `Fix dashboard upcoming appointment ordering`.
+# Feature discipline
+
+Before implementing a new clinic feature, read `docs/FEATURE_INVENTORY.md` and search the existing routes, services, hooks, pages, and tests. Confirm whether the requirement is implemented, partial, or missing. Extend an existing implementation when possible; do not create duplicate models or parallel workflows.

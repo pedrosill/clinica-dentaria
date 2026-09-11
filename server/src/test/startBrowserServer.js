@@ -33,6 +33,13 @@ const clinicalRecordsMigrationPath = path.join(
   '20260911190000_add_clinical_records',
   'migration.sql'
 );
+const clinicLanguageMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911200000_add_clinic_language',
+  'migration.sql'
+);
 
 process.env.DATABASE_URL = `file:${databasePath.replaceAll('\\', '/')}`;
 
@@ -41,6 +48,7 @@ database.exec(fs.readFileSync(migrationPath, 'utf8'));
 database.exec(fs.readFileSync(authMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(clinicSettingsMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(clinicalRecordsMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(clinicLanguageMigrationPath, 'utf8'));
 database.close();
 
 const app = require('../app');

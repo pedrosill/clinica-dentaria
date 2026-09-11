@@ -39,6 +39,7 @@ model ClinicSettings {
   id                  Int              @id @default(1)
   clinicName          String           @default("DentalPro")
   timezone            String           @default("Europe/Lisbon")
+  language            String           @default("en")
   slotIntervalMinutes Int              @default(30)
   schedules           ClinicSchedule[]
   closures            ClinicClosure[]

@@ -769,6 +769,18 @@ async function updateAppointmentStatus(appointmentId, payload) {
     throw new HttpError(404, 'Appointment not found');
   }
 
+  const allowedTransitions = {
+    scheduled: ['arrived', 'cancelled', 'no_show'],
+    arrived: ['cancelled', 'no_show'],
+    completed: [],
+    cancelled: [],
+    no_show: [],
+  };
+
+  if (!allowedTransitions[existingAppointment.status]?.includes(status)) {
+    throw new HttpError(409, 'This appointment status transition is not allowed');
+  }
+
   return prisma.appointment.update({
     where: {
       id,

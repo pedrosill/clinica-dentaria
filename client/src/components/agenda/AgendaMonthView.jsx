@@ -1,3 +1,5 @@
+import { getAppLocale } from '../../utils/agendaUtils';
+
 export default function AgendaMonthView({
   currentMonth,
   monthDays,
@@ -13,7 +15,7 @@ export default function AgendaMonthView({
       <div className="mb-5 flex items-center justify-between border-b border-slate-300 pb-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-950">
-            {new Intl.DateTimeFormat('en-GB', {
+            {new Intl.DateTimeFormat(getAppLocale(), {
               month: 'long',
               year: 'numeric',
             }).format(currentMonth)}

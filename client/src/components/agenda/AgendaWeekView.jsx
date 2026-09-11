@@ -1,3 +1,5 @@
+import { getAppLocale } from '../../utils/agendaUtils';
+
 export default function AgendaWeekView({
   weekLabel,
   weekDays,
@@ -53,14 +55,14 @@ export default function AgendaWeekView({
                     isSameDay(day, selectedDate) ? 'text-teal-800' : 'text-slate-600'
                   }`}
                 >
-                  {new Intl.DateTimeFormat('en-GB', { weekday: 'short' }).format(day)}
+                  {new Intl.DateTimeFormat(getAppLocale(), { weekday: 'short' }).format(day)}
                 </p>
                 <p
                   className={`mt-1 text-lg font-semibold ${
                     isSameDay(day, selectedDate) ? 'text-teal-950' : 'text-slate-950'
                   }`}
                 >
-                  {new Intl.DateTimeFormat('en-GB', { day: '2-digit' }).format(day)}
+                  {new Intl.DateTimeFormat(getAppLocale(), { day: '2-digit' }).format(day)}
                 </p>
               </button>
 

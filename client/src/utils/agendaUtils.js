@@ -53,8 +53,14 @@ export function formatDateInput(date) {
   return `${year}-${month}-${day}`;
 }
 
-export function formatFullDate(date) {
-  return new Intl.DateTimeFormat('en-GB', {
+export function getAppLocale() {
+  return typeof document !== 'undefined' && document.documentElement.lang === 'pt-PT'
+    ? 'pt-PT'
+    : 'en-GB';
+}
+
+export function formatFullDate(date, locale = getAppLocale()) {
+  return new Intl.DateTimeFormat(locale, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -62,14 +68,14 @@ export function formatFullDate(date) {
   }).format(new Date(date));
 }
 
-export function formatWeekRange(date) {
+export function formatWeekRange(date, locale = getAppLocale()) {
   const weekStart = startOfWeek(date);
   const weekEnd = endOfWeek(date);
-  const startLabel = new Intl.DateTimeFormat('en-GB', {
+  const startLabel = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
   }).format(weekStart);
-  const endLabel = new Intl.DateTimeFormat('en-GB', {
+  const endLabel = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -78,8 +84,8 @@ export function formatWeekRange(date) {
   return `${startLabel} - ${endLabel}`;
 }
 
-export function formatCalendarMonth(date) {
-  return new Intl.DateTimeFormat('en-GB', {
+export function formatCalendarMonth(date, locale = getAppLocale()) {
+  return new Intl.DateTimeFormat(locale, {
     month: 'long',
     year: 'numeric',
   }).format(new Date(date));
@@ -154,6 +160,14 @@ export function getStatusClasses(status) {
 }
 
 export function getStatusLabel(status) {
+  const isPortuguese = typeof document !== 'undefined' && document.documentElement.lang === 'pt-PT';
+  if (isPortuguese) {
+    if (status === 'arrived') return 'Chegado';
+    if (status === 'completed') return 'Concluído';
+    if (status === 'no_show') return 'Falta';
+    if (status === 'cancelled') return 'Cancelado';
+    return 'Marcado';
+  }
   if (status === 'arrived') return 'Arrived';
   if (status === 'completed') return 'Completed';
   if (status === 'no_show') return 'No-show';

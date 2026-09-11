@@ -6,6 +6,7 @@ import { CalendarDays, Plus, Search, UserRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPatient } from '../services/patients';
 import { getPatientDisplayName } from '../utils/agendaUtils';
+import useLanguage from '../context/useLanguage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -51,6 +52,7 @@ function getAppointmentDateTime(appointment) {
 ================================ */
 export default function Patients() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   /* ================================
      State: page data
@@ -194,12 +196,12 @@ export default function Patients() {
       !createNif.trim() ||
       !createNationality.trim()
     ) {
-      setCreateSubmitError('Full name, phone, email, nif and nationality are required');
+      setCreateSubmitError(t('Full name, phone, email, NIF and nationality are required'));
       return;
     }
 
     if (createNationality.trim().toLowerCase() === 'portuguese' && !/^\d{9}$/.test(createNif.trim())) {
-      setCreateSubmitError('Portuguese NIF must contain exactly 9 digits');
+      setCreateSubmitError(t('Portuguese NIF must contain exactly 9 digits'));
       return;
     }
 
@@ -259,10 +261,10 @@ export default function Patients() {
       <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-teal-800">Secretary workflow</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Patients</h1>
+            <p className="text-sm font-semibold text-teal-800">{t('Secretary workflow')}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Patients')}</h1>
             <p className="text-sm text-slate-700">
-              Search all patients and work from today&apos;s active appointment list.
+              {t('Search all patients and work from today&apos;s active appointment list.')}
             </p>
           </div>
 
@@ -272,7 +274,7 @@ export default function Patients() {
             className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add patient
+            {t('Add patient')}
           </button>
         </div>
 
@@ -285,7 +287,7 @@ export default function Patients() {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search all patients by name, phone, email or NIF"
+              placeholder={t('Search all patients by name, phone, email or NIF')}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-500 focus:border-teal-700 focus:bg-white focus:outline-none"
             />
           </label>
@@ -305,21 +307,21 @@ export default function Patients() {
         <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-2 border-b border-slate-300 pb-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Search results</h2>
-              <p className="text-sm text-slate-700">All existing patients</p>
+              <h2 className="text-lg font-semibold text-slate-950">{t('Search results')}</h2>
+              <p className="text-sm text-slate-700">{t('All existing patients')}</p>
             </div>
 
             <p className="text-sm font-medium text-slate-700">
-              {filteredPatients.length} result{filteredPatients.length === 1 ? '' : 's'}
+              {filteredPatients.length} {t(filteredPatients.length === 1 ? 'result' : 'results')}
             </p>
           </div>
 
           <div className="mt-5 space-y-4">
             {filteredPatients.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-                <p className="text-sm font-medium text-slate-800">No matching patients found</p>
+                <p className="text-sm font-medium text-slate-800">{t('No matching patients found')}</p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Try a different name, phone, email or NIF.
+                  {t('Try a different name, phone, email or NIF.')}
                 </p>
               </div>
             ) : (
@@ -351,7 +353,7 @@ export default function Patients() {
                       className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
                     >
                       <UserRound className="mr-2 h-4 w-4" />
-                      Open patient
+                      {t('Open patient')}
                     </Link>
                   </div>
                 </div>
@@ -368,22 +370,22 @@ export default function Patients() {
         <div className="flex flex-col gap-2 border-b border-slate-300 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-950">
-              Patients with appointments today
+              {t('Patients with appointments today')}
             </h2>
             <p className="text-sm text-slate-700">{formatFullDate(today)}</p>
           </div>
 
           <p className="text-sm font-medium text-slate-700">
-            {todayAppointments.length} result{todayAppointments.length === 1 ? '' : 's'}
+            {todayAppointments.length} {t(todayAppointments.length === 1 ? 'result' : 'results')}
           </p>
         </div>
 
         <div className="mt-5 space-y-4">
           {todayAppointments.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-              <p className="text-sm font-medium text-slate-800">No patients scheduled for today</p>
+              <p className="text-sm font-medium text-slate-800">{t('No patients scheduled for today')}</p>
               <p className="mt-2 text-sm text-slate-600">
-                Today&apos;s operational patient list will appear here once appointments exist.
+                {t('Today&apos;s operational patient list will appear here once appointments exist.')}
               </p>
             </div>
           ) : (

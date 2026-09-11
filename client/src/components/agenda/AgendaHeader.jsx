@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import useLanguage from '../../context/useLanguage';
 
 export default function AgendaHeader({
   viewType,
@@ -8,14 +9,15 @@ export default function AgendaHeader({
   onNextRange,
   onGoToToday,
 }) {
+  const { t } = useLanguage();
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-teal-800">Secretary workflow</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Agenda</h1>
+          <p className="text-sm font-semibold text-teal-800">{t('Secretary workflow')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Agenda')}</h1>
           <p className="text-sm text-slate-700">
-            Review the week, prepare today&apos;s patients, and manage bookings.
+            {t('Review the week, prepare today&apos;s patients, and manage bookings.')}
           </p>
         </div>
 
@@ -26,7 +28,7 @@ export default function AgendaHeader({
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
         >
           <Plus className="h-4 w-4" />
-          Add appointment
+          {t('Add appointment')}
         </button>
       </div>
 
@@ -41,7 +43,7 @@ export default function AgendaHeader({
                 : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-100'
             }`}
           >
-            Week
+            {t('Week')}
           </button>
           <button
             type="button"
@@ -52,7 +54,7 @@ export default function AgendaHeader({
                 : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-100'
             }`}
           >
-            Month
+            {t('Month')}
           </button>
         </div>
 
@@ -69,7 +71,7 @@ export default function AgendaHeader({
             onClick={onGoToToday}
             className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
           >
-            Today
+            {t('Today')}
           </button>
           <button
             type="button"

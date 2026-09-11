@@ -23,7 +23,7 @@ export const TIME_OPTIONS = Array.from({ length: 24 * 2 }, (_, index) => {
    Helpers: date formatting
 ================================ */
 export function formatLongDate(dateValue) {
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(typeof document !== 'undefined' && document.documentElement.lang === 'pt-PT' ? 'pt-PT' : 'en-GB', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -32,7 +32,7 @@ export function formatLongDate(dateValue) {
 }
 
 export function formatShortDate(dateValue) {
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(typeof document !== 'undefined' && document.documentElement.lang === 'pt-PT' ? 'pt-PT' : 'en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -43,6 +43,14 @@ export function formatShortDate(dateValue) {
    Helpers: appointment status
 ================================ */
 export function getStatusLabel(status) {
+  const isPortuguese = typeof document !== 'undefined' && document.documentElement.lang === 'pt-PT';
+  if (isPortuguese) {
+    if (status === 'arrived') return 'Chegado';
+    if (status === 'completed') return 'Concluído';
+    if (status === 'cancelled') return 'Cancelado';
+    if (status === 'no_show') return 'Falta';
+    return 'Marcado';
+  }
   if (status === 'arrived') return 'Arrived';
   if (status === 'completed') return 'Completed';
   if (status === 'cancelled') return 'Cancelled';

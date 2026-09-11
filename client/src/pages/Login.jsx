@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../context/useAuth';
+import useLanguage from '../context/useLanguage';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -41,9 +43,9 @@ export default function Login() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-200/70 px-4 py-8">
       <section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold text-teal-800">Clinic workspace</p>
+        <p className="text-sm font-semibold text-teal-800">{t('Clinic workspace')}</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">DentalPro</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">Sign in to manage the clinic safely.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{t('Sign in to manage the clinic safely.')}</p>
 
         {error ? (
           <div className="mt-6 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
@@ -54,7 +56,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="space-y-2">
             <label htmlFor="login-email" className="text-sm font-medium text-slate-800">
-              Email
+              {t('Email')}
             </label>
             <input
               id="login-email"
@@ -70,7 +72,7 @@ export default function Login() {
 
           <div className="space-y-2">
             <label htmlFor="login-password" className="text-sm font-medium text-slate-800">
-              Password
+              {t('Password')}
             </label>
             <input
               id="login-password"
@@ -90,7 +92,7 @@ export default function Login() {
             disabled={isSubmitting}
             className="w-full rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? 'Signing in…' : 'Sign in'}
+            {isSubmitting ? t('Signing in…') : t('Sign in')}
           </button>
         </form>
       </section>

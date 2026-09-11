@@ -78,6 +78,7 @@ export default function AppointmentDetail() {
     handleSave,
     handleRescheduleAppointment,
     handleConcludeAppointment,
+    handleStatusChange,
   } = useAppointmentDetailForm({
     appointmentId,
     appointment,
@@ -152,6 +153,8 @@ export default function AppointmentDetail() {
             isTerminalAppointment={isTerminalAppointment}
             onStartReschedule={handleStartReschedule}
             onOpenConcludeModal={handleOpenConcludeModal}
+            onStatusChange={handleStatusChange}
+            isSubmitting={isSubmitting}
           />
         </div>
       </div>

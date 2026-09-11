@@ -40,11 +40,19 @@ const clinicalRecordsMigrationPath = path.join(
   '20260911190000_add_clinical_records',
   'migration.sql'
 );
+const clinicLanguageMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911200000_add_clinic_language',
+  'migration.sql'
+);
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(clinicSettingsMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(clinicalRecordsMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(clinicLanguageMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
@@ -387,6 +395,7 @@ test('clinic settings control closures and appointment templates', async () => {
   const initialSettings = await request('/api/settings');
 
   assert.equal(initialSettings.response.status, 200);
+  assert.equal(initialSettings.body.language, 'en');
   assert.equal(initialSettings.body.slotIntervalMinutes, 30);
   assert.equal(initialSettings.body.schedules.find((day) => day.weekday === 1).startTime, '08:00');
 
@@ -420,6 +429,46 @@ test('clinic settings control closures and appointment templates', async () => {
   assert.ok(
     settingsAfterUpdate.body.appointmentTypes.some((type) => type.name === 'Emergency visit')
   );
+
+  const languageUpdate = await request('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clinicName: initialSettings.body.clinicName,
+      timezone: initialSettings.body.timezone,
+      language: 'pt-PT',
+      slotIntervalMinutes: 30,
+      schedules: initialSettings.body.schedules,
+    }),
+  });
+  assert.equal(languageUpdate.response.status, 200);
+  assert.equal(languageUpdate.body.language, 'pt-PT');
+
+  const legacySettingsUpdate = await request('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clinicName: initialSettings.body.clinicName,
+      timezone: initialSettings.body.timezone,
+      slotIntervalMinutes: 30,
+      schedules: initialSettings.body.schedules,
+    }),
+  });
+  assert.equal(legacySettingsUpdate.response.status, 200);
+  assert.equal(legacySettingsUpdate.body.language, 'pt-PT');
+
+  const invalidLanguageUpdate = await request('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clinicName: initialSettings.body.clinicName,
+      timezone: initialSettings.body.timezone,
+      language: 'fr',
+      slotIntervalMinutes: 30,
+      schedules: initialSettings.body.schedules,
+    }),
+  });
+  assert.equal(invalidLanguageUpdate.response.status, 400);
 });
 
 test('enforces administrator-only doctor changes', async () => {
@@ -545,6 +594,17 @@ test('preserves arrived status and blocks terminal appointment edits', async () 
   );
 
   assert.equal(cancelledStatusResult.response.status, 200);
+
+  const reopenedStatusResult = await request(
+    `/api/appointments/${arrivedResult.body.id}/status`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'scheduled' }),
+    }
+  );
+
+  assert.equal(reopenedStatusResult.response.status, 409);
 
   const cancelledUpdateResult = await request(
     `/api/appointments/${arrivedResult.body.id}`,
