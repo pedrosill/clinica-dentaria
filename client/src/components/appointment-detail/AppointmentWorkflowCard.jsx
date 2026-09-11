@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { FileText, UserCheck, XCircle } from 'lucide-react';
+import { Ban, FileText, UserCheck, XCircle } from 'lucide-react';
 import { getStatusClasses, getStatusLabel } from '../../utils/appointmentDetailUtils';
 import useLanguage from '../../context/useLanguage';
 
@@ -13,6 +13,7 @@ export default function AppointmentWorkflowCard({
   isCompletedAppointment,
   isTerminalAppointment,
   onStatusChange,
+  onOpenCancelModal,
   isSubmitting,
 }) {
   const { t } = useLanguage();
@@ -34,7 +35,7 @@ export default function AppointmentWorkflowCard({
       <div className="mt-5 space-y-3">
         <div className="border-t border-slate-200 pt-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Current status
+            {t('Current status')}
           </p>
           <span
             className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${getStatusClasses(
@@ -68,6 +69,18 @@ export default function AppointmentWorkflowCard({
               {t('Mark as no-show')}
             </button>
           </div>
+        ) : null}
+
+        {!isTerminalAppointment ? (
+          <button
+            type="button"
+            onClick={onOpenCancelModal}
+            disabled={isSubmitting}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Ban className="h-4 w-4" />
+            {t('Cancel appointment')}
+          </button>
         ) : null}
 
         {isTerminalAppointment ? (

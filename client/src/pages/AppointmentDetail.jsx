@@ -14,6 +14,7 @@ import ErrorState from '../components/appointment-detail/ErrorState';
 import useAppointmentDetailData from '../hooks/useAppointmentDetailData';
 import useAppointmentDetailForm from '../hooks/useAppointmentDetailForm';
 import RescheduleAppointmentModal from '../components/appointment-detail/RescheduleAppointmentModal';
+import CancelAppointmentModal from '../components/appointment-detail/CancelAppointmentModal';
 
 /* ================================
    Page component
@@ -47,6 +48,7 @@ export default function AppointmentDetail() {
     isEditing,
     isConcludeModalOpen,
     isRescheduleModalOpen,
+    isCancelModalOpen,
     saveSuccess,
     submitError,
     isSubmitting,
@@ -76,10 +78,13 @@ export default function AppointmentDetail() {
     handleCloseConcludeModal,
     handleStartReschedule,
     handleCloseRescheduleModal,
+    handleOpenCancelModal,
+    handleCloseCancelModal,
     handleSave,
     handleRescheduleAppointment,
     handleConcludeAppointment,
     handleStatusChange,
+    handleCancelAppointment,
   } = useAppointmentDetailForm({
     appointmentId,
     appointment,
@@ -154,6 +159,7 @@ export default function AppointmentDetail() {
             isCompletedAppointment={isCompletedAppointment}
             isTerminalAppointment={isTerminalAppointment}
             onStatusChange={handleStatusChange}
+            onOpenCancelModal={handleOpenCancelModal}
             isSubmitting={isSubmitting}
           />
         </div>
@@ -189,6 +195,14 @@ export default function AppointmentDetail() {
         onDurationChange={setDuration}
         onClose={handleCloseRescheduleModal}
         onSubmit={handleRescheduleAppointment}
+      />
+
+      <CancelAppointmentModal
+        isOpen={isCancelModalOpen}
+        appointment={appointment}
+        isSubmitting={isSubmitting}
+        onClose={handleCloseCancelModal}
+        onConfirm={handleCancelAppointment}
       />
     </div>
   );

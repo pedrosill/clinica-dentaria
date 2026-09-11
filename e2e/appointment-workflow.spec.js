@@ -69,6 +69,14 @@ test('creates an appointment, shows it on the dashboard, and reschedules it', as
   await expect(page).toHaveURL(new RegExp(`/agenda\\?date=${newDate}$`));
   await expect(page.getByText(/10:00 · Browser Test Patient/)).toBeVisible();
 
+  await page.getByRole('link', { name: 'Open appointment', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel appointment', exact: true }).click();
+  const cancelModal = page.getByRole('dialog');
+  await expect(cancelModal.getByRole('heading', { name: 'Cancel this appointment?', exact: true })).toBeVisible();
+  await cancelModal.getByRole('button', { name: 'Cancel booking', exact: true }).click();
+  await expect(page.getByText('Appointment cancelled successfully.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Cancelled', { exact: true }).first()).toBeVisible();
+
   await page.goto(`/agenda?date=${oldDate}`);
   await expect(page.getByText('No appointments for this day', { exact: true })).toBeVisible();
   await expect(page.getByText('Browser Test Patient', { exact: true })).toHaveCount(0);

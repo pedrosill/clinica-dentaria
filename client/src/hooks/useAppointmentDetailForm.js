@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../services/api';
 import { formatDateInput } from '../utils/agendaUtils';
+import useLanguage from '../context/useLanguage';
 
 /* ================================
    Hook: appointment detail form
@@ -21,6 +22,7 @@ export default function useAppointmentDetailForm({
   isTerminalAppointment,
 }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   /* ================================
      State: workflow UI
@@ -28,6 +30,7 @@ export default function useAppointmentDetailForm({
   const [isEditing, setIsEditing] = useState(false);
   const [isConcludeModalOpen, setIsConcludeModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* ================================
@@ -156,6 +159,21 @@ export default function useAppointmentDetailForm({
     setIsRescheduleModalOpen(false);
   }
 
+  function handleOpenCancelModal() {
+    if (!appointment || isTerminalAppointment) return;
+
+    setSubmitError('');
+    setSaveSuccess('');
+    setIsCancelModalOpen(true);
+  }
+
+  function handleCloseCancelModal() {
+    if (isSubmitting) return;
+
+    setSubmitError('');
+    setIsCancelModalOpen(false);
+  }
+
   /* ================================
      Handlers: save full appointment edit
   ================================ */
@@ -165,7 +183,7 @@ export default function useAppointmentDetailForm({
     if (!appointmentId) return;
 
     if (!patientId || !doctorId) {
-      setSubmitError('Patient and doctor are required');
+      setSubmitError(t('Patient and doctor are required'));
       return;
     }
 
@@ -195,9 +213,9 @@ export default function useAppointmentDetailForm({
 
       setAppointment(data);
       setIsEditing(false);
-      setSaveSuccess('Appointment updated successfully.');
+      setSaveSuccess(t('Appointment updated successfully.'));
     } catch (error) {
-      setSubmitError(error.message || 'Failed to update appointment');
+      setSubmitError(error.message || t('Failed to update appointment'));
     } finally {
       setIsSubmitting(false);
     }
@@ -215,14 +233,14 @@ export default function useAppointmentDetailForm({
     if (!appointmentId || !appointment) return;
 
     if (!date || !time) {
-      setSubmitError('Date and time are required');
+      setSubmitError(t('Date and time are required'));
       return;
     }
 
     const normalizedTime = String(time).slice(0, 5);
 
     if (!/^\d{2}:(00|30)$/.test(normalizedTime)) {
-      setSubmitError('Please choose a 30-minute time slot such as 09:00 or 09:30');
+      setSubmitError(t('Please choose a 30-minute time slot such as 09:00 or 09:30'));
       return;
     }
 
@@ -249,10 +267,10 @@ export default function useAppointmentDetailForm({
       setTime(data?.time || normalizedTime);
       setDuration(data?.duration ? String(data.duration) : String(duration));
       setIsRescheduleModalOpen(false);
-      setSaveSuccess('Appointment rescheduled successfully.');
+      setSaveSuccess(t('Appointment rescheduled successfully.'));
       navigate(`/agenda?date=${encodeURIComponent(date)}`);
     } catch (error) {
-      setSubmitError(error.message || 'Failed to reschedule appointment');
+      setSubmitError(error.message || t('Failed to reschedule appointment'));
     } finally {
       setIsSubmitting(false);
     }
@@ -283,13 +301,13 @@ export default function useAppointmentDetailForm({
 
       setAppointment(data);
       setIsConcludeModalOpen(false);
-      setSaveSuccess('Appointment concluded successfully.');
+      setSaveSuccess(t('Appointment concluded successfully.'));
 
       if (afterConcludeAction === 'agenda') {
         navigate('/agenda');
       }
     } catch (error) {
-      setSubmitError(error.message || 'Failed to conclude appointment');
+      setSubmitError(error.message || t('Failed to conclude appointment'));
     } finally {
       setIsSubmitting(false);
     }
@@ -309,11 +327,21 @@ export default function useAppointmentDetailForm({
       });
 
       setAppointment(data);
-      setSaveSuccess('Appointment status updated successfully.');
+      setSaveSuccess(t('Appointment status updated successfully.'));
+      return true;
     } catch (error) {
-      setSubmitError(error.message || 'Failed to update appointment status');
+      setSubmitError(error.message || t('Failed to update appointment status'));
+      return false;
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleCancelAppointment() {
+    const didUpdate = await handleStatusChange('cancelled');
+    if (didUpdate) {
+      setIsCancelModalOpen(false);
+      setSaveSuccess(t('Appointment cancelled successfully.'));
     }
   }
 
@@ -321,6 +349,7 @@ export default function useAppointmentDetailForm({
     isEditing,
     isConcludeModalOpen,
     isRescheduleModalOpen,
+    isCancelModalOpen,
     saveSuccess,
     submitError,
     isSubmitting,
@@ -350,9 +379,12 @@ export default function useAppointmentDetailForm({
     handleCloseConcludeModal,
     handleStartReschedule,
     handleCloseRescheduleModal,
+    handleOpenCancelModal,
+    handleCloseCancelModal,
     handleSave,
     handleRescheduleAppointment,
     handleConcludeAppointment,
     handleStatusChange,
+    handleCancelAppointment,
   };
 }
