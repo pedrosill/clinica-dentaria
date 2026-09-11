@@ -301,6 +301,8 @@ const translations = {
     'Mark as no-show': 'Marcar como falta',
     'Conclude appointment': 'Concluir consulta',
     'Workflow actions': 'Ações da consulta',
+    'Appointment status': 'Estado da consulta',
+    'Record attendance here. Rescheduling and completion are available in the top actions.': 'Registe aqui a presença. O reagendamento e a conclusão estão disponíveis nas ações superiores.',
     'Update attendance, conclude the visit, or move directly into follow-up scheduling.': 'Atualize a presença, conclua a consulta ou avance diretamente para o reagendamento.',
     'Reschedule appointment': 'Reagendar consulta',
     'Scheduling workflow': 'Fluxo de agendamento',

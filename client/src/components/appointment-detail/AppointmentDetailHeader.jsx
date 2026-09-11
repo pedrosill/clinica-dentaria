@@ -20,7 +20,7 @@ export default function AppointmentDetailHeader({
 }) {
   const { t } = useLanguage();
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
       <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start 2xl:justify-between">
         <div className="space-y-3">
           <button
@@ -83,7 +83,7 @@ export default function AppointmentDetailHeader({
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
             >
               <CheckCircle2 className="h-4 w-4" />
-              Conclude Appointment
+              {t('Conclude Appointment')}
             </button>
           ) : null}
         </div>

@@ -153,8 +153,6 @@ export default function AppointmentDetail() {
             appointment={appointment}
             isCompletedAppointment={isCompletedAppointment}
             isTerminalAppointment={isTerminalAppointment}
-            onStartReschedule={handleStartReschedule}
-            onOpenConcludeModal={handleOpenConcludeModal}
             onStatusChange={handleStatusChange}
             isSubmitting={isSubmitting}
           />
