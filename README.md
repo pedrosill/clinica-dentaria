@@ -21,7 +21,7 @@ The frontend runs on port 5173 and the backend runs on port 5000 in development.
 
 ## Prerequisites
 
-- Node.js 18+ recommended
+- Node.js 22.12+ recommended
 - npm
 
 ## Install dependencies

@@ -2,6 +2,9 @@
   "name": "clinica-dentaria",
   "version": "1.0.0",
   "description": "Dental clinic management system",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
     "start": "concurrently \"npm run build --prefix client && npm run preview --prefix client\" \"npm run start --prefix server\"",
