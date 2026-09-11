@@ -57,6 +57,14 @@ const patientsSeed = [
   },
 ];
 
+const doctorsSeed = [
+  {
+    name: 'Dr. DentalPro',
+    email: 'doctor@dentalpro.local',
+    phone: '917000000',
+  },
+];
+
 const appointmentSeed = [
   { patientIndex: 0, date: '2026-10-02T00:00:00.000Z', time: '09:00', treatmentType: 'Consultation', notes: 'Initial consultation.' },
   { patientIndex: 1, date: '2026-10-03T00:00:00.000Z', time: '10:30', treatmentType: 'Cleaning', notes: 'Routine cleaning.' },
@@ -132,10 +140,25 @@ async function seedDatabase() {
     createdPatients.push(createdPatient);
   }
 
+  const createdDoctors = [];
+
+  for (const doctor of doctorsSeed) {
+    const createdDoctor = await prisma.doctor.create({
+      data: doctor,
+    });
+
+    createdDoctors.push(createdDoctor);
+  }
+
   for (const appointment of appointmentSeed) {
     await prisma.appointment.create({
       data: {
-        patientId: createdPatients[appointment.patientIndex].id,
+        patient: {
+          connect: { id: createdPatients[appointment.patientIndex].id },
+        },
+        doctor: {
+          connect: { id: createdDoctors[appointment.doctorIndex || 0].id },
+        },
         date: new Date(appointment.date),
         time: appointment.time,
         treatmentType: appointment.treatmentType,

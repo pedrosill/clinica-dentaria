@@ -9,7 +9,7 @@
     "seed": "node seed.js",
     "admin:create": "node scripts/createAdmin.js",
     "postinstall": "prisma generate",
-    "test": "node --test src/utils/appointmentScheduling.test.js src/utils/appointmentUtils.test.js src/utils/parse.test.js src/integration/appointments.integration.test.js"
+    "test": "node --test src/utils/appointmentScheduling.test.js src/utils/appointmentUtils.test.js src/utils/parse.test.js src/startup/defaultAdmin.test.js src/integration/appointments.integration.test.js"
   },
   "keywords": [],
   "author": "",

@@ -88,13 +88,24 @@ npm run seed --prefix server
 
 The seed includes 5 patients and 17 appointments in October 2026. [file:16]
 
-## Create the first administrator
+## Default administrator
 
-The server does not create users automatically. Create the first clinic administrator interactively:
+In development, startup creates one administrator automatically when the database has no users:
+
+```text
+Email: admin@dentalpro.local
+Password: DentalProAdmin123!
+```
+
+The account is created only once and is not duplicated on later restarts. You can override the development values with `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_NAME`, and `DEFAULT_ADMIN_PASSWORD` in `server/.env`.
+
+For production, startup provisioning is disabled by default. Create an administrator interactively instead:
 
 ```bash
 npm run admin:create --prefix server
 ```
+
+If production startup provisioning is temporarily required, explicitly set `CREATE_DEFAULT_ADMIN=true` and provide `DEFAULT_ADMIN_PASSWORD` in the deployment environment. Replace the default credentials before exposing the application publicly.
 
 ## Build the frontend
 

@@ -2,6 +2,7 @@ const app = require('./app');
 const { NODE_ENV, PORT } = require('./config/env');
 const { runSeed } = require('./startup/seed');
 const { backfillPatientIdentityFields } = require('./startup/backfill');
+const { ensureDefaultAdmin } = require('./startup/defaultAdmin');
 
 async function startServer() {
   try {
@@ -9,6 +10,8 @@ async function startServer() {
       await runSeed();
       await backfillPatientIdentityFields();
     }
+
+    await ensureDefaultAdmin();
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
