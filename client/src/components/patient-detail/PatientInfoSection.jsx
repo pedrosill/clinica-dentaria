@@ -1,0 +1,124 @@
+import { getPatientDisplayName } from '../../utils/agendaUtils';
+
+export default function PatientInfoSection({
+  patient,
+  form,
+  isEditing,
+  isSubmitting,
+  onChange,
+  onSubmit,
+  formatDisplayDate,
+}) {
+  return (
+    <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
+      <div className="border-b border-slate-300 pb-4">
+        <h2 className="text-lg font-semibold text-slate-950">Patient information</h2>
+      </div>
+
+      {isEditing ? (
+        <form onSubmit={onSubmit} className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="space-y-2 md:col-span-2 xl:col-span-6">
+            <label className="text-sm font-medium text-slate-700">Full name</label>
+            <input
+              type="text"
+              name="fullName"
+              value={form.fullName}
+              onChange={onChange}
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2 xl:col-span-2">
+            <label className="text-sm font-medium text-slate-700">Phone</label>
+            <input
+              type="text"
+              name="phone"
+              value={form.phone}
+              onChange={onChange}
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2 xl:col-span-2">
+            <label className="text-sm font-medium text-slate-700">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={onChange}
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2 xl:col-span-2">
+            <label className="text-sm font-medium text-slate-700">NIF</label>
+            <input
+              type="text"
+              name="nif"
+              value={form.nif}
+              onChange={onChange}
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2 xl:col-span-3">
+            <label className="text-sm font-medium text-slate-700">Nationality</label>
+            <input
+              type="text"
+              name="nationality"
+              value={form.nationality}
+              onChange={onChange}
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="md:col-span-2 xl:col-span-6 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? 'Saving...' : 'Save patient'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Full name</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">
+              {getPatientDisplayName(patient)}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Phone</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">{patient.phone}</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Email</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">{patient.email}</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">NIF</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">{patient.nif}</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Nationality</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">{patient.nationality}</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">Created</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">
+              {formatDisplayDate(patient.createdAt)}
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
