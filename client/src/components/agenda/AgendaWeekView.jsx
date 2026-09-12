@@ -11,7 +11,6 @@ export default function AgendaWeekView({
   getStatusClasses,
   getStatusLabel,
   onSelectDate,
-  onOpenCreateModal,
   onOpenAppointment,
   showDoctor = false,
 }) {
@@ -107,13 +106,6 @@ export default function AgendaWeekView({
                 ) : (
                   <div className="border-t border-dashed border-slate-300 pt-4 text-center">
                     <p className="text-sm font-medium text-slate-700">{t('No appointments')}</p>
-                    <button
-                      type="button"
-                      onClick={() => onOpenCreateModal(day)}
-                      className="mt-3 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
-                    >
-                      {t('Add')}
-                    </button>
                   </div>
                 )}
               </div>

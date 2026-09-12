@@ -8,7 +8,6 @@ export default function AgendaDayDetails({
   getStatusClasses,
   getStatusLabel,
   renderCompactActions,
-  onOpenCreateModal,
   showDoctor = false,
 }) {
   const { t } = useLanguage();
@@ -23,13 +22,6 @@ export default function AgendaDayDetails({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenCreateModal}
-          className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
-        >
-          {t('Add for this day')}
-        </button>
       </div>
 
       <div className="mt-5 space-y-4">
@@ -67,7 +59,7 @@ export default function AgendaDayDetails({
           <div className="border-t border-dashed border-slate-300 pt-6 text-center">
             <p className="text-sm font-medium text-slate-800">{t('No appointments for this day')}</p>
             <p className="mt-2 text-sm text-slate-600">
-              {t('Add a booking for this date to prepare the day ahead.')}
+              {t('Use the Add appointment button above to choose a date and time.')}
             </p>
           </div>
         )}

@@ -258,7 +258,6 @@ export default function Agenda() {
           getStatusClasses={getStatusClasses}
           getStatusLabel={getStatusLabel}
           onSelectDate={(day) => setSelectedDate(startOfDay(day))}
-          onOpenCreateModal={openCreateModal}
           onOpenAppointment={(appointmentId) => navigate(
             `/appointments/${appointmentId}`,
             { state: createAppointmentReturnState(location, 'Back to Agenda') }
@@ -293,7 +292,6 @@ export default function Agenda() {
         getStatusClasses={getStatusClasses}
         getStatusLabel={getStatusLabel}
         renderCompactActions={renderCompactActions}
-        onOpenCreateModal={() => openCreateModal(selectedDate)}
         showDoctor={selectedDoctorId === 'all'}
       />
 
