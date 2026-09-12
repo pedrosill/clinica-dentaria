@@ -51,10 +51,10 @@ async function request(pathname, options = {}, sessionCookie) {
   return { response, body: await response.json().catch(() => null) };
 }
 
-async function login(password) {
+async function login(password, loginUser = user) {
   const result = await request('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: user.email, password }),
+    body: JSON.stringify({ email: loginUser.email, password }),
   });
   assert.equal(result.response.status, 200);
   return cookieValue(result.response.headers.get('set-cookie'));
@@ -104,6 +104,63 @@ test('lists active login users without exposing email and accepts user id login'
   });
   assert.equal(loginResponse.response.status, 200);
   assert.equal(loginResponse.body.user.id, user.id);
+});
+
+test('administrator can update user details, role, and linked doctor', async () => {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const admin = await prisma.user.create({
+    data: {
+      email: `auth.admin.${suffix}@example.test`,
+      displayName: 'Auth Integration Admin',
+      passwordHash: hashPassword('admin-password-123'),
+      role: 'admin',
+    },
+  });
+  const target = await prisma.user.create({
+    data: {
+      email: `auth.target.${suffix}@example.test`,
+      displayName: 'Original User',
+      passwordHash: hashPassword('target-password-123'),
+      role: 'receptionist',
+    },
+  });
+  const doctor = await prisma.doctor.create({ data: { name: 'Linked Integration Doctor' } });
+  const adminSession = await login('admin-password-123', admin);
+
+  const updated = await request(`/api/users/${target.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      email: `auth.updated.${suffix}@example.test`,
+      displayName: 'Updated User',
+      role: 'dentist',
+      doctorId: doctor.id,
+    }),
+  }, adminSession);
+
+  assert.equal(updated.response.status, 200);
+  assert.equal(updated.body.id, target.id);
+  assert.equal(updated.body.email, `auth.updated.${suffix}@example.test`);
+  assert.equal(updated.body.displayName, 'Updated User');
+  assert.equal(updated.body.role, 'dentist');
+  assert.deepEqual(updated.body.doctorProfile, { id: doctor.id, name: doctor.name });
+
+  const storedTarget = await prisma.user.findUnique({ where: { id: target.id } });
+  const storedDoctor = await prisma.doctor.findUnique({ where: { id: doctor.id } });
+  assert.equal(storedTarget.email, `auth.updated.${suffix}@example.test`);
+  assert.equal(storedTarget.displayName, 'Updated User');
+  assert.equal(storedTarget.role, 'dentist');
+  assert.equal(storedDoctor.userId, target.id);
+
+  const forbidden = await request(`/api/users/${target.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      email: `auth.forbidden.${suffix}@example.test`,
+      displayName: 'Should Not Update',
+      role: 'receptionist',
+      doctorId: null,
+    }),
+  }, await login('current-password-123'));
+  assert.equal(forbidden.response.status, 403);
 });
 
 test('password change enforces a strong password and revokes other sessions', async () => {

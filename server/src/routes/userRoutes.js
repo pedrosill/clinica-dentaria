@@ -12,6 +12,9 @@ router.post('/', asyncHandler(async (req, res) => {
   const user = await authService.createUser(req.body || {});
   return res.status(201).json(user);
 }));
+router.patch('/:id', asyncHandler(async (req, res) => {
+  return res.json(await authService.updateUser(req.params.id, req.body || {}, req.user));
+}));
 router.patch('/:id/active', asyncHandler(async (req, res) => {
   const active = req.body?.isActive;
   if (typeof active !== 'boolean') throw new HttpError(400, 'isActive must be a boolean');

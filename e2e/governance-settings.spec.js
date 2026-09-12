@@ -52,9 +52,19 @@ test('creates and deactivates a receptionist from Settings', async ({ page }) =>
   await expect(userRow).toContainText('Receptionist');
   await expect(userRow).toContainText('Active');
 
-  await userRow.getByRole('button', { name: 'Deactivate', exact: true }).click();
-  await expect(userRow).toContainText('Inactive');
-  await expect(userRow.getByRole('button', { name: 'Activate', exact: true })).toBeVisible();
+  const updatedEmail = `browser.receptionist.updated.${Date.now()}@example.test`;
+  await userRow.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByLabel('Display name', { exact: true }).fill('Updated Browser Receptionist');
+  await page.getByLabel('Email', { exact: true }).fill(updatedEmail);
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+
+  const updatedUserRow = page.locator('tbody tr').filter({ hasText: updatedEmail });
+  await expect(updatedUserRow).toContainText('Updated Browser Receptionist');
+  await expect(updatedUserRow).toContainText('Receptionist');
+
+  await updatedUserRow.getByRole('button', { name: 'Deactivate', exact: true }).click();
+  await expect(updatedUserRow).toContainText('Inactive');
+  await expect(updatedUserRow.getByRole('button', { name: 'Activate', exact: true })).toBeVisible();
 });
 
 test('creates a dentist account with scoped agenda and follow-up workflow', async ({ page }) => {

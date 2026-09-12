@@ -485,6 +485,80 @@ async function setUserActive(userId, isActive, actor) {
   }
 }
 
+async function updateUser(userId, { email, displayName, role, doctorId }, actor) {
+  const id = parseNumericId(userId, 'user id');
+  const allowedRoles = new Set(['admin', 'receptionist', 'dentist']);
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedName = String(displayName || '').trim();
+
+  if (!normalizedEmail || !normalizedName || !role) {
+    throw new HttpError(400, 'Email, display name, and a role are required');
+  }
+  if (!allowedRoles.has(role)) throw new HttpError(400, 'Invalid user role');
+  if (Number(actor?.id) === id && role !== 'admin') {
+    throw new HttpError(400, 'An administrator cannot remove their own administrator role');
+  }
+
+  const normalizedDoctorId = role === 'dentist' && doctorId !== null && doctorId !== '' && doctorId !== undefined
+    ? parseNumericId(doctorId, 'doctor id')
+    : null;
+
+  if (role === 'dentist' && !normalizedDoctorId) {
+    throw new HttpError(400, 'A dentist account must be linked to a doctor profile');
+  }
+
+  try {
+    const updated = await prisma.$transaction(async (transaction) => {
+      const currentUser = await transaction.user.findUnique({
+        where: { id },
+        select: { id: true, doctorProfile: { select: { id: true } } },
+      });
+      if (!currentUser) throw new HttpError(404, 'User not found');
+
+      const emailOwner = await transaction.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true },
+      });
+      if (emailOwner && emailOwner.id !== id) throw new HttpError(409, 'This email is already in use');
+
+      if (normalizedDoctorId) {
+        const doctor = await transaction.doctor.findUnique({
+          where: { id: normalizedDoctorId },
+          select: { id: true, userId: true },
+        });
+        if (!doctor) throw new HttpError(404, 'Doctor not found');
+        if (doctor.userId && doctor.userId !== id) throw new HttpError(409, 'This doctor profile is already linked to a user');
+      }
+
+      if (currentUser.doctorProfile && (role !== 'dentist' || currentUser.doctorProfile.id !== normalizedDoctorId)) {
+        await transaction.doctor.update({
+          where: { id: currentUser.doctorProfile.id },
+          data: { userId: null },
+        });
+      }
+
+      if (normalizedDoctorId) {
+        await transaction.doctor.update({
+          where: { id: normalizedDoctorId },
+          data: { userId: id },
+        });
+      }
+
+      return transaction.user.update({
+        where: { id },
+        data: { email: normalizedEmail, displayName: normalizedName, role },
+        select: PUBLIC_USER_SELECT,
+      });
+    });
+
+    return toPublicUser(updated);
+  } catch (error) {
+    if (error?.code === 'P2002') throw new HttpError(409, 'This email is already in use');
+    if (error?.code === 'P2025') throw new HttpError(404, 'User or doctor not found');
+    throw error;
+  }
+}
+
 module.exports = {
   disableMfa,
   enableMfa,
@@ -499,5 +573,6 @@ module.exports = {
   revokeSessionFromRequest,
   setupMfa,
   setUserActive,
+  updateUser,
   verifyMfa,
 };

@@ -17,3 +17,10 @@ export function setUserActive(userId, isActive) {
     body: JSON.stringify({ isActive }),
   });
 }
+
+export function updateUser(userId, payload) {
+  return apiRequest(`/api/users/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
