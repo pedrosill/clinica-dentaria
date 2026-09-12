@@ -22,9 +22,9 @@ export default function useWorkQueue() {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadQueue() {
+    async function loadQueue(silent = false) {
       try {
-        setIsLoading(true);
+        if (!silent) setIsLoading(true);
         setError('');
         const nextData = await getWorkQueue();
         if (isMounted) setData(nextData);
@@ -35,7 +35,18 @@ export default function useWorkQueue() {
       }
     }
     loadQueue();
-    return () => { isMounted = false; };
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadQueue(true);
+    }, 60_000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') loadQueue(true);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      isMounted = false;
+      window.clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [t]);
 
   return { data, isLoading, error, refresh };
