@@ -39,8 +39,8 @@ async function createUser({ email, displayName, password, role = 'receptionist',
   const normalizedName = String(displayName || '').trim();
   const allowedRoles = new Set(['admin', 'receptionist', 'dentist']);
 
-  if (!normalizedEmail || !normalizedName || String(password || '').length < 12) {
-    throw new HttpError(400, 'Email, display name, and a password of at least 12 characters are required');
+  if (!normalizedEmail || !normalizedName || !String(password || '')) {
+    throw new HttpError(400, 'Email, display name, and a password are required');
   }
 
   if (!allowedRoles.has(role)) {
@@ -129,8 +129,8 @@ async function changePassword({ userId, currentPassword, newPassword, sessionTok
     throw new HttpError(401, 'Current password is incorrect');
   }
 
-  if (String(newPassword || '').length < 12) {
-    throw new HttpError(400, 'New password must be at least 12 characters');
+  if (!String(newPassword || '')) {
+    throw new HttpError(400, 'New password is required');
   }
 
   if (verifyPassword(newPassword, current.passwordHash)) {

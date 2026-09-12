@@ -538,7 +538,6 @@ const translations = {
     'Display name': 'Nome a apresentar',
     Role: 'Função',
     'Temporary password': 'Palavra-passe temporária',
-    'Use at least 12 characters.': 'Utilize pelo menos 12 caracteres.',
     'Saving…': 'A guardar…',
     'Create user': 'Criar utilizador',
     'Loading users…': 'A carregar utilizadores…',

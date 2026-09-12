@@ -85,7 +85,7 @@ test.after(async () => {
   fs.rmSync(databasePath, { force: true });
 });
 
-test('password change is protected, validates policy, and revokes other sessions', async () => {
+test('password change accepts short non-empty passwords and revokes other sessions', async () => {
   const firstSession = await login('current-password-123');
   const secondSession = await login('current-password-123');
 
@@ -95,11 +95,11 @@ test('password change is protected, validates policy, and revokes other sessions
   }, firstSession);
   assert.equal(wrongCurrent.response.status, 401);
 
-  const shortPassword = await request('/api/auth/password', {
+  const emptyPassword = await request('/api/auth/password', {
     method: 'POST',
-    body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: 'too-short' }),
+    body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: '' }),
   }, firstSession);
-  assert.equal(shortPassword.response.status, 400);
+  assert.equal(emptyPassword.response.status, 400);
 
   const samePassword = await request('/api/auth/password', {
     method: 'POST',
@@ -109,13 +109,13 @@ test('password change is protected, validates policy, and revokes other sessions
 
   const changed = await request('/api/auth/password', {
     method: 'POST',
-    body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: 'new-password-123' }),
+    body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: 'short' }),
   }, firstSession);
   assert.equal(changed.response.status, 200);
 
   assert.equal((await request('/api/auth/me', {}, firstSession)).response.status, 200);
   assert.equal((await request('/api/auth/me', {}, secondSession)).response.status, 401);
-  assert.equal((await login('new-password-123')).length > 0, true);
+  assert.equal((await login('short')).length > 0, true);
 });
 
 test('password change requires authentication and CSRF', async () => {
