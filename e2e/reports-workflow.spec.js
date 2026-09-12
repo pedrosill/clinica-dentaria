@@ -3,7 +3,8 @@ import { expect, test } from '@playwright/test';
 test('opens operational reports and filters appointments by status', async ({ page }) => {
   await page.goto('/reports');
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Admin · Administrator' });
+  await page.getByTestId('login-user').click();
+  await page.getByRole('option', { name: /Browser Test Admin.*Administrator/ }).click();
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByTestId('login-submit').click();
 

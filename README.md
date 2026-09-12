@@ -70,6 +70,8 @@ This starts:
 - the backend server on `http://localhost:5000` [file:16]
 - the frontend Vite app on `http://localhost:5173` [file:16]
 
+The frontend reserves port 5173 and fails clearly if that port is already in use instead of silently moving to another port. Stop an older Vite process before restarting the app. In development, the backend accepts the local `localhost`/`127.0.0.1` origins configured for the frontend.
+
 ## Run services separately
 
 ### Frontend
@@ -99,9 +101,12 @@ The seed includes 5 patients and 17 appointments in October 2026. [file:16]
 In development, startup creates one administrator automatically when the database has no users:
 
 ```text
-Email: admin@dentalpro.local
+Account: DentalPro Administrator
+Stored email: admin@dentalpro.local
 Password: DentalProAdmin123!
 ```
+
+At sign-in, choose `DentalPro Administrator` from the account list. The stored email is not needed in the login form.
 
 The account is created only once and is not duplicated on later restarts. You can override the development values with `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_NAME`, and `DEFAULT_ADMIN_PASSWORD` in `server/.env`.
 

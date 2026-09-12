@@ -21,7 +21,8 @@ async function signIn(page, path) {
   await page.context().clearCookies();
   await page.goto(path);
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Admin · Administrator' });
+  await page.getByTestId('login-user').click();
+  await page.getByRole('option', { name: /Browser Test Admin.*Administrator/ }).click();
   await page.getByTestId('login-password').fill(admin.password);
   await page.getByTestId('login-submit').click();
 }
@@ -83,7 +84,8 @@ test('creates a dentist account with scoped agenda and follow-up workflow', asyn
   await page.context().clearCookies();
   await page.goto(`/agenda?date=${initialDate}`);
   await expect(page).toHaveURL(/\/login/);
-  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Dentist · Dentist' });
+  await page.getByTestId('login-user').click();
+  await page.getByRole('option', { name: /Browser Test Dentist.*Dentist/ }).click();
   await page.getByTestId('login-password').fill('browser-dentist-password');
   await page.getByTestId('login-submit').click();
   await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible();
