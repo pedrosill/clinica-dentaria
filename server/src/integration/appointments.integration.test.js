@@ -778,6 +778,18 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
     'integration.dentist@example.test',
     'integration-dentist-123'
   );
+  const dentistAgendaEdit = await requestWithSession(
+    dentistCookie,
+    `/api/appointments/${ownAppointment.body.id}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(appointmentPayload({ time: '10:00' })),
+    }
+  );
+  assert.equal(dentistAgendaEdit.response.status, 200);
+  assert.equal(dentistAgendaEdit.body.time, '10:00');
+
   const dentistConclusion = await requestWithSession(
     dentistCookie,
     `/api/appointments/${ownAppointment.body.id}/conclude`,
@@ -793,16 +805,16 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
   assert.equal(dentistConclusion.response.status, 200);
   assert.equal(dentistConclusion.body.status, 'completed');
 
-  const dentistAgendaEdit = await requestWithSession(
+  const dentistTerminalEdit = await requestWithSession(
     dentistCookie,
     `/api/appointments/${ownAppointment.body.id}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(appointmentPayload({ time: '10:00' })),
+      body: JSON.stringify(appointmentPayload({ time: '10:30' })),
     }
   );
-  assert.equal(dentistAgendaEdit.response.status, 403);
+  assert.equal(dentistTerminalEdit.response.status, 409);
 
   const ownClinicalRead = await requestWithSession(
     dentistCookie,
@@ -844,6 +856,21 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
     `/api/appointments/${otherDoctorAppointment.body.id}`
   );
   assert.equal(unrelatedAppointmentRead.response.status, 403);
+
+  const unrelatedAppointmentEdit = await requestWithSession(
+    dentistCookie,
+    `/api/appointments/${otherDoctorAppointment.body.id}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(appointmentPayload({
+        patientId: patients[1].id,
+        doctorId: secondDoctor.id,
+        time: '10:30',
+      })),
+    }
+  );
+  assert.equal(unrelatedAppointmentEdit.response.status, 403);
 });
 
 test('rejects cross-patient links for notes, plans, items, and nested updates', async () => {

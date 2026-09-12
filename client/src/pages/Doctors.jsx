@@ -5,9 +5,12 @@ import DoctorsHeader from '../components/doctors/DoctorsHeader';
 import DoctorsListSection from '../components/doctors/DoctorsListSection';
 import useDoctorsData from '../hooks/useDoctorsData';
 import useDoctorForm from '../hooks/useDoctorForm';
+import useAuth from '../context/useAuth';
 
 export default function Doctors() {
   const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
+  const canManageDoctors = user?.role === 'admin';
 
   const { setDoctors, filteredDoctors, isLoading, pageError } = useDoctorsData(searchTerm);
 
@@ -50,6 +53,7 @@ export default function Doctors() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onOpenCreateModal={handleOpenCreateModal}
+        canManageDoctors={canManageDoctors}
       />
 
       {pageError ? (
@@ -73,6 +77,7 @@ export default function Doctors() {
        <DoctorsListSection
         doctors={filteredDoctors}
         onOpenDeleteModal={handleOpenDeleteModal}
+        canManageDoctors={canManageDoctors}
       />
 
       <DoctorFormModal

@@ -18,6 +18,7 @@ import {
 } from '../utils/patientDetailUtils';
 import { getPatientDisplayName } from '../utils/agendaUtils';
 import useLanguage from '../context/useLanguage';
+import useAuth from '../context/useAuth';
 
 function PatientToolToggle({ title, description, isOpen, onToggle }) {
   const { t } = useLanguage();
@@ -62,6 +63,8 @@ export default function PatientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const canEditPatient = user?.role === 'admin' || user?.role === 'receptionist';
   const [activeTab, setActiveTab] = useState('overview');
   const [openPatientTool, setOpenPatientTool] = useState(null);
 
@@ -172,6 +175,7 @@ export default function PatientDetail() {
         isEditing={isEditing}
         isSubmitting={isSubmitting}
         onBack={handleBack}
+        canEditPatient={canEditPatient}
         onStartEdit={handleStartEdit}
         onCancelEdit={handleCancelEdit}
         onOpenDeleteModal={handleOpenDeleteModal}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useLanguage from '../context/useLanguage';
 import useAuth from '../context/useAuth';
@@ -46,6 +46,7 @@ export default function Agenda() {
   const [selectedDoctorId, setSelectedDoctorId] = useState(() => (
     isDentist && user?.doctorId ? String(user.doctorId) : 'all'
   ));
+  const followUpLaunchRef = useRef('');
 
   const {
     appointments,
@@ -112,6 +113,27 @@ export default function Agenda() {
     setSelectedDate,
     preferredDoctorId: selectedDoctorId === 'all' ? '' : selectedDoctorId,
   });
+
+  useEffect(() => {
+    const followUp = location.state?.openFollowUp;
+    if (!followUp) {
+      followUpLaunchRef.current = '';
+      return;
+    }
+    if (isLoading) return;
+
+    const launchKey = `${location.key}:${location.search}:${followUp.patientId}:${followUp.doctorId}`;
+    if (followUpLaunchRef.current === launchKey) return;
+    followUpLaunchRef.current = launchKey;
+
+    const dateParam = new URLSearchParams(location.search).get('date');
+    const followUpDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam || '')
+      ? new Date(`${dateParam}T00:00:00`)
+      : selectedDate;
+
+    openCreateModal(followUpDate, followUp);
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [isLoading, location.pathname, location.search, location.state, navigate, openCreateModal, selectedDate]);
 
   const visibleAppointments = useMemo(() => {
     if (selectedDoctorId === 'all') return appointments;

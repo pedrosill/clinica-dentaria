@@ -5,6 +5,7 @@ import useLanguage from '../../context/useLanguage';
 export default function DoctorsListSection({
   doctors,
   onOpenDeleteModal,
+  canManageDoctors = false,
 }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -72,7 +73,7 @@ export default function DoctorsListSection({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                {canManageDoctors ? <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => onOpenDeleteModal(doctor)}
@@ -81,7 +82,7 @@ export default function DoctorsListSection({
                     <Trash2 className="mr-2 h-4 w-4" />
                     {t('Delete')}
                   </button>
-                </div>
+                </div> : null}
               </div>
             </div>
           ))

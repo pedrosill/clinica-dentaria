@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPatient } from '../services/patients';
 import { getPatientDisplayName } from '../utils/agendaUtils';
 import useLanguage from '../context/useLanguage';
+import useAuth from '../context/useAuth';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -53,6 +54,8 @@ function getAppointmentDateTime(appointment) {
 export default function Patients() {
   const navigate = useNavigate();
   const { t, locale } = useLanguage();
+  const { user } = useAuth();
+  const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
 
   /* ================================
      State: page data
@@ -272,14 +275,14 @@ export default function Patients() {
             </p>
           </div>
 
-          <button
+          {canManagePatients ? <button
             type="button"
             onClick={handleOpenCreateModal}
             className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
           >
             <Plus className="mr-2 h-4 w-4" />
             {t('Add patient')}
-          </button>
+          </button> : null}
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-300 pt-5" role="tablist" aria-label={t('Patient views')}>

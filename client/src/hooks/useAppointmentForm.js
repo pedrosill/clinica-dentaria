@@ -240,36 +240,39 @@ export default function useAppointmentForm({
   /* ================================
      Helpers: reset form state
   ================================ */
-  function resetFormState(baseSelectedDate = selectedDate) {
+  function resetFormState(baseSelectedDate = selectedDate, initialValues = {}) {
     const baseDate = startOfDay(baseSelectedDate);
     const preferredDoctor = doctors.find((doctor) => String(doctor.id) === String(preferredDoctorId));
+    const initialPatient = patients.find((patient) => String(patient.id) === String(initialValues.patientId));
+    const initialDoctor = doctors.find((doctor) => String(doctor.id) === String(initialValues.doctorId)) || preferredDoctor;
+    const initialType = activeAppointmentTypes.find((type) => type.name === initialValues.treatmentType);
 
     setEditingAppointmentId(null);
-    setPatientId('');
-    setDoctorId(preferredDoctor ? String(preferredDoctor.id) : '');
-    setPatientSearch('');
-    setDoctorSearch(preferredDoctor?.name || '');
+    setPatientId(initialPatient ? String(initialPatient.id) : '');
+    setDoctorId(initialDoctor ? String(initialDoctor.id) : '');
+    setPatientSearch(initialPatient ? getPatientDisplayName(initialPatient) : '');
+    setDoctorSearch(initialDoctor?.name || '');
     setPatientSelectorOpen(false);
     setDoctorSelectorOpen(false);
     setAppointmentDate(formatDateInput(baseDate));
     setCalendarMonth(baseDate);
     setCalendarSelection(baseDate);
     setIsCalendarOpen(false);
-    setAppointmentTime('09:00');
-    const firstType = activeAppointmentTypes[0];
-    setDuration(firstType ? String(firstType.duration) : '');
-    setTreatmentType(firstType?.name || '');
-    setNotes('');
+    setAppointmentTime(initialValues.time || '09:00');
+    const firstType = initialType || activeAppointmentTypes[0];
+    setDuration(initialValues.duration ? String(initialValues.duration) : firstType ? String(firstType.duration) : '');
+    setTreatmentType(initialValues.treatmentType || firstType?.name || '');
+    setNotes(initialValues.notes || '');
     setSubmitError('');
   }
 
   /* ================================
      Actions: open create modal
   ================================ */
-  function openCreateModal(date = selectedDate) {
+  function openCreateModal(date = selectedDate, initialValues = {}) {
     const normalizedDate = startOfDay(date);
 
-    resetFormState(normalizedDate);
+    resetFormState(normalizedDate, initialValues);
     setAppointmentDate(formatDateInput(normalizedDate));
     setCalendarMonth(normalizedDate);
     setCalendarSelection(normalizedDate);

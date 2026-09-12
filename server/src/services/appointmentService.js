@@ -641,6 +641,7 @@ async function createAppointment(payload, user) {
   assertPermission(user, 'appointment', 'schedule');
   assertReceptionistAppointmentPayload(user, payload);
   const normalized = normalizeAppointmentPayload(payload);
+  await ensureDoctorAccess(user, normalized.doctorId);
   const schedulingRules = await getDoctorScheduleForDate({
     doctorId: normalized.doctorId,
     date: normalized.date,
@@ -705,6 +706,7 @@ async function updateAppointment(appointmentId, payload, user) {
   }
 
   assertAppointmentAccess(user, existingAppointment, 'schedule');
+  await ensureDoctorAccess(user, normalized.doctorId);
 
   await validateConfiguredAppointmentType(normalized.treatmentType, {
     historicalValues: [existingAppointment.treatmentType],

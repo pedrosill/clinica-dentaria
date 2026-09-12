@@ -25,7 +25,7 @@ const AUTHORIZATION_MATRIX = Object.freeze({
   dentist: Object.freeze({
     patient: Object.freeze(['read']),
     doctor: Object.freeze(['read']),
-    appointment: Object.freeze(['read', 'status', 'clinicalWrite']),
+    appointment: Object.freeze(['read', 'schedule', 'status', 'clinicalWrite']),
     clinical: Object.freeze(['read', 'write']),
     settings: Object.freeze(['read']),
     recall: Object.freeze(['read', 'write']),

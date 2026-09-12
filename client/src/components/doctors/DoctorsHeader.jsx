@@ -5,6 +5,7 @@ export default function DoctorsHeader({
   searchTerm,
   onSearchChange,
   onOpenCreateModal,
+  canManageDoctors = false,
 }) {
   const { t } = useLanguage();
   return (
@@ -18,14 +19,14 @@ export default function DoctorsHeader({
           </p>
         </div>
 
-        <button
+        {canManageDoctors ? <button
           type="button"
           onClick={onOpenCreateModal}
           className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
         >
           <Plus className="mr-2 h-4 w-4" />
           {t('Add doctor')}
-        </button>
+        </button> : null}
       </div>
 
       <div className="mt-5 border-t border-slate-300 pt-5">

@@ -6,6 +6,7 @@ export default function PatientDetailHeader({
   patient,
   isEditing,
   isSubmitting,
+  canEditPatient = false,
   onBack,
   onStartEdit,
   onCancelEdit,
@@ -27,7 +28,7 @@ export default function PatientDetailHeader({
               {t('Back')}
             </button>
 
-            {isEditing ? (
+            {canEditPatient && isEditing ? (
               <button
                 type="button"
                 onClick={onCancelEdit}
@@ -37,7 +38,7 @@ export default function PatientDetailHeader({
                 <X className="h-4 w-4" />
                 {t('Cancel')}
               </button>
-            ) : (
+            ) : canEditPatient ? (
               <>
                 <button
                   type="button"
@@ -57,7 +58,7 @@ export default function PatientDetailHeader({
                   {t('Delete')}
                 </button>
               </>
-            )}
+            ) : null}
           </div>
 
           <div className="flex items-start gap-4">

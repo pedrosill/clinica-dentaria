@@ -103,10 +103,6 @@ export default function Settings() {
   const loadSettings = useCallback(async () => {
     const requestId = settingsRequestRef.current + 1;
     settingsRequestRef.current = requestId;
-    if (!canManage) {
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
     setError('');
 
@@ -143,7 +139,7 @@ export default function Settings() {
     } finally {
       if (requestId === settingsRequestRef.current) setIsLoading(false);
     }
-  }, [canManage, setLanguage, t]);
+  }, [setLanguage, t]);
 
   useEffect(() => {
     // Loading external settings is intentionally initiated when this page mounts.
@@ -363,7 +359,7 @@ export default function Settings() {
           ['scheduling', 'Scheduling'],
           ['team', 'Team'],
           ['account', 'Account'],
-        ].map(([value, label]) => (
+        ].filter(([value]) => value !== 'team' || canManage).map(([value, label]) => (
           <button
             key={value}
             type="button"

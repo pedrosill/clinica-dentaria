@@ -5,6 +5,19 @@ const admin = {
   password: 'browser-password-123',
 };
 
+function formatDateInput(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date, amount) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + amount);
+  return nextDate;
+}
+
 async function signIn(page, path) {
   await page.context().clearCookies();
   await page.goto(path);
@@ -37,6 +50,73 @@ test('creates and deactivates a receptionist from Settings', async ({ page }) =>
   await userRow.getByRole('button', { name: 'Deactivate', exact: true }).click();
   await expect(userRow).toContainText('Inactive');
   await expect(userRow.getByRole('button', { name: 'Activate', exact: true })).toBeVisible();
+});
+
+test('creates a dentist account with scoped agenda and follow-up workflow', async ({ page }) => {
+  await signIn(page, '/settings');
+  await page.getByRole('tab', { name: 'Team', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit user management', exact: true }).click();
+
+  const dentistEmail = `browser.dentist.${Date.now()}@example.test`;
+  await page.getByLabel('Display name', { exact: true }).fill('Browser Test Dentist');
+  await page.getByLabel('Email', { exact: true }).fill(dentistEmail);
+  await page.locator('select[name="role"]').selectOption('dentist');
+  await page.locator('select[name="doctorId"]').selectOption({ label: 'Browser Test Doctor' });
+  await page.locator('input[name="password"]').fill('browser-dentist-password');
+  await page.getByRole('button', { name: 'Create user', exact: true }).click();
+  await expect(page.getByText('Browser Test Dentist', { exact: true })).toBeVisible();
+
+  const initialDate = formatDateInput(addDays(new Date(), 5));
+  await page.goto('/agenda');
+  await page.getByTestId('add-appointment').click();
+  const modal = page.getByTestId('appointment-modal');
+  await modal.getByTestId('appointment-patient').click();
+  await modal.getByRole('button', { name: /Browser Test Patient/ }).first().click();
+  await modal.getByTestId('appointment-doctor').click();
+  await modal.getByRole('button', { name: /Browser Test Doctor/ }).click();
+  await modal.getByTestId('appointment-date-toggle').click();
+  await modal.getByTestId(`appointment-date-${initialDate}`).click();
+  await modal.getByTestId('select-time').click();
+  await modal.getByRole('option', { name: '09:00 · Free' }).click();
+  await modal.getByTestId('appointment-submit').click();
+  await expect(modal).toBeHidden();
+
+  await page.context().clearCookies();
+  await page.goto(`/agenda?date=${initialDate}`);
+  await expect(page).toHaveURL(/\/login/);
+  await page.getByTestId('login-email').fill(dentistEmail);
+  await page.getByTestId('login-password').fill('browser-dentist-password');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible();
+
+  const doctorFilter = page.getByTestId('agenda-doctor-filter');
+  await expect(doctorFilter).toBeDisabled();
+  await expect(doctorFilter.locator('option:checked')).toHaveText('Browser Test Doctor');
+  await page.getByRole('link', { name: 'Open appointment', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit appointment', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reschedule', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Edit appointment', exact: true }).click();
+  await page.locator('textarea').fill('Updated by assigned dentist');
+  await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
+  await expect(page.getByText('Appointment updated successfully.', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Reschedule', exact: true }).click();
+  const rescheduleModal = page.getByTestId('reschedule-modal');
+  await rescheduleModal.getByRole('button', { name: 'Next day', exact: true }).click();
+  await rescheduleModal.getByRole('button', { name: /^09:00\b/ }).click();
+  await rescheduleModal.getByRole('button', { name: 'Save reschedule', exact: true }).click();
+
+  await page.getByRole('link', { name: 'Open appointment', exact: true }).click();
+  await page.getByRole('button', { name: 'Conclude Appointment', exact: true }).click();
+  const concludeModal = page.getByRole('dialog');
+  await concludeModal.getByText('Finish and continue to reschedule', { exact: true }).click();
+  await concludeModal.getByRole('button', { name: 'Complete Appointment', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/agenda\?date=/);
+  await expect(page.getByTestId('appointment-modal')).toBeVisible();
+  await expect(page.getByTestId('appointment-patient')).toHaveValue('Browser Test Patient');
+  await expect(page.getByTestId('appointment-doctor')).toHaveValue('Browser Test Doctor');
 });
 
 test('records patient consent and exposes the JSON export', async ({ page }) => {

@@ -124,7 +124,7 @@ export default function useAppointmentDetailForm({
     setSaveSuccess('');
     setPerformedTreatment(appointment?.performedTreatment || appointment?.treatmentType || '');
     setCompletionNotes(appointment?.completionNotes || '');
-    setAfterConcludeAction('stay');
+    setAfterConcludeAction('finish');
     setIsConcludeModalOpen(true);
   }
 
@@ -303,8 +303,19 @@ export default function useAppointmentDetailForm({
       setIsConcludeModalOpen(false);
       setSaveSuccess(t('Appointment concluded successfully.'));
 
-      if (afterConcludeAction === 'agenda') {
-        navigate('/agenda');
+      if (afterConcludeAction === 'follow_up') {
+        const followUpDate = new Date(`${formatDateInput(data.date || appointment.date)}T00:00:00`);
+        followUpDate.setDate(followUpDate.getDate() + 1);
+        const dateValue = formatDateInput(followUpDate);
+        navigate(`/agenda?date=${encodeURIComponent(dateValue)}`, {
+          state: {
+            openFollowUp: {
+              patientId: data.patientId || appointment.patientId,
+              doctorId: data.doctorId || appointment.doctorId,
+              treatmentType: data.treatmentType || appointment.treatmentType || '',
+            },
+          },
+        });
       }
     } catch (error) {
       setSubmitError(error.message || t('Failed to conclude appointment'));
