@@ -1,10 +1,12 @@
 /* ================================
    Imports
 ================================ */
-import { BarChart3, CalendarDays, ClipboardList, Clock3, LayoutDashboard, LogOut, Settings, Stethoscope, Users } from 'lucide-react';
+import { BarChart3, CalendarDays, CircleHelp, ClipboardList, Clock3, LayoutDashboard, LogOut, Settings, Stethoscope, Users } from 'lucide-react';
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import useAuth from '../context/useAuth';
 import useLanguage from '../context/useLanguage';
+import HelpCenter from './HelpCenter';
 
 /* ================================
    Navigation items
@@ -69,6 +71,7 @@ function visibleNavigationItems(role) {
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const roleLabel = {
     admin: 'Administrator',
     administrator: 'Administrator',
@@ -90,15 +93,28 @@ export default function Sidebar() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-700">{t('Clinic workspace')}</p>
             <p className="truncate text-lg font-semibold tracking-tight text-slate-950">DentalPro</p>
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-200"
-            aria-label={t('Sign out')}
-            title={t('Sign out')}
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsHelpOpen(true)}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-200"
+              aria-label={t('Open help')}
+              title={t('Open help')}
+              aria-haspopup="dialog"
+              aria-expanded={isHelpOpen}
+            >
+              <CircleHelp className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={logout}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-200"
+              aria-label={t('Sign out')}
+              title={t('Sign out')}
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <nav className="flex gap-2 overflow-x-auto px-4 pb-3" aria-label={t('Main navigation')}>
           {visibleNavigationItems(user?.role).map((item) => {
@@ -163,6 +179,20 @@ export default function Sidebar() {
         </nav>
 
         {/* ================================
+           Help block
+        ================================ */}
+        <button
+          type="button"
+          onClick={() => setIsHelpOpen(true)}
+          className="mt-6 inline-flex w-full items-center gap-3 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-teal-200"
+          aria-haspopup="dialog"
+          aria-expanded={isHelpOpen}
+        >
+          <CircleHelp className="h-5 w-5 text-teal-700" />
+          <span>{t('Help')}</span>
+        </button>
+
+        {/* ================================
            User block
         ================================ */}
         <div className="mt-6 border-t border-slate-200 pt-5">
@@ -185,6 +215,7 @@ export default function Sidebar() {
         </div>
       </div>
       </aside>
+      <HelpCenter isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} role={user?.role} />
     </>
   );
 }

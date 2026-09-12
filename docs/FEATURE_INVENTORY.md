@@ -20,6 +20,7 @@ Last reviewed: 2026-09-12
 | Clinic settings | Clinic hours/breaks, closures, appointment types, provider schedules, clinic language | `client/src/pages/Settings.jsx`, `server/src/services/clinicSettingsService.js` |
 | Operational health | Liveness/readiness endpoints and automated unit/integration/E2E checks | `server/src/app.js`, `e2e/` |
 | Data governance | Append-only audit events, sensitive-operation fail-closed audit, consent lifecycle, reasoned patient export, rights-request workflow, private document upload/download with hash, retention preview/holds, and an operational compliance checklist with per-item procedures, evidence, and approval state | `server/src/services/governanceService.js`, `server/src/services/privateDocumentService.js`, `server/src/services/complianceService.js`, `client/src/components/patient-detail/PatientGovernanceSection.jsx`, `client/src/components/settings/ComplianceSection.jsx` |
+| Help center | Interactive in-app guide for the dashboard, agenda, patients, recalls, waitlist, reports, and settings, with direct links to each area | `client/src/components/HelpCenter.jsx`, `client/src/components/help/helpTopics.js`, `client/src/components/Sidebar.jsx` |
 
 ## Partial — extend these instead of creating parallel features
 
