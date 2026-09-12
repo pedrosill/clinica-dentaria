@@ -11,12 +11,17 @@ function buildPlaceholderFullName(patientId) {
 }
 
 function normalizePatientPayload(payload = {}) {
+  const rawNationality = String(payload.nationality || '').trim();
+  const nationality = rawNationality.toLowerCase() === 'portuguesa'
+    ? 'Portuguese'
+    : rawNationality;
+
   return {
     fullName: String(payload.fullName || '').trim(),
     phone: String(payload.phone || '').trim(),
     email: String(payload.email || '').trim().toLowerCase(),
     nif: String(payload.nif || '').trim(),
-    nationality: String(payload.nationality || '').trim(),
+    nationality,
     dateOfBirth: payload.dateOfBirth ? new Date(`${payload.dateOfBirth}T00:00:00`) : null,
   };
 }

@@ -96,30 +96,37 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
   await page.getByRole('link', { name: 'Open patient', exact: true }).first().click();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByLabel('Full name').fill('Browser Test Patient');
+  await page.getByLabel('Date of birth').fill('1990-01-01');
   await page.getByRole('button', { name: 'Save patient', exact: true }).click();
   await expect(page.getByText('Patient updated successfully.', { exact: true })).toBeVisible();
+  await expect(page.getByText(/1990/)).toBeVisible();
   await page.getByRole('tab', { name: 'Clinical record', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Clinical record', exact: true })).toBeVisible();
 
+  await page.getByRole('button', { name: 'Edit medical context', exact: true }).click();
   await page.getByLabel('Allergies').fill('Latex');
   await page.getByRole('button', { name: 'Save clinical profile', exact: true }).click();
   await expect(page.getByText('Clinical profile saved.', { exact: true })).toBeVisible();
 
+  await page.getByRole('button', { name: 'Edit odontogram', exact: true }).click();
   await page.getByRole('button', { name: 'Tooth 16', exact: true }).click();
   await page.getByTestId('tooth-condition').selectOption('caries');
   await page.getByLabel('Clinical note').fill('Review occlusal surface');
   await page.getByRole('button', { name: 'Save finding', exact: true }).click();
   await expect(page.getByText('Tooth 16 chart updated.', { exact: true })).toBeVisible();
 
+  await page.getByRole('button', { name: 'Add clinical note', exact: true }).click();
   await page.getByLabel('Chief complaint').fill('Sensitivity');
   await page.getByLabel('Clinical findings').fill('Caries suspected on tooth 16');
   await page.getByLabel('Diagnosis').fill('Occlusal caries');
   await page.getByRole('button', { name: 'Save draft note', exact: true }).click();
   await expect(page.getByText('Clinical note saved as draft.', { exact: true })).toBeVisible();
 
+  await page.getByRole('button', { name: 'Edit treatment plans', exact: true }).click();
   await page.getByLabel('New plan title').fill('Initial restorative plan');
   await page.getByRole('button', { name: 'Create plan', exact: true }).click();
   await expect(page.getByText('Treatment plan created.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit treatment plans', exact: true }).click();
   await page.getByLabel('Procedure').fill('Composite restoration');
   await page.getByLabel('Tooth (optional)').fill('16');
   await page.getByRole('button', { name: 'Add procedure', exact: true }).click();

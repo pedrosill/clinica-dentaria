@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Check,
   ClipboardList,
+  Edit3,
   FileText,
+  Plus,
   Save,
   Stethoscope,
   Trash2,
@@ -77,7 +79,39 @@ const PLAN_ITEM_STATUS_OPTIONS = [
 const inputClass =
   'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100';
 
-const panelClass = 'rounded-3xl border border-slate-300 bg-white p-6 shadow-sm';
+const panelClass = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm';
+
+const CONDITION_MARKERS = {
+  healthy: '#10b981',
+  caries: '#f43f5e',
+  restoration: '#0ea5e9',
+  missing: '#64748b',
+  fracture: '#f59e0b',
+  crown: '#8b5cf6',
+  implant: '#6366f1',
+  root_canal: '#f97316',
+  extraction_needed: '#dc2626',
+  other: '#94a3b8',
+};
+
+function ToothGlyph({ condition = 'healthy', isLower = false }) {
+  return (
+    <svg
+      viewBox="0 0 40 48"
+      aria-hidden="true"
+      className={`h-7 w-6 ${isLower ? 'rotate-180' : ''}`}
+    >
+      <path
+        d="M10 5.5C13 2.5 27 2.5 30 5.5c3.8 3.8 2.1 10.8 1.6 16.1-.7 7.9-1.7 18.4-5.4 20.2-2.4 1.2-3.4-5.6-6.2-5.6s-3.8 6.8-6.2 5.6c-3.7-1.8-4.7-12.3-5.4-20.2C7.9 16.3 6.2 9.3 10 5.5Z"
+        fill="#fff"
+        stroke="#94a3b8"
+        strokeWidth="1.5"
+      />
+      <path d="M13 8.5c3-2.3 11-2.3 14 0" fill="none" stroke="#e2e8f0" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="20" cy="18" r="5" fill={CONDITION_MARKERS[condition] || CONDITION_MARKERS.other} opacity="0.9" />
+    </svg>
+  );
+}
 
 function emptyProfile() {
   return {
@@ -134,6 +168,7 @@ export default function ClinicalRecordSection({
     notes: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [editingSection, setEditingSection] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -181,14 +216,16 @@ export default function ClinicalRecordSection({
   }
 
   async function runMutation(action, successMessage) {
-    if (!canManage) return;
+    if (!canManage) return false;
     try {
       setIsSaving(true);
       clearFeedback();
       await action();
       showSuccess(successMessage);
+      return true;
     } catch (requestError) {
       setError(requestError.message || t('Unable to save clinical record'));
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -196,15 +233,16 @@ export default function ClinicalRecordSection({
 
   async function handleSaveProfile(event) {
     event.preventDefault();
-    await runMutation(async () => {
+    const saved = await runMutation(async () => {
       const profile = await updateClinicalProfile(patientId, profileForm);
       setClinicalRecord((current) => ({ ...current, profile }));
     }, t('Clinical profile saved.'));
+    if (saved) setEditingSection(null);
   }
 
   async function handleSaveTooth(event) {
     event.preventDefault();
-    await runMutation(async () => {
+    const saved = await runMutation(async () => {
       const entry = await saveToothChartEntry(patientId, {
         toothNumber: selectedTooth,
         surface: selectedSurface,
@@ -218,6 +256,7 @@ export default function ClinicalRecordSection({
         ].sort((first, second) => first.toothNumber.localeCompare(second.toothNumber) || first.surface.localeCompare(second.surface)),
       }));
     }, `${t('Tooth')} ${selectedTooth} ${t('chart updated.')}`);
+    if (saved) setEditingSection(null);
   }
 
   async function handleRemoveTooth() {
@@ -243,7 +282,7 @@ export default function ClinicalRecordSection({
       return;
     }
 
-    await runMutation(async () => {
+    const saved = await runMutation(async () => {
       const note = await createClinicalNote(patientId, {
         ...noteForm,
         appointmentId: noteForm.appointmentId || null,
@@ -259,6 +298,7 @@ export default function ClinicalRecordSection({
         recommendations: '',
       });
     }, t('Clinical note saved as draft.'));
+    if (saved) setEditingSection(null);
   }
 
   async function handleFinalizeNote(note) {
@@ -278,12 +318,13 @@ export default function ClinicalRecordSection({
       return;
     }
 
-    await runMutation(async () => {
+    const saved = await runMutation(async () => {
       const plan = await createTreatmentPlan(patientId, planForm);
       setClinicalRecord((current) => ({ ...current, treatmentPlans: [plan, ...(current.treatmentPlans || [])] }));
       setSelectedPlanId(String(plan.id));
       setPlanForm({ title: '', notes: '' });
     }, t('Treatment plan created.'));
+    if (saved) setEditingSection(null);
   }
 
   async function handlePlanStatus(status) {
@@ -351,11 +392,16 @@ export default function ClinicalRecordSection({
       </section>
 
       <section className={panelClass}>
-        <div className="border-b border-slate-300 pb-4">
-          <h3 className="text-lg font-semibold text-slate-950">{t('Medical and dental context')}</h3>
-          <p className="mt-1 text-sm text-slate-600">{t('Keep important safety information visible before treatment.')}</p>
+        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-950">{t('Medical and dental context')}</h3>
+            <p className="mt-1 text-sm text-slate-600">{t('Keep important safety information visible before treatment.')}</p>
+          </div>
+          {canManage ? <button type="button" onClick={() => setEditingSection(editingSection === 'medical' ? null : 'medical')} className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <Edit3 className="h-4 w-4 text-teal-700" />{editingSection === 'medical' ? t('Close editor') : t('Edit medical context')}
+          </button> : null}
         </div>
-        <form onSubmit={handleSaveProfile} className="mt-5 grid gap-4 md:grid-cols-2">
+        {editingSection === 'medical' && canManage ? <form onSubmit={handleSaveProfile} className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm font-medium text-slate-700">
             {t('Allergies')}
             <textarea disabled={!canManage || isSaving} value={profileForm.allergies} onChange={(event) => setProfileForm((current) => ({ ...current, allergies: event.target.value }))} className={`${inputClass} min-h-24 resize-y`} placeholder={t('Medication, latex or other allergies')} />
@@ -383,13 +429,30 @@ export default function ClinicalRecordSection({
             </label>
           </div>
           {canManage ? <button disabled={isSaving} type="submit" className="inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save clinical profile')}</button> : null}
-        </form>
+        </form> : <div className="mt-5 grid gap-x-6 gap-y-4 text-sm md:grid-cols-2">
+          {[
+            ['Allergies', profileForm.allergies],
+            ['Current medication', profileForm.medications],
+            ['Medical conditions', profileForm.medicalConditions],
+            ['Dental history and alerts', profileForm.dentalNotes],
+            ['Emergency contact', profileForm.emergencyContactName],
+            ['Emergency phone', profileForm.emergencyContactPhone],
+          ].map(([label, value]) => <div key={label} className="border-b border-slate-100 pb-3 last:border-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t(label)}</p>
+            <p className="mt-1 whitespace-pre-wrap leading-6 text-slate-700">{value || t('Not recorded')}</p>
+          </div>)}
+        </div>}
       </section>
 
       <section className={panelClass}>
-        <div className="border-b border-slate-300 pb-4">
-          <h3 className="text-lg font-semibold text-slate-950">{t('Interactive odontogram')}</h3>
-          <p className="mt-1 text-sm text-slate-600">{t('Select a tooth, choose a surface and record its current clinical finding.')}</p>
+        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-950">{t('Interactive odontogram')}</h3>
+            <p className="mt-1 text-sm text-slate-600">{t('Select a tooth, choose a surface and record its current clinical finding.')}</p>
+          </div>
+          {canManage ? <button type="button" onClick={() => setEditingSection(editingSection === 'odontogram' ? null : 'odontogram')} className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <Edit3 className="h-4 w-4 text-teal-700" />{editingSection === 'odontogram' ? t('Close editor') : t('Edit odontogram')}
+          </button> : null}
         </div>
         <div className="mt-5 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
           <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
@@ -401,7 +464,7 @@ export default function ClinicalRecordSection({
                     {group.teeth.map((tooth) => {
                       const entries = getToothEntries(toothChart, tooth);
                       const color = entries[0] ? getConditionOption(entries[0].condition).color : 'bg-white text-slate-800 ring-slate-300';
-                      return <button key={tooth} type="button" onClick={() => handleSelectTooth(tooth)} className={`relative flex h-12 items-center justify-center rounded-xl text-xs font-semibold ring-1 ring-inset transition hover:-translate-y-0.5 hover:shadow-sm ${color} ${selectedTooth === tooth ? 'outline outline-2 outline-teal-600 outline-offset-2' : ''}`} aria-label={`${t('Tooth')} ${tooth}`}>{tooth}{entries.length > 1 ? <span className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-teal-700" /> : null}</button>;
+                      return <button key={tooth} type="button" onClick={() => handleSelectTooth(tooth)} className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-xl text-xs font-semibold ring-1 ring-inset transition hover:-translate-y-0.5 hover:shadow-sm ${color} ${selectedTooth === tooth ? 'outline outline-2 outline-teal-600 outline-offset-2' : ''}`} aria-label={`${t('Tooth')} ${tooth}`}><ToothGlyph condition={entries[0]?.condition} isLower={group.label.startsWith('Lower')} /><span>{tooth}</span>{entries.length > 1 ? <span className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-teal-700" /> : null}</button>;
                     })}
                   </div>
                 </div>
@@ -414,7 +477,7 @@ export default function ClinicalRecordSection({
                     {group.teeth.map((tooth) => {
                       const entries = getToothEntries(toothChart, tooth);
                       const color = entries[0] ? getConditionOption(entries[0].condition).color : 'bg-white text-slate-800 ring-slate-300';
-                      return <button key={tooth} type="button" onClick={() => handleSelectTooth(tooth)} className={`relative flex h-12 items-center justify-center rounded-xl text-xs font-semibold ring-1 ring-inset transition hover:-translate-y-0.5 hover:shadow-sm ${color} ${selectedTooth === tooth ? 'outline outline-2 outline-teal-600 outline-offset-2' : ''}`} aria-label={`${t('Tooth')} ${tooth}`}>{tooth}{entries.length > 1 ? <span className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-teal-700" /> : null}</button>;
+                      return <button key={tooth} type="button" onClick={() => handleSelectTooth(tooth)} className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-xl text-xs font-semibold ring-1 ring-inset transition hover:-translate-y-0.5 hover:shadow-sm ${color} ${selectedTooth === tooth ? 'outline outline-2 outline-teal-600 outline-offset-2' : ''}`} aria-label={`${t('Tooth')} ${tooth}`}><ToothGlyph condition={entries[0]?.condition} isLower={group.label.startsWith('Lower')} /><span>{tooth}</span>{entries.length > 1 ? <span className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-teal-700" /> : null}</button>;
                     })}
                   </div>
                 </div>
@@ -425,7 +488,7 @@ export default function ClinicalRecordSection({
             </div>
           </div>
 
-          <form onSubmit={handleSaveTooth} className="rounded-2xl border border-slate-300 bg-white p-4">
+          {editingSection === 'odontogram' && canManage ? <form onSubmit={handleSaveTooth} className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between gap-3 border-b border-slate-300 pb-3">
               <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-800">{t('Selected tooth')}</p><p className="mt-1 text-2xl font-semibold text-slate-950">{selectedTooth}</p></div>
               {toothChart.some((item) => item.toothNumber === selectedTooth) ? <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800 ring-1 ring-teal-200">{t('Charted')}</span> : null}
@@ -437,20 +500,32 @@ export default function ClinicalRecordSection({
               <label className="block space-y-2 text-sm font-medium text-slate-700">{t('Clinical note')}<textarea disabled={!canManage || isSaving} value={toothForm.notes} onChange={(event) => setToothForm((current) => ({ ...current, notes: event.target.value }))} className={`${inputClass} min-h-24 resize-y`} placeholder={t('Finding, material, or follow-up')} /></label>
               {canManage ? <div className="flex flex-wrap gap-2"><button disabled={isSaving} type="submit" className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save finding')}</button><button disabled={isSaving || !toothChart.some((item) => item.toothNumber === selectedTooth && item.surface === selectedSurface)} type="button" onClick={handleRemoveTooth} className="inline-flex items-center gap-2 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"><Trash2 className="h-4 w-4" />{t('Remove')}</button></div> : null}
             </div>
-          </form>
+          </form> : <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="border-b border-slate-200 pb-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-800">{t('Selected tooth')}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-950">{selectedTooth}</p>
+            </div>
+            <div className="mt-4 space-y-3 text-sm">
+              {getToothEntries(toothChart, selectedTooth).length === 0 ? <p className="text-slate-600">{t('No findings recorded for this tooth.')}</p> : getToothEntries(toothChart, selectedTooth).map((entry) => <div key={entry.id} className="border-b border-slate-200 pb-3 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between gap-3"><span className="font-medium text-slate-800">{t(SURFACE_OPTIONS.find((option) => option.value === entry.surface)?.label || entry.surface)}</span><span className={`rounded-full px-2 py-1 text-xs font-semibold ring-1 ring-inset ${getConditionOption(entry.condition).color}`}>{t(getConditionOption(entry.condition).label)}</span></div>
+                <p className="mt-1 text-slate-600">{entry.notes || t('No clinical note')}</p>
+              </div>)}
+            </div>
+            {canManage ? <p className="mt-5 text-xs text-slate-500">{t('Select Edit odontogram to change findings.')}</p> : null}
+          </div>}
         </div>
       </section>
 
       <section className={panelClass}>
-        <div className="flex items-start gap-3 border-b border-slate-300 pb-4"><FileText className="mt-0.5 h-5 w-5 text-teal-700" /><div><h3 className="text-lg font-semibold text-slate-950">{t('Clinical notes')}</h3><p className="mt-1 text-sm text-slate-600">{t('Draft notes can be edited; finalized notes are locked for record integrity.')}</p></div></div>
-        {canManage ? <form onSubmit={handleCreateNote} className="mt-5 grid gap-4 md:grid-cols-2"><label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2">{t('Related appointment')}<select value={noteForm.appointmentId} onChange={(event) => setNoteForm((current) => ({ ...current, appointmentId: event.target.value }))} className={inputClass}><option value="">{t('No linked appointment')}</option>{appointments.map((appointment) => <option key={appointment.id} value={appointment.id}>{formatAppointment(appointment, locale)}</option>)}</select></label>{[['chiefComplaint', 'Chief complaint'], ['clinicalFindings', 'Clinical findings'], ['diagnosis', 'Diagnosis'], ['treatmentPerformed', 'Treatment performed'], ['recommendations', 'Recommendations']].map(([field, label]) => <label key={field} className="space-y-2 text-sm font-medium text-slate-700 md:col-span-1">{t(label)}<textarea value={noteForm[field]} onChange={(event) => setNoteForm((current) => ({ ...current, [field]: event.target.value }))} className={`${inputClass} min-h-24 resize-y`} /></label>)}<button disabled={isSaving} type="submit" className="inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save draft note')}</button></form> : null}
+        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between"><div className="flex items-start gap-3"><FileText className="mt-0.5 h-5 w-5 text-teal-700" /><div><h3 className="text-lg font-semibold text-slate-950">{t('Clinical notes')}</h3><p className="mt-1 text-sm text-slate-600">{t('Draft notes can be edited; finalized notes are locked for record integrity.')}</p></div></div>{canManage ? <button type="button" onClick={() => setEditingSection(editingSection === 'notes' ? null : 'notes')} className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><Plus className="h-4 w-4 text-teal-700" />{editingSection === 'notes' ? t('Close editor') : t('Add clinical note')}</button> : null}</div>
+        {canManage && editingSection === 'notes' ? <form onSubmit={handleCreateNote} className="mt-5 grid gap-4 md:grid-cols-2"><label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2">{t('Related appointment')}<select value={noteForm.appointmentId} onChange={(event) => setNoteForm((current) => ({ ...current, appointmentId: event.target.value }))} className={inputClass}><option value="">{t('No linked appointment')}</option>{appointments.map((appointment) => <option key={appointment.id} value={appointment.id}>{formatAppointment(appointment, locale)}</option>)}</select></label>{[['chiefComplaint', 'Chief complaint'], ['clinicalFindings', 'Clinical findings'], ['diagnosis', 'Diagnosis'], ['treatmentPerformed', 'Treatment performed'], ['recommendations', 'Recommendations']].map(([field, label]) => <label key={field} className="space-y-2 text-sm font-medium text-slate-700 md:col-span-1">{t(label)}<textarea value={noteForm[field]} onChange={(event) => setNoteForm((current) => ({ ...current, [field]: event.target.value }))} className={`${inputClass} min-h-24 resize-y`} /></label>)}<button disabled={isSaving} type="submit" className="inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save draft note')}</button></form> : null}
         <div className="mt-6 space-y-3">{notes.length === 0 ? <div className="border-t border-dashed border-slate-300 pt-6 text-center text-sm text-slate-600">{t('No clinical notes recorded yet.')}</div> : notes.map((note) => <article key={note.id} className="border-t border-slate-200 py-4 first:border-t-0 first:pt-0"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold text-slate-950">{note.appointment ? formatAppointment(note.appointment, locale) : t('General clinical note')}</p><p className="mt-1 text-xs text-slate-500">{new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(note.createdAt))}{note.author?.displayName ? ` · ${note.author.displayName}` : ''}</p></div><div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${note.status === 'final' ? 'bg-emerald-100 text-emerald-800 ring-emerald-200' : 'bg-amber-100 text-amber-800 ring-amber-200'}`}>{note.status === 'final' ? t('Final') : t('Draft')}</span>{note.status !== 'final' && canManage ? <button disabled={isSaving} type="button" onClick={() => handleFinalizeNote(note)} className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"><Check className="h-3.5 w-3.5" />{t('Finalize')}</button> : null}</div></div><div className="mt-4 grid gap-3 text-sm md:grid-cols-2">{[['chiefComplaint', 'Chief complaint'], ['clinicalFindings', 'Findings'], ['diagnosis', 'Diagnosis'], ['treatmentPerformed', 'Treatment'], ['recommendations', 'Recommendations']].filter(([field]) => note[field]).map(([field, label]) => <div key={field}><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t(label)}</p><p className="mt-1 whitespace-pre-wrap leading-6 text-slate-700">{note[field]}</p></div>)}</div></article>)}</div>
       </section>
 
       <section className={panelClass}>
-        <div className="flex items-start gap-3 border-b border-slate-300 pb-4"><ClipboardList className="mt-0.5 h-5 w-5 text-teal-700" /><div><h3 className="text-lg font-semibold text-slate-950">{t('Treatment plans')}</h3><p className="mt-1 text-sm text-slate-600">{t('Organize recommended procedures and connect them to teeth before scheduling.')}</p></div></div>
-        {canManage ? <form onSubmit={handleCreatePlan} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end"><label className="flex-1 space-y-2 text-sm font-medium text-slate-700">{t('New plan title')}<input value={planForm.title} onChange={(event) => setPlanForm((current) => ({ ...current, title: event.target.value }))} className={inputClass} placeholder={t('e.g. Initial restorative plan')} /></label><label className="flex-1 space-y-2 text-sm font-medium text-slate-700">{t('Notes')}<input value={planForm.notes} onChange={(event) => setPlanForm((current) => ({ ...current, notes: event.target.value }))} className={inputClass} placeholder={t('Optional context')} /></label><button disabled={isSaving} type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><ClipboardList className="h-4 w-4" />{t('Create plan')}</button></form> : null}
-        {treatmentPlans.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center text-sm text-slate-600">{t('No treatment plans created yet.')}</div> : <div className="mt-5 grid gap-5 xl:grid-cols-[0.75fr_1.25fr]"><div className="space-y-2">{treatmentPlans.map((plan) => <button key={plan.id} type="button" onClick={() => setSelectedPlanId(String(plan.id))} className={`w-full rounded-2xl border p-4 text-left transition ${selectedPlan?.id === plan.id ? 'border-teal-500 bg-teal-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'}`}><div className="flex items-start justify-between gap-3"><span className="font-semibold text-slate-950">{plan.title}</span><span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-300">{t(PLAN_STATUS_OPTIONS.find((option) => option.value === plan.status)?.label || plan.status)}</span></div><p className="mt-2 text-xs text-slate-600">{plan.items?.length || 0} {t(plan.items?.length === 1 ? 'procedure' : 'procedures')}</p></button>)}</div><div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">{selectedPlan ? <><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 pb-3"><div><h4 className="font-semibold text-slate-950">{selectedPlan.title}</h4>{selectedPlan.notes ? <p className="mt-1 text-sm text-slate-600">{selectedPlan.notes}</p> : null}</div>{canManage ? <select disabled={isSaving} value={selectedPlan.status} onChange={(event) => handlePlanStatus(event.target.value)} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700">{PLAN_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select> : null}</div>{canManage ? <form onSubmit={handleCreatePlanItem} className="mt-4 grid gap-3 md:grid-cols-2"><label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2">{t('Procedure')}<input value={planItemForm.procedureName} onChange={(event) => setPlanItemForm((current) => ({ ...current, procedureName: event.target.value }))} className={inputClass} placeholder={t('e.g. Composite restoration')} /></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Tooth (optional)')}<input value={planItemForm.toothNumber} onChange={(event) => setPlanItemForm((current) => ({ ...current, toothNumber: event.target.value }))} className={inputClass} placeholder="e.g. 16" /></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Surface')}<select value={planItemForm.surface} onChange={(event) => setPlanItemForm((current) => ({ ...current, surface: event.target.value }))} className={inputClass}><option value="">{t('Not specified')}</option>{SURFACE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Priority')}<select value={planItemForm.priority} onChange={(event) => setPlanItemForm((current) => ({ ...current, priority: event.target.value }))} className={inputClass}>{[1, 2, 3, 4, 5].map((priority) => <option key={priority} value={priority}>{priority}</option>)}</select></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Notes')}<input value={planItemForm.notes} onChange={(event) => setPlanItemForm((current) => ({ ...current, notes: event.target.value }))} className={inputClass} /></label><button disabled={isSaving} type="submit" className="inline-flex w-fit items-center gap-2 rounded-xl border border-teal-300 bg-white px-4 py-2.5 text-sm font-medium text-teal-800 hover:bg-teal-50 disabled:opacity-60"><ClipboardList className="h-4 w-4" />{t('Add procedure')}</button></form> : null}<div className="mt-5 space-y-2">{selectedPlan.items?.length ? selectedPlan.items.map((item) => <div key={item.id} className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-slate-900">{item.procedureName}{item.toothNumber ? ` · ${t('Tooth')} ${item.toothNumber}` : ''}{item.surface ? ` · ${t(item.surface)}` : ''}</p>{item.notes ? <p className="mt-1 text-xs text-slate-600">{item.notes}</p> : null}</div><span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-300">{t(PLAN_ITEM_STATUS_OPTIONS.find((option) => option.value === item.status)?.label || item.status)}</span></div>) : <p className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-600">{t('No procedures in this plan yet.')}</p>}</div></> : null}</div></div>}
+        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between"><div className="flex items-start gap-3"><ClipboardList className="mt-0.5 h-5 w-5 text-teal-700" /><div><h3 className="text-lg font-semibold text-slate-950">{t('Treatment plans')}</h3><p className="mt-1 text-sm text-slate-600">{t('Organize recommended procedures and connect them to teeth before scheduling.')}</p></div></div>{canManage ? <button type="button" onClick={() => setEditingSection(editingSection === 'plans' ? null : 'plans')} className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><Edit3 className="h-4 w-4 text-teal-700" />{editingSection === 'plans' ? t('Close editor') : t('Edit treatment plans')}</button> : null}</div>
+        {canManage && editingSection === 'plans' ? <form onSubmit={handleCreatePlan} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end"><label className="flex-1 space-y-2 text-sm font-medium text-slate-700">{t('New plan title')}<input value={planForm.title} onChange={(event) => setPlanForm((current) => ({ ...current, title: event.target.value }))} className={inputClass} placeholder={t('e.g. Initial restorative plan')} /></label><label className="flex-1 space-y-2 text-sm font-medium text-slate-700">{t('Notes')}<input value={planForm.notes} onChange={(event) => setPlanForm((current) => ({ ...current, notes: event.target.value }))} className={inputClass} placeholder={t('Optional context')} /></label><button disabled={isSaving} type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><ClipboardList className="h-4 w-4" />{t('Create plan')}</button></form> : null}
+        {treatmentPlans.length === 0 ? <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center text-sm text-slate-600">{t('No treatment plans created yet.')}</div> : <div className="mt-5 grid gap-5 xl:grid-cols-[0.75fr_1.25fr]"><div className="space-y-2">{treatmentPlans.map((plan) => <button key={plan.id} type="button" onClick={() => setSelectedPlanId(String(plan.id))} className={`w-full rounded-2xl border p-4 text-left transition ${selectedPlan?.id === plan.id ? 'border-teal-500 bg-teal-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'}`}><div className="flex items-start justify-between gap-3"><span className="font-semibold text-slate-950">{plan.title}</span><span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">{t(PLAN_STATUS_OPTIONS.find((option) => option.value === plan.status)?.label || plan.status)}</span></div><p className="mt-2 text-xs text-slate-600">{plan.items?.length || 0} {t(plan.items?.length === 1 ? 'procedure' : 'procedures')}</p></button>)}</div><div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">{selectedPlan ? <><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3"><div><h4 className="font-semibold text-slate-950">{selectedPlan.title}</h4>{selectedPlan.notes ? <p className="mt-1 text-sm text-slate-600">{selectedPlan.notes}</p> : null}</div>{canManage && editingSection === 'plans' ? <select disabled={isSaving} value={selectedPlan.status} onChange={(event) => handlePlanStatus(event.target.value)} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700">{PLAN_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select> : <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">{t(PLAN_STATUS_OPTIONS.find((option) => option.value === selectedPlan.status)?.label || selectedPlan.status)}</span>}</div>{canManage && editingSection === 'plans' ? <form onSubmit={handleCreatePlanItem} className="mt-4 grid gap-3 md:grid-cols-2"><label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2">{t('Procedure')}<input value={planItemForm.procedureName} onChange={(event) => setPlanItemForm((current) => ({ ...current, procedureName: event.target.value }))} className={inputClass} placeholder={t('e.g. Composite restoration')} /></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Tooth (optional)')}<input value={planItemForm.toothNumber} onChange={(event) => setPlanItemForm((current) => ({ ...current, toothNumber: event.target.value }))} className={inputClass} placeholder="e.g. 16" /></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Surface')}<select value={planItemForm.surface} onChange={(event) => setPlanItemForm((current) => ({ ...current, surface: event.target.value }))} className={inputClass}><option value="">{t('Not specified')}</option>{SURFACE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Priority')}<select value={planItemForm.priority} onChange={(event) => setPlanItemForm((current) => ({ ...current, priority: event.target.value }))} className={inputClass}>{[1, 2, 3, 4, 5].map((priority) => <option key={priority} value={priority}>{priority}</option>)}</select></label><label className="space-y-2 text-sm font-medium text-slate-700">{t('Notes')}<input value={planItemForm.notes} onChange={(event) => setPlanItemForm((current) => ({ ...current, notes: event.target.value }))} className={inputClass} /></label><button disabled={isSaving} type="submit" className="inline-flex w-fit items-center gap-2 rounded-xl border border-teal-300 bg-white px-4 py-2.5 text-sm font-medium text-teal-800 hover:bg-teal-50 disabled:opacity-60"><ClipboardList className="h-4 w-4" />{t('Add procedure')}</button></form> : null}<div className="mt-5 space-y-2">{selectedPlan.items?.length ? selectedPlan.items.map((item) => <div key={item.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-slate-900">{item.procedureName}{item.toothNumber ? ` · ${t('Tooth')} ${item.toothNumber}` : ''}{item.surface ? ` · ${t(item.surface)}` : ''}</p>{item.notes ? <p className="mt-1 text-xs text-slate-600">{item.notes}</p> : null}</div><span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">{t(PLAN_ITEM_STATUS_OPTIONS.find((option) => option.value === item.status)?.label || item.status)}</span></div>) : <p className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-600">{t('No procedures in this plan yet.')}</p>}</div></> : null}</div></div>}
       </section>
     </div>
   );

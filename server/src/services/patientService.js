@@ -33,7 +33,7 @@ async function ensurePatientAccess(patientId, user, { write = false } = {}) {
 }
 
 function validatePortugueseNif(nif, nationality) {
-  if (String(nationality).trim().toLowerCase() !== 'portuguese') {
+  if (!['portuguese', 'portuguesa'].includes(String(nationality).trim().toLowerCase())) {
     return;
   }
 

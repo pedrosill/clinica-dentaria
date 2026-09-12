@@ -12,9 +12,26 @@ export default function PatientInfoSection({
 }) {
   const { t } = useLanguage();
 
+  function handleFieldChange(event) {
+    if (event.target.name === 'nationality') {
+      const value = event.target.value;
+      onChange({
+        ...event,
+        target: {
+          ...event.target,
+          value: value.trim().toLowerCase() === t('Portuguese').toLowerCase() || value.trim().toLowerCase() === 'portuguesa'
+            ? 'Portuguese'
+            : value,
+        },
+      });
+      return;
+    }
+    onChange(event);
+  }
+
   return (
-    <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
-      <div className="border-b border-slate-300 pb-4">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="border-b border-slate-200 pb-4">
         <h2 className="text-lg font-semibold text-slate-950">{t('Patient information')}</h2>
       </div>
 
@@ -27,7 +44,7 @@ export default function PatientInfoSection({
               name="fullName"
               id="patient-full-name"
               value={form.fullName}
-              onChange={onChange}
+              onChange={handleFieldChange}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
             />
           </div>
@@ -74,7 +91,19 @@ export default function PatientInfoSection({
               type="text"
               name="nationality"
               id="patient-nationality"
-              value={form.nationality}
+              value={form.nationality.toLowerCase() === 'portuguese' ? t('Portuguese') : form.nationality}
+              onChange={handleFieldChange}
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2 xl:col-span-3">
+            <label htmlFor="patient-date-of-birth" className="text-sm font-medium text-slate-700">{t('Date of birth')}</label>
+            <input
+              type="date"
+              name="dateOfBirth"
+              id="patient-date-of-birth"
+              value={form.dateOfBirth}
               onChange={onChange}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none"
             />
@@ -116,7 +145,14 @@ export default function PatientInfoSection({
 
           <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Nationality')}</p>
-            <p className="mt-2 text-base font-semibold text-slate-950">{patient.nationality}</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">{patient.nationality ? t(patient.nationality) : t('Not recorded')}</p>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Date of birth')}</p>
+            <p className="mt-2 text-base font-semibold text-slate-950">
+              {patient.dateOfBirth ? formatDisplayDate(patient.dateOfBirth) : t('Not recorded')}
+            </p>
           </div>
 
           <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">

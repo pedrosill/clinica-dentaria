@@ -70,6 +70,7 @@ export default function Patients() {
   const [createEmail, setCreateEmail] = useState('');
   const [createNif, setCreateNif] = useState('');
   const [createNationality, setCreateNationality] = useState('Portuguese');
+  const [createDateOfBirth, setCreateDateOfBirth] = useState('');
   const [createSubmitError, setCreateSubmitError] = useState('');
   const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
 
@@ -178,6 +179,7 @@ export default function Patients() {
     setCreateEmail('');
     setCreateNif('');
     setCreateNationality('Portuguese');
+    setCreateDateOfBirth('');
     setCreateSubmitError('');
     setIsCreateModalOpen(true);
   }
@@ -216,6 +218,7 @@ export default function Patients() {
         email: createEmail.trim().toLowerCase(),
         nif: createNif.trim(),
         nationality: createNationality.trim(),
+        dateOfBirth: createDateOfBirth || null,
       });
 
       setPatients((current) => [newPatient, ...current]);
@@ -377,7 +380,7 @@ export default function Patients() {
                         </p>
                         <p className="mt-1 text-sm font-medium text-slate-700">{patient.phone}</p>
                         <p className="mt-1 text-sm text-slate-600">
-                          {patient.nationality || '—'}
+                          {patient.nationality ? t(patient.nationality) : '—'}
                         </p>
                       </div>
                     </div>
@@ -536,8 +539,8 @@ export default function Patients() {
                   <label className="text-sm font-medium text-slate-800">{t('Nationality')}</label>
                   <input
                     type="text"
-                    value={createNationality}
-                    onChange={(event) => setCreateNationality(event.target.value)}
+                    value={createNationality.trim().toLowerCase() === 'portuguese' ? t('Portuguese') : createNationality}
+                    onChange={(event) => setCreateNationality(event.target.value.trim().toLowerCase() === t('Portuguese').toLowerCase() || event.target.value.trim().toLowerCase() === 'portuguesa' ? 'Portuguese' : event.target.value)}
                     className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
                   />
                 </div>
@@ -550,6 +553,16 @@ export default function Patients() {
                     onChange={(event) => setCreateNif(event.target.value)}
                     pattern={createNationality.trim().toLowerCase() === 'portuguese' ? '[0-9]{9}' : undefined}
                     inputMode={createNationality.trim().toLowerCase() === 'portuguese' ? 'numeric' : 'text'}
+                    className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-800">{t('Date of birth')}</label>
+                  <input
+                    type="date"
+                    value={createDateOfBirth}
+                    onChange={(event) => setCreateDateOfBirth(event.target.value)}
                     className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
                   />
                 </div>

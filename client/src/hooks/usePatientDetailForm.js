@@ -4,12 +4,17 @@ import { apiRequest } from '../services/api';
 import useLanguage from '../context/useLanguage';
 
 function buildPatientForm(patient) {
+  const dateOfBirth = patient?.dateOfBirth ? new Date(patient.dateOfBirth) : null;
+
   return {
     fullName: patient?.fullName || '',
     phone: patient?.phone || '',
     email: patient?.email || '',
     nif: patient?.nif || '',
-    nationality: patient?.nationality || '',
+    nationality: patient?.nationality?.toLowerCase() === 'portuguesa' ? 'Portuguese' : patient?.nationality || '',
+    dateOfBirth: dateOfBirth && !Number.isNaN(dateOfBirth.getTime())
+      ? `${dateOfBirth.getFullYear()}-${String(dateOfBirth.getMonth() + 1).padStart(2, '0')}-${String(dateOfBirth.getDate()).padStart(2, '0')}`
+      : '',
   };
 }
 
@@ -87,6 +92,7 @@ export default function usePatientDetailForm(patientId, patient, setPatient) {
           email: form.email.trim().toLowerCase(),
           nif: form.nif.trim(),
           nationality: form.nationality.trim(),
+          dateOfBirth: form.dateOfBirth || null,
         }),
       });
 
