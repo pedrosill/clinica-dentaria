@@ -1,4 +1,4 @@
-import { getAppLocale } from '../../utils/agendaUtils';
+import { getAppLocale, getPatientDisplayName } from '../../utils/agendaUtils';
 import useLanguage from '../../context/useLanguage';
 
 export default function AgendaWeekView({
@@ -13,6 +13,7 @@ export default function AgendaWeekView({
   onSelectDate,
   onOpenCreateModal,
   onOpenAppointment,
+  showDoctor = false,
 }) {
   const { t } = useLanguage();
 
@@ -79,9 +80,10 @@ export default function AgendaWeekView({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-950">
-                            {appointment.time} · {appointment.patient.firstName} {appointment.patient.lastName}
+                            {appointment.time} · {getPatientDisplayName(appointment.patient)}
                           </p>
                           <p className="mt-1 text-sm text-slate-700">{appointment.treatmentType}</p>
+                          {showDoctor ? <p className="mt-1 text-xs font-medium text-slate-600">{t('Doctor')}: {appointment.doctor?.name || t('Not recorded')}</p> : null}
                         </div>
 
                         <span

@@ -34,6 +34,7 @@ export default function useAppointmentForm({
   appointmentTypes = [],
   setAppointments,
   setSelectedDate,
+  preferredDoctorId = '',
 }) {
   const { t } = useLanguage();
   /* ================================
@@ -241,12 +242,13 @@ export default function useAppointmentForm({
   ================================ */
   function resetFormState(baseSelectedDate = selectedDate) {
     const baseDate = startOfDay(baseSelectedDate);
+    const preferredDoctor = doctors.find((doctor) => String(doctor.id) === String(preferredDoctorId));
 
     setEditingAppointmentId(null);
     setPatientId('');
-    setDoctorId('');
+    setDoctorId(preferredDoctor ? String(preferredDoctor.id) : '');
     setPatientSearch('');
-    setDoctorSearch('');
+    setDoctorSearch(preferredDoctor?.name || '');
     setPatientSelectorOpen(false);
     setDoctorSelectorOpen(false);
     setAppointmentDate(formatDateInput(baseDate));

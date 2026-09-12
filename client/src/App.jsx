@@ -1,6 +1,7 @@
 /* ================================
    Imports
 ================================ */
+import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
@@ -70,10 +71,30 @@ function ProtectedRoutes() {
   );
 }
 
+function BrowserAutofillGuard() {
+  useEffect(() => {
+    function disableBrowserSuggestions() {
+      document.querySelectorAll('form').forEach((form) => form.setAttribute('autocomplete', 'off'));
+      document.querySelectorAll('input, textarea, select').forEach((control) => {
+        control.setAttribute('autocomplete', control.type === 'password' ? 'new-password' : 'off');
+      });
+    }
+
+    disableBrowserSuggestions();
+    const observer = new MutationObserver(disableBrowserSuggestions);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
+        <BrowserAutofillGuard />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<ProtectedRoutes />} />

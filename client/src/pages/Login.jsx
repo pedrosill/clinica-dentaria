@@ -53,7 +53,7 @@ export default function Login() {
           </div>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} autoComplete="off" className="mt-6 space-y-4">
           <div className="space-y-2">
             <label htmlFor="login-email" className="text-sm font-medium text-slate-800">
               {t('Email')}
@@ -64,7 +64,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              autoComplete="username"
+              autoComplete="off"
               required
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
             />
@@ -80,7 +80,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
+              autoComplete="off"
               required
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
             />

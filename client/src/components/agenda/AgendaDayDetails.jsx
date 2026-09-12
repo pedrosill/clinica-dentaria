@@ -9,6 +9,7 @@ export default function AgendaDayDetails({
   getStatusLabel,
   renderCompactActions,
   onOpenCreateModal,
+  showDoctor = false,
 }) {
   const { t } = useLanguage();
 
@@ -44,6 +45,7 @@ export default function AgendaDayDetails({
                     {appointment.time} · {getPatientDisplayName(appointment.patient)}
                   </p>
                   <p className="text-sm font-medium text-slate-700">{appointment.treatmentType}</p>
+                  {showDoctor ? <p className="text-sm text-slate-600">{t('Doctor')}: {appointment.doctor?.name || t('Not recorded')}</p> : null}
                   <p className="text-sm text-slate-600">{appointment.patient.phone}</p>
                 </div>
 

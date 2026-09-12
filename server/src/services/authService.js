@@ -19,7 +19,7 @@ const PUBLIC_USER_SELECT = {
   role: true,
   isActive: true,
   doctorProfile: {
-    select: { id: true },
+    select: { id: true, name: true },
   },
 };
 
@@ -30,10 +30,11 @@ function toPublicUser(user) {
   return {
     ...publicUser,
     doctorId: doctorProfile?.id || null,
+    doctorProfile: doctorProfile ? { id: doctorProfile.id, name: doctorProfile.name } : null,
   };
 }
 
-async function createUser({ email, displayName, password, role = 'receptionist' }) {
+async function createUser({ email, displayName, password, role = 'receptionist', doctorId = null }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedName = String(displayName || '').trim();
   const allowedRoles = new Set(['admin', 'receptionist', 'dentist']);
@@ -46,15 +47,35 @@ async function createUser({ email, displayName, password, role = 'receptionist' 
     throw new HttpError(400, 'Invalid user role');
   }
 
-  return prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      displayName: normalizedName,
-      passwordHash: hashPassword(password),
-      role,
-    },
-    select: PUBLIC_USER_SELECT,
-  }).then(toPublicUser);
+  const normalizedDoctorId = doctorId ? parseNumericId(doctorId, 'doctor id') : null;
+  if (role === 'dentist' && !normalizedDoctorId) {
+    throw new HttpError(400, 'A dentist account must be linked to a doctor profile');
+  }
+
+  if (normalizedDoctorId) {
+    const doctor = await prisma.doctor.findUnique({ where: { id: normalizedDoctorId }, select: { id: true, userId: true } });
+    if (!doctor) throw new HttpError(404, 'Doctor not found');
+    if (doctor.userId) throw new HttpError(409, 'This doctor profile is already linked to a user');
+  }
+
+  const user = await prisma.$transaction(async (transaction) => {
+    const createdUser = await transaction.user.create({
+      data: {
+        email: normalizedEmail,
+        displayName: normalizedName,
+        passwordHash: hashPassword(password),
+        role,
+      },
+    });
+
+    if (normalizedDoctorId) {
+      await transaction.doctor.update({ where: { id: normalizedDoctorId }, data: { userId: createdUser.id } });
+    }
+
+    return transaction.user.findUnique({ where: { id: createdUser.id }, select: PUBLIC_USER_SELECT });
+  });
+
+  return toPublicUser(user);
 }
 
 async function login({ email, password, userAgent, ipAddress }) {

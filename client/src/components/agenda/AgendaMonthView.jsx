@@ -1,4 +1,4 @@
-import { getAppLocale } from '../../utils/agendaUtils';
+import { getAppLocale, getPatientDisplayName } from '../../utils/agendaUtils';
 import useLanguage from '../../context/useLanguage';
 
 export default function AgendaMonthView({
@@ -10,6 +10,7 @@ export default function AgendaMonthView({
   isSameMonth,
   onSelectDay,
   onOpenWeek,
+  showDoctor = false,
 }) {
   const { t } = useLanguage();
 
@@ -99,7 +100,8 @@ export default function AgendaMonthView({
                         : 'bg-slate-200 text-slate-800'
                     }`}
                   >
-                    {appointment.time} {appointment.patient.firstName}
+                    <span className="block">{appointment.time} · {getPatientDisplayName(appointment.patient)}</span>
+                    {showDoctor ? <span className="mt-0.5 block text-[11px] font-normal">{appointment.doctor?.name || t('Not recorded')}</span> : null}
                   </div>
                 ))}
 

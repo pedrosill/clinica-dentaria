@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useLanguage from '../context/useLanguage';
+import useAuth from '../context/useAuth';
 import AgendaHeader from '../components/agenda/AgendaHeader';
 import AgendaWeekView from '../components/agenda/AgendaWeekView';
 import AgendaMonthView from '../components/agenda/AgendaMonthView';
@@ -28,6 +29,8 @@ export default function Agenda() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const isDentist = user?.role === 'dentist';
   const [viewType, setViewType] = useState('week');
   const initialAgendaDate = useMemo(() => {
     const dateParam = new URLSearchParams(location.search).get('date');
@@ -40,6 +43,9 @@ export default function Agenda() {
   }, [location.search]);
   const [selectedDate, setSelectedDate] = useState(initialAgendaDate);
   const [currentMonth, setCurrentMonth] = useState(initialAgendaDate);
+  const [selectedDoctorId, setSelectedDoctorId] = useState(() => (
+    isDentist && user?.doctorId ? String(user.doctorId) : 'all'
+  ));
 
   const {
     appointments,
@@ -104,7 +110,13 @@ export default function Agenda() {
     appointmentTypes: clinicSettings?.appointmentTypes || [],
     setAppointments,
     setSelectedDate,
+    preferredDoctorId: selectedDoctorId === 'all' ? '' : selectedDoctorId,
   });
+
+  const visibleAppointments = useMemo(() => {
+    if (selectedDoctorId === 'all') return appointments;
+    return appointments.filter((appointment) => String(appointment.doctorId) === String(selectedDoctorId));
+  }, [appointments, selectedDoctorId]);
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(selectedDate);
@@ -114,10 +126,10 @@ export default function Agenda() {
   const monthDays = useMemo(() => getMonthDays(currentMonth), [currentMonth]);
 
   const selectedDateAppointments = useMemo(() => {
-    return appointments
+    return visibleAppointments
       .filter((appointment) => isSameDay(appointment.date, selectedDate))
       .sort((first, second) => getAppointmentDateTime(first) - getAppointmentDateTime(second));
-  }, [appointments, selectedDate]);
+  }, [selectedDate, visibleAppointments]);
 
   function handleGoToToday() {
     const today = startOfDay(new Date());
@@ -190,6 +202,10 @@ export default function Agenda() {
         onPreviousRange={handlePreviousRange}
         onNextRange={handleNextRange}
         onGoToToday={handleGoToToday}
+        doctors={doctors}
+        selectedDoctorId={selectedDoctorId}
+        onDoctorChange={setSelectedDoctorId}
+        isDentist={isDentist}
       />
 
       {pageError ? (
@@ -203,7 +219,7 @@ export default function Agenda() {
           weekLabel={formatWeekRange(selectedDate)}
           weekDays={weekDays}
           selectedDate={selectedDate}
-          appointments={appointments}
+          appointments={visibleAppointments}
           isSameDay={isSameDay}
           getAppointmentDateTime={getAppointmentDateTime}
           getStatusClasses={getStatusClasses}
@@ -211,13 +227,14 @@ export default function Agenda() {
           onSelectDate={(day) => setSelectedDate(startOfDay(day))}
           onOpenCreateModal={openCreateModal}
           onOpenAppointment={(appointmentId) => navigate(`/appointments/${appointmentId}`)}
+          showDoctor={selectedDoctorId === 'all'}
         />
       ) : (
         <AgendaMonthView
           currentMonth={currentMonth}
           monthDays={monthDays}
           selectedDate={selectedDate}
-          appointments={appointments}
+          appointments={visibleAppointments}
           isSameDay={isSameDay}
           isSameMonth={isSameMonth}
           onSelectDay={(day) => {
@@ -229,6 +246,7 @@ export default function Agenda() {
             setCurrentMonth(startOfDay(day));
             setViewType('week');
           }}
+          showDoctor={selectedDoctorId === 'all'}
         />
       )}
 
@@ -240,6 +258,7 @@ export default function Agenda() {
         getStatusLabel={getStatusLabel}
         renderCompactActions={renderCompactActions}
         onOpenCreateModal={() => openCreateModal(selectedDate)}
+        showDoctor={selectedDoctorId === 'all'}
       />
 
       <AppointmentModal

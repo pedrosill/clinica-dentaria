@@ -67,7 +67,7 @@ test('creates an appointment, shows it on the dashboard, and reschedules it', as
   await rescheduleModal.getByRole('button', { name: 'Save reschedule', exact: true }).click();
 
   await expect(page).toHaveURL(new RegExp(`/agenda\\?date=${newDate}$`));
-  await expect(page.getByText(/10:00 · Browser Test Patient/)).toBeVisible();
+  await expect(page.getByText(/10:00 · Browser Test Patient/).last()).toBeVisible();
 
   await page.getByRole('link', { name: 'Open appointment', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel appointment', exact: true }).click();
