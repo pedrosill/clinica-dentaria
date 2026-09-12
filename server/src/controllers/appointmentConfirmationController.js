@@ -1,7 +1,9 @@
 const confirmationService = require('../services/appointmentConfirmationService');
+const appointmentService = require('../services/appointmentService');
 
 async function send(req, res, next) {
   try {
+    await appointmentService.getAppointmentById(req.params.appointmentId, req.user);
     const confirmation = await confirmationService.sendAppointmentConfirmation(req.params.appointmentId, {
       req,
       actor: req.user,

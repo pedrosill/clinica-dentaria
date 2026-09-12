@@ -41,6 +41,10 @@ function expirationForAppointment(appointment) {
   return expiration;
 }
 
+function isSameLocalDate(first, second) {
+  return first && second && formatDateOnly(first) === formatDateOnly(second);
+}
+
 function escapeHtml(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -184,10 +188,18 @@ async function sendDueAppointmentConfirmations({ now = new Date() } = {}) {
       archivedAt: null,
       patient: { archivedAt: null, email: { not: '' } },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      confirmationRequests: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: { sentAt: true },
+      },
+    },
   });
   let sent = 0;
   for (const appointment of appointments) {
+    if (isSameLocalDate(appointment.confirmationRequests[0]?.sentAt, now)) continue;
     try {
       const result = await sendAppointmentConfirmation(appointment.id);
       if (!result.alreadySent) sent += 1;

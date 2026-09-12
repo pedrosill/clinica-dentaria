@@ -144,7 +144,7 @@ export default function AppointmentDetail() {
           onOpenConcludeModal={handleOpenConcludeModal}
           onSendConfirmation={handleSendConfirmation}
           isSendingConfirmation={isSendingConfirmation}
-          canSendConfirmation={Boolean(appointment?.patient?.email) && ['admin', 'receptionist', 'dentist'].includes(user?.role)}
+          canSendConfirmation={canModifyAppointment && Boolean(appointment?.patient?.email) && ['admin', 'receptionist', 'dentist'].includes(user?.role)}
           confirmationMessage={confirmationMessage}
         canModifyAppointment={canModifyAppointment}
       />
