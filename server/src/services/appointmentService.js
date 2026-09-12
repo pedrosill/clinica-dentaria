@@ -697,6 +697,7 @@ async function createAppointment(payload, user, req) {
         treatmentType: normalized.treatmentType,
         performedTreatment: normalized.performedTreatment,
         status: normalized.status,
+        arrivedAt: normalized.status === 'arrived' ? new Date() : null,
         notes: normalized.notes,
         completionNotes: normalized.completionNotes,
       },
@@ -801,6 +802,10 @@ async function updateAppointment(appointmentId, payload, user) {
     );
   }
 
+  const nextStatus = payload.status !== undefined
+    ? normalized.status
+    : existingAppointment.status || 'scheduled';
+
   return prisma.appointment.update({
     where: {
       id,
@@ -816,10 +821,10 @@ async function updateAppointment(appointmentId, payload, user) {
         payload.performedTreatment !== undefined
           ? normalized.performedTreatment
           : existingAppointment.performedTreatment,
-      status:
-        payload.status !== undefined
-          ? normalized.status
-          : existingAppointment.status || 'scheduled',
+      status: nextStatus,
+      arrivedAt: nextStatus === 'arrived'
+        ? (existingAppointment.arrivedAt || new Date())
+        : existingAppointment.arrivedAt,
       notes: normalized.notes,
       completionNotes:
         payload.completionNotes !== undefined
@@ -946,6 +951,9 @@ async function updateAppointmentStatus(appointmentId, payload, user) {
     },
     data: {
       status,
+      arrivedAt: status === 'arrived'
+        ? (existingAppointment.arrivedAt || new Date())
+        : existingAppointment.arrivedAt,
     },
     include: appointmentListInclude,
   });

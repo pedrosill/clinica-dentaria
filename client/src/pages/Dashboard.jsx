@@ -9,6 +9,7 @@ import DashboardPatientsTable from '../components/dashboard/DashboardPatientsTab
 import DashboardStatsCard from '../components/dashboard/DashboardStatsCard';
 import DashboardTodaySummary from '../components/dashboard/DashboardTodaySummary';
 import DashboardUpcomingAppointments from '../components/dashboard/DashboardUpcomingAppointments';
+import DashboardWorkQueue from '../components/dashboard/DashboardWorkQueue';
 import useDashboardData from '../hooks/useDashboardData';
 import useLanguage from '../context/useLanguage';
 
@@ -29,6 +30,10 @@ export default function Dashboard() {
     filteredPatients,
     upcomingAppointments,
     todayAppointments,
+    workQueue,
+    workQueueLoading,
+    workQueueError,
+    refreshWorkQueue,
   } = useDashboardData();
 
   if (isLoading) {
@@ -42,6 +47,10 @@ export default function Dashboard() {
   return (
     <div className="w-full space-y-6">
       <DashboardHeader />
+
+      {workQueueLoading ? <div className="h-56 animate-pulse rounded-3xl border border-slate-200 bg-white" aria-label={t('Loading work queue')} /> : null}
+      {!workQueueLoading && workQueueError ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{workQueueError}</div> : null}
+      {!workQueueLoading && workQueue ? <DashboardWorkQueue data={workQueue} onRefresh={refreshWorkQueue} /> : null}
 
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <DashboardPatientsTable

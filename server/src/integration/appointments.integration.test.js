@@ -84,6 +84,7 @@ const waitlistAppointmentsMigrationPath = path.join(
 );
 const mfaMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912110000_add_mfa_and_password_recovery', 'migration.sql');
 const complianceMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912120000_add_compliance_transcription_documents', 'migration.sql');
+const arrivedAtMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912130000_add_appointment_arrived_at', 'migration.sql');
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
@@ -97,6 +98,7 @@ integrationDatabase.exec(fs.readFileSync(waitlistMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(waitlistAppointmentsMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(mfaMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(complianceMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(arrivedAtMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
@@ -717,6 +719,7 @@ test('preserves arrived status and blocks terminal appointment edits', async () 
 
   assert.equal(arrivedUpdateResult.response.status, 200);
   assert.equal(arrivedUpdateResult.body.status, 'arrived');
+  assert.ok(arrivedUpdateResult.body.arrivedAt);
 
   const cancelledStatusResult = await request(
     `/api/appointments/${arrivedResult.body.id}/status`,
@@ -1113,4 +1116,14 @@ test('governance endpoints enforce admin and patient relationship boundaries', a
     `/api/patients/${patients[1].id}/export`
   );
   assert.equal(unrelatedExport.response.status, 403);
+});
+
+test('returns a role-scoped operational work queue', async () => {
+  const queueResult = await request('/api/work-queue');
+
+  assert.equal(queueResult.response.status, 200);
+  assert.equal(queueResult.body.role, 'admin');
+  assert.ok(Array.isArray(queueResult.body.items));
+  assert.ok(queueResult.body.counts);
+  assert.ok(queueResult.body.items.every((item) => item.id && item.type && item.priority && item.action?.path));
 });

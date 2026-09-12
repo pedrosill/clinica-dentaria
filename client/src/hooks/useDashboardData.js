@@ -9,12 +9,14 @@ import {
   buildDashboardUpcomingAppointments,
   filterDashboardPatients,
 } from '../utils/dashboardUtils';
+import useWorkQueue from './useWorkQueue';
 
 /* ================================
    Hook: dashboard page state
 ================================ */
 export default function useDashboardData() {
   const { t } = useLanguage();
+  const workQueue = useWorkQueue();
   /* ================================
      State: raw fetched data
   ================================ */
@@ -108,5 +110,9 @@ export default function useDashboardData() {
     filteredPatients,
     upcomingAppointments,
     todayAppointments,
+    workQueue: workQueue.data,
+    workQueueLoading: workQueue.isLoading,
+    workQueueError: workQueue.error,
+    refreshWorkQueue: workQueue.refresh,
   };
 }

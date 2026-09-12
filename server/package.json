@@ -13,7 +13,7 @@
     "db:backup:verify": "node scripts/verifyBackup.js",
     "db:restore": "node scripts/restore.js",
     "postinstall": "prisma generate",
-    "test": "node --test src/utils/appointmentScheduling.test.js src/utils/appointmentUtils.test.js src/utils/parse.test.js src/utils/auth.test.js src/config/env.test.js src/startup/defaultAdmin.test.js scripts/backup.test.js src/app.security.test.js src/integration/auth.integration.test.js src/integration/appointments.integration.test.js src/integration/reports.integration.test.js src/integration/recalls.integration.test.js src/integration/waitlist.integration.test.js"
+    "test": "node --test src/utils/appointmentScheduling.test.js src/utils/appointmentUtils.test.js src/utils/parse.test.js src/utils/auth.test.js src/config/env.test.js src/startup/defaultAdmin.test.js scripts/backup.test.js src/app.security.test.js src/services/workQueueService.test.js src/integration/auth.integration.test.js src/integration/appointments.integration.test.js src/integration/reports.integration.test.js src/integration/recalls.integration.test.js src/integration/waitlist.integration.test.js"
   },
   "keywords": [],
   "author": "",
