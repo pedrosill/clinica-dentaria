@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import AppointmentDetailHeader from '../components/appointment-detail/AppointmentDetailHeader';
 import AppointmentInfoSection from '../components/appointment-detail/AppointmentInfoSection';
@@ -16,6 +16,8 @@ import useAppointmentDetailForm from '../hooks/useAppointmentDetailForm';
 import RescheduleAppointmentModal from '../components/appointment-detail/RescheduleAppointmentModal';
 import CancelAppointmentModal from '../components/appointment-detail/CancelAppointmentModal';
 import useAuth from '../context/useAuth';
+import { sendAppointmentConfirmation } from '../services/appointments';
+import useLanguage from '../context/useLanguage';
 
 /* ================================
    Page component
@@ -25,6 +27,9 @@ export default function AppointmentDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const [isSendingConfirmation, setIsSendingConfirmation] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
 
   const appointmentId = useMemo(() => {
     if (!appointmentIdParam) return null;
@@ -51,6 +56,23 @@ export default function AppointmentDetail() {
   const editableDoctors = user?.role === 'dentist'
     ? doctors.filter((doctor) => Number(doctor.id) === Number(user.doctorId))
     : doctors;
+
+  async function handleSendConfirmation() {
+    setIsSendingConfirmation(true);
+    setConfirmationMessage('');
+    try {
+      const confirmation = await sendAppointmentConfirmation(appointmentId);
+      setAppointment((current) => current ? {
+        ...current,
+        confirmationRequests: [confirmation],
+      } : current);
+      setConfirmationMessage(confirmation.alreadySent ? t('A confirmation email is already pending.') : t('Confirmation email sent.'));
+    } catch (error) {
+      setConfirmationMessage(error.message || t('Unable to send confirmation email.'));
+    } finally {
+      setIsSendingConfirmation(false);
+    }
+  }
 
   const {
     isEditing,
@@ -110,7 +132,7 @@ export default function AppointmentDetail() {
 
   return (
     <div className="w-full space-y-6">
-      <AppointmentDetailHeader
+        <AppointmentDetailHeader
         appointment={appointment}
         isEditing={isEditing}
         isCompletedAppointment={isCompletedAppointment}
@@ -119,7 +141,11 @@ export default function AppointmentDetail() {
         location={location}
         onStartEdit={handleStartEdit}
         onStartReschedule={handleStartReschedule}
-        onOpenConcludeModal={handleOpenConcludeModal}
+          onOpenConcludeModal={handleOpenConcludeModal}
+          onSendConfirmation={handleSendConfirmation}
+          isSendingConfirmation={isSendingConfirmation}
+          canSendConfirmation={Boolean(appointment?.patient?.email) && ['admin', 'receptionist', 'dentist'].includes(user?.role)}
+          confirmationMessage={confirmationMessage}
         canModifyAppointment={canModifyAppointment}
       />
 

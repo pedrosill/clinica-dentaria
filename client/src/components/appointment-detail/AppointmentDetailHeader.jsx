@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { ArrowLeft, CheckCircle2, Pencil } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Mail, Pencil } from 'lucide-react';
 import useLanguage from '../../context/useLanguage';
 import { getAppointmentReturnContext, getAppointmentReturnPath } from '../../utils/appointmentNavigation';
 
@@ -18,6 +18,10 @@ export default function AppointmentDetailHeader({
   onStartEdit,
   onStartReschedule,
   onOpenConcludeModal,
+  onSendConfirmation,
+  isSendingConfirmation = false,
+  canSendConfirmation = false,
+  confirmationMessage = '',
   canModifyAppointment = true,
 }) {
   const { t } = useLanguage();
@@ -59,6 +63,17 @@ export default function AppointmentDetailHeader({
         </div>
 
         <div className="flex flex-wrap gap-3">
+          {canSendConfirmation && !isTerminalAppointment ? (
+            <button
+              type="button"
+              onClick={onSendConfirmation}
+              disabled={isSendingConfirmation}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Mail className="h-4 w-4 text-teal-700" />
+              {isSendingConfirmation ? t('Sending confirmation…') : t('Send confirmation')}
+            </button>
+          ) : null}
           {canModifyAppointment && !isEditing && !isTerminalAppointment ? (
             <button
               type="button"
@@ -97,6 +112,7 @@ export default function AppointmentDetailHeader({
           ) : null}
         </div>
       </div>
+      {confirmationMessage ? <p role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{confirmationMessage}</p> : null}
     </section>
   );
 }

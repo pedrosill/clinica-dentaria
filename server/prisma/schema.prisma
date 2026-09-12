@@ -206,6 +206,23 @@ model Appointment {
   treatmentPlanItems TreatmentPlanItem[]
   recalls            PatientRecall[]
   waitlistEntry      WaitlistEntry?
+  confirmationRequests AppointmentConfirmation[]
+}
+
+model AppointmentConfirmation {
+  id            Int          @id @default(autoincrement())
+  appointmentId Int
+  tokenHash     String       @unique
+  status        String       @default("pending") // pending, confirmed, declined, expired
+  sentAt        DateTime?
+  respondedAt   DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  appointment   Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, status])
+  @@index([expiresAt, status])
 }
 
 model PatientRecall {

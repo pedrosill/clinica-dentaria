@@ -96,6 +96,13 @@ const arrivedAtMigrationPath = path.join(
   '20260912130000_add_appointment_arrived_at',
   'migration.sql'
 );
+const confirmationMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260912130000_add_appointment_confirmations',
+  'migration.sql'
+);
 
 process.env.DATABASE_URL = `file:${databasePath.replaceAll('\\', '/')}`;
 
@@ -113,6 +120,7 @@ database.exec(fs.readFileSync(waitlistMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(waitlistAppointmentsMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(complianceMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(arrivedAtMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(confirmationMigrationPath, 'utf8'));
 database.close();
 
 const app = require('../app');

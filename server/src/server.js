@@ -4,6 +4,7 @@ const { runSeed } = require('./startup/seed');
 const { backfillPatientIdentityFields } = require('./startup/backfill');
 const { ensureDefaultAdmin } = require('./startup/defaultAdmin');
 const { ensureClinicSettings } = require('./services/clinicSettingsService');
+const { startAppointmentConfirmationScheduler } = require('./services/appointmentConfirmationService');
 
 async function startServer() {
   try {
@@ -17,6 +18,7 @@ async function startServer() {
 
     app.listen(PORT, HOST, () => {
       console.log(`Server running on http://${HOST}:${PORT}${LOCAL_ONLY ? ' (local-only)' : ''}`);
+      startAppointmentConfirmationScheduler();
     });
   } catch (error) {
     console.error('Failed to start server:', error);

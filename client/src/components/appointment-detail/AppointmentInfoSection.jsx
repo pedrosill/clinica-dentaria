@@ -64,6 +64,7 @@ export default function AppointmentInfoSection({
     },
     [appointment?.treatmentType, appointmentTypes, t]
   );
+  const confirmation = appointment?.confirmationRequests?.[0];
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
@@ -117,6 +118,8 @@ export default function AppointmentInfoSection({
                 {appointment.performedTreatment || t('Not recorded yet')}
               </p>
             </div>
+
+            {confirmation ? <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t('Patient confirmation')}</p><p className="mt-2 text-sm font-medium text-slate-900">{t(confirmation.status === 'confirmed' ? 'Presence confirmed' : confirmation.status === 'declined' ? 'Patient cannot attend' : confirmation.status === 'expired' ? 'Confirmation expired' : 'Awaiting patient response')}</p></div> : null}
 
             <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -202,6 +205,8 @@ export default function AppointmentInfoSection({
                 {appointment.notes || t('No scheduling notes recorded.')}
               </p>
             </div>
+
+            {confirmation ? <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t('Patient confirmation')}</p><p className="mt-2 text-sm font-medium text-slate-900">{t(confirmation.status === 'confirmed' ? 'Presence confirmed' : confirmation.status === 'declined' ? 'Patient cannot attend' : confirmation.status === 'expired' ? 'Confirmation expired' : 'Awaiting patient response')}</p></div> : null}
 
             <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">

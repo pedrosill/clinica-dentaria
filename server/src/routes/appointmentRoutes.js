@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.get('/', requirePermission('appointment', 'read'), appointmentController.getAppointments);
 router.get('/availability', requirePermission('appointment', 'read'), appointmentController.getAppointmentAvailability);
+router.post('/:appointmentId/confirmation', requirePermission('appointment', 'schedule'), appointmentController.sendAppointmentConfirmation);
 router.get('/:appointmentId', requirePermission('appointment', 'read'), appointmentController.getAppointmentById);
 
 // ADD THIS NEW ROUTE

@@ -85,6 +85,7 @@ const waitlistAppointmentsMigrationPath = path.join(
 const mfaMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912110000_add_mfa_and_password_recovery', 'migration.sql');
 const complianceMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912120000_add_compliance_transcription_documents', 'migration.sql');
 const arrivedAtMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912130000_add_appointment_arrived_at', 'migration.sql');
+const confirmationMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912130000_add_appointment_confirmations', 'migration.sql');
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
@@ -99,6 +100,7 @@ integrationDatabase.exec(fs.readFileSync(waitlistAppointmentsMigrationPath, 'utf
 integrationDatabase.exec(fs.readFileSync(mfaMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(complianceMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(arrivedAtMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(confirmationMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');

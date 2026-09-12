@@ -21,6 +21,18 @@ const { recordAuditEvent } = require('./auditService');
 const appointmentListInclude = {
   patient: true,
   doctor: true,
+  confirmationRequests: {
+    select: {
+      id: true,
+      status: true,
+      sentAt: true,
+      respondedAt: true,
+      expiresAt: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
 };
 
 function appointmentDetailIncludeFor(user) {
@@ -36,6 +48,18 @@ function appointmentDetailIncludeFor(user) {
           },
         },
       },
+    },
+    confirmationRequests: {
+      select: {
+        id: true,
+        status: true,
+        sentAt: true,
+        respondedAt: true,
+        expiresAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 1,
     },
   };
 }

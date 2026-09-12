@@ -139,6 +139,12 @@ Set `BACKUP_SECONDARY_DIR` for a second approved copy and run `npm run db:backup
 
 The operational checklist, scheduling recommendation, and restore drill are documented in [`docs/OPERATIONS_BACKUP.md`](docs/OPERATIONS_BACKUP.md). The full deployment and clinic acceptance runbook is in [`docs/CLINIC_DEPLOYMENT_RUNBOOK.md`](docs/CLINIC_DEPLOYMENT_RUNBOOK.md), and the compliance checklist is available under Settings > Compliance after login.
 
+## Experimental appointment confirmations
+
+The branch `codex/experimental-email-confirmations` contains an opt-in prototype. When SMTP settings and `CONFIRMATION_PUBLIC_BASE_URL` are configured, the server checks active appointments two days ahead, sends a message with confirmation/decline links, and stores the patient's response on the appointment. The same flow can be triggered manually from appointment detail for testing.
+
+Because the clinic app is local-only, `CONFIRMATION_PUBLIC_BASE_URL` cannot be `localhost` if patients use their own phones or computers. It must point to a separately reachable confirmation endpoint/relay, or the flow must remain disabled. This prototype is not a production-ready public exposure of the clinical app.
+
 ## Build the frontend
 
 ```bash

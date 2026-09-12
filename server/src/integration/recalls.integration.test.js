@@ -23,6 +23,7 @@ const migrationNames = [
   '20260912110000_add_mfa_and_password_recovery',
   '20260912120000_add_compliance_transcription_documents',
   '20260912130000_add_appointment_arrived_at',
+  '20260912130000_add_appointment_confirmations',
 ];
 const database = new Database(databasePath);
 for (const migrationName of migrationNames) {

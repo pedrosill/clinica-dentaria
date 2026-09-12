@@ -1,4 +1,5 @@
 const appointmentService = require('../services/appointmentService');
+const appointmentConfirmationService = require('../services/appointmentConfirmationService');
 
 async function getAppointments(req, res, next) {
   try {
@@ -13,6 +14,18 @@ async function getAppointmentById(req, res, next) {
   try {
     const appointment = await appointmentService.getAppointmentById(req.params.appointmentId, req.user);
     res.json(appointment);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function sendAppointmentConfirmation(req, res, next) {
+  try {
+    const confirmation = await appointmentConfirmationService.sendAppointmentConfirmation(req.params.appointmentId, {
+      req,
+      actor: req.user,
+    });
+    res.status(confirmation.alreadySent ? 200 : 202).json(confirmation);
   } catch (error) {
     next(error);
   }
@@ -110,6 +123,7 @@ async function updateAppointmentStatus(req, res, next) {
 module.exports = {
   getAppointments,
   getAppointmentById,
+  sendAppointmentConfirmation,
   getAppointmentAvailability,
   getRescheduleOptions, // ADD THIS EXPORT
   createAppointment,

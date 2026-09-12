@@ -11,6 +11,7 @@ const waitlistRoutes = require('./waitlistRoutes');
 const reportRoutes = require('./reportRoutes');
 const complianceRoutes = require('./complianceRoutes');
 const workQueueRoutes = require('./workQueueRoutes');
+const appointmentConfirmationRoutes = require('./appointmentConfirmationRoutes');
 const { requireAuth } = require('../middleware/auth');
 const { auditRequest } = require('../services/auditService');
 
@@ -18,6 +19,7 @@ const router = express.Router();
 
 router.use(auditRequest);
 router.use('/auth', authRoutes);
+router.use('/public/appointment-confirmations', appointmentConfirmationRoutes);
 router.use('/', requireAuth, governanceRoutes);
 router.use('/patients', requireAuth, patientRoutes);
 router.use('/doctors', requireAuth, doctorRoutes);

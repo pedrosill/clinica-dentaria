@@ -22,3 +22,9 @@ export function deleteAppointment(id) {
     method: 'DELETE',
   });
 }
+
+export function sendAppointmentConfirmation(id) {
+  return apiRequest(`/api/appointments/${id}/confirmation`, {
+    method: 'POST',
+  });
+}
