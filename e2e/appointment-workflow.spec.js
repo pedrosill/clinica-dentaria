@@ -140,6 +140,7 @@ test('switches the clinic interface between English and European Portuguese', as
   await page.getByTestId('login-email').fill('browser.admin@example.test');
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByTestId('login-submit').click();
+  await page.getByRole('button', { name: 'Edit clinic settings', exact: true }).click();
   await expect(page.getByTestId('language-select')).toBeVisible();
   await expect(page.getByTestId('language-select')).toBeEnabled();
 
@@ -152,6 +153,7 @@ test('switches the clinic interface between English and European Portuguese', as
   await page.reload();
   await expect(page.getByRole('link', { name: 'Definições', exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT');
+  await page.getByRole('button', { name: 'Editar definições da clínica', exact: true }).click();
   await expect(page.getByTestId('language-select')).toBeEnabled();
 
   await page.goto('/agenda');
@@ -168,6 +170,7 @@ test('switches the clinic interface between English and European Portuguese', as
   await portugueseModal.getByRole('button', { name: 'Fechar janela', exact: true }).click();
 
   await page.goto('/settings');
+  await page.getByRole('button', { name: 'Editar definições da clínica', exact: true }).click();
   await expect(page.getByTestId('language-select')).toBeVisible();
   await page.getByTestId('language-select').selectOption('en');
   await page.getByTestId('save-clinic-settings').click();
