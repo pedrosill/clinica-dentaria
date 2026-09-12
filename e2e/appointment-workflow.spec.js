@@ -63,6 +63,7 @@ test('creates an appointment, shows it on the dashboard, and reschedules it', as
   await page.goto(`/agenda?date=${oldDate}`);
   await page.getByRole('link', { name: 'Open appointment', exact: true }).click();
   await expect(page).toHaveURL(/\/appointments\/\d+$/);
+  await expect(page.getByRole('button', { name: 'Back to Agenda', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Reschedule', exact: true }).click();
 
   const rescheduleModal = page.getByTestId('reschedule-modal');

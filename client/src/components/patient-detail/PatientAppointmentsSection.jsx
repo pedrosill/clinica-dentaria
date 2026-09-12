@@ -1,6 +1,7 @@
 import { CalendarDays } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import useLanguage from '../../context/useLanguage';
+import { createAppointmentReturnState } from '../../utils/appointmentNavigation';
 
 export default function PatientAppointmentsSection({
   title,
@@ -13,6 +14,7 @@ export default function PatientAppointmentsSection({
   getStatusLabel,
 }) {
   const { t, locale } = useLanguage();
+  const location = useLocation();
 
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
@@ -58,6 +60,7 @@ export default function PatientAppointmentsSection({
 
                   <Link
                     to={`/appointments/${appointment.id}`}
+                    state={createAppointmentReturnState(location, 'Back to patient')}
                     className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
                   >
                     <CalendarDays className="mr-2 h-4 w-4" />

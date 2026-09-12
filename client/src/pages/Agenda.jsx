@@ -24,6 +24,7 @@ import {
   startOfDay,
   startOfWeek,
 } from '../utils/agendaUtils';
+import { createAppointmentReturnState } from '../utils/appointmentNavigation';
 
 export default function Agenda() {
   const navigate = useNavigate();
@@ -196,6 +197,7 @@ export default function Agenda() {
       <div className="flex flex-wrap gap-2">
         <Link
           to={`/appointments/${appointment.id}`}
+          state={createAppointmentReturnState(location, 'Back to Agenda')}
           className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100"
         >
           {t('Open appointment')}
@@ -257,7 +259,10 @@ export default function Agenda() {
           getStatusLabel={getStatusLabel}
           onSelectDate={(day) => setSelectedDate(startOfDay(day))}
           onOpenCreateModal={openCreateModal}
-          onOpenAppointment={(appointmentId) => navigate(`/appointments/${appointmentId}`)}
+          onOpenAppointment={(appointmentId) => navigate(
+            `/appointments/${appointmentId}`,
+            { state: createAppointmentReturnState(location, 'Back to Agenda') }
+          )}
           showDoctor={selectedDoctorId === 'all'}
         />
       ) : (

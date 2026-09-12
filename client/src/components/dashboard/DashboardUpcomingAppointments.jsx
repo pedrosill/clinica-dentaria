@@ -2,9 +2,10 @@
    Imports
 ================================ */
 import { ArrowRight, CalendarDays } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import StateCard from '../StateCard';
 import { formatFullDate, getPatientDisplayName } from '../../utils/agendaUtils';
+import { createAppointmentReturnState } from '../../utils/appointmentNavigation';
 import useLanguage from '../../context/useLanguage';
 
 /* ================================
@@ -12,6 +13,7 @@ import useLanguage from '../../context/useLanguage';
 ================================ */
 export default function DashboardUpcomingAppointments({ appointments }) {
   const { t } = useLanguage();
+  const location = useLocation();
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center gap-3">
@@ -28,7 +30,7 @@ export default function DashboardUpcomingAppointments({ appointments }) {
       <div className="mt-6 space-y-3">
         {appointments.length > 0 ? (
           appointments.map((appointment) => (
-            <Link key={appointment.id} to={`/appointments/${appointment.id}`} className="group block border-t border-slate-200 py-4 first:border-t-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-200">
+            <Link key={appointment.id} to={`/appointments/${appointment.id}`} state={createAppointmentReturnState(location, 'Back to dashboard')} className="group block border-t border-slate-200 py-4 first:border-t-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-200">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">
