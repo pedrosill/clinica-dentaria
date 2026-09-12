@@ -197,6 +197,7 @@ model Appointment {
   treatmentType      String // Scheduled treatment
   performedTreatment String? // Completed treatment result
   status             String              @default("scheduled") // scheduled, arrived, completed, cancelled, no_show
+  arrivedAt          DateTime?
   notes              String?
   completionNotes    String?
   archivedAt         DateTime?

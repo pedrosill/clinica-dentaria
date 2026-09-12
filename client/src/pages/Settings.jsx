@@ -11,7 +11,7 @@ import {
   Stethoscope,
   Trash2,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import useAuth from '../context/useAuth';
 import useLanguage from '../context/useLanguage';
 import { LANGUAGE_OPTIONS } from '../context/languageConstants';
@@ -87,6 +87,7 @@ function buildProviderDraft(doctorId, settings) {
 export default function Settings() {
   const { user } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const location = useLocation();
   const canManage = user?.role === 'admin';
   const [settings, setSettings] = useState(null);
   const [scheduleDraft, setScheduleDraft] = useState([]);
@@ -98,7 +99,12 @@ export default function Settings() {
   const [typeDrafts, setTypeDrafts] = useState({});
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
-  const [activeSettingsSection, setActiveSettingsSection] = useState('clinic');
+  const initialSettingsSection = new URLSearchParams(location.search).get('section');
+  const [activeSettingsSection, setActiveSettingsSection] = useState(
+    ['clinic', 'scheduling', 'team', 'account', 'compliance'].includes(initialSettingsSection)
+      ? initialSettingsSection
+      : 'clinic'
+  );
   const [editingSettingsSection, setEditingSettingsSection] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
