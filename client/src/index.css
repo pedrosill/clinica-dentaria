@@ -17,3 +17,57 @@ body {
   background: #ffffff;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 20px -14px rgb(15 23 42 / 0.35);
 }
+
+/* Keep native selects and date/time pickers visually aligned with the app controls. */
+select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 1rem !important;
+  background-color: #f8fafc !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.1rem) 50%,
+    calc(100% - 0.8rem) 50%;
+  background-repeat: no-repeat;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  color: #1e293b !important;
+  padding: 0.75rem 3rem 0.75rem 1rem !important;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+select:hover:not(:disabled),
+input[type='date']:hover:not(:disabled),
+input[type='time']:hover:not(:disabled) {
+  background-color: #ffffff !important;
+}
+
+select:focus,
+input[type='date']:focus,
+input[type='time']:focus {
+  border-color: #0f766e !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgb(204 251 241 / 0.8) !important;
+  outline: none;
+}
+
+select:disabled,
+input[type='date']:disabled,
+input[type='time']:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+input[type='date'],
+input[type='time'] {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 1rem !important;
+  background-color: #f8fafc !important;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  color: #1e293b !important;
+  padding: 0.75rem 1rem !important;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
