@@ -2,16 +2,47 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../context/useAuth';
 import useLanguage from '../context/useLanguage';
+import { getLoginUsers } from '../services/auth';
+
+const roleLabels = {
+  admin: 'Administrator',
+  receptionist: 'Receptionist',
+  dentist: 'Dentist',
+};
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
   const { t } = useLanguage();
-  const [email, setEmail] = useState('');
+  const [users, setUsers] = useState([]);
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getLoginUsers()
+      .then((data) => {
+        if (!isMounted) return;
+        const availableUsers = Array.isArray(data.users) ? data.users : [];
+        setUsers(availableUsers);
+        if (availableUsers.length === 1) setUserId(String(availableUsers[0].id));
+      })
+      .catch((loadError) => {
+        if (isMounted) setError(loadError.message || t('Unable to load users'));
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingUsers(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -29,7 +60,7 @@ export default function Login() {
     setError('');
 
     try {
-      await login({ email, password });
+      await login({ userId, password });
       const from = location.state?.from;
       const destination = `${from?.pathname || '/'}${from?.search || ''}`;
       navigate(destination, { replace: true });
@@ -55,19 +86,26 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} autoComplete="off" className="mt-6 space-y-4">
           <div className="space-y-2">
-            <label htmlFor="login-email" className="text-sm font-medium text-slate-800">
-              {t('Email')}
+            <label htmlFor="login-user" className="text-sm font-medium text-slate-800">
+              {t('User')}
             </label>
-            <input
-              id="login-email"
-              data-testid="login-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+            <select
+              id="login-user"
+              data-testid="login-user"
+              value={userId}
+              onChange={(event) => setUserId(event.target.value)}
               autoComplete="off"
               required
-              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
-            />
+              disabled={isLoadingUsers || isSubmitting || users.length === 0}
+            >
+              <option value="">{isLoadingUsers ? t('Loading users…') : t('Select user')}</option>
+              {users.map((loginUser) => (
+                <option key={loginUser.id} value={loginUser.id}>
+                  {loginUser.displayName} · {t(roleLabels[loginUser.role] || loginUser.role)}
+                </option>
+              ))}
+            </select>
+            {!isLoadingUsers && users.length === 0 ? <p className="text-xs font-normal text-red-700">{t('No active users available.')}</p> : null}
           </div>
 
           <div className="space-y-2">
@@ -82,6 +120,7 @@ export default function Login() {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="off"
               required
+              disabled={isLoadingUsers || users.length === 0}
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
             />
           </div>
@@ -89,7 +128,7 @@ export default function Login() {
           <button
             type="submit"
             data-testid="login-submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingUsers || users.length === 0}
             className="w-full rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting ? t('Signing in…') : t('Sign in')}

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('creates and updates a patient recall', async ({ page }) => {
   await page.goto('/recalls');
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByTestId('login-email').fill('browser.admin@example.test');
+  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Admin · Administrator' });
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByTestId('login-submit').click();
   await expect(page.getByTestId('recall-create-form')).toBeVisible();

@@ -6,6 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 router.get('/csrf', asyncHandler(authController.csrf));
+router.get('/users', asyncHandler(authController.loginUsers));
 router.post('/login', asyncHandler(authController.login));
 router.post('/logout', asyncHandler(authController.logout));
 router.get('/me', requireAuth, asyncHandler(authController.me));

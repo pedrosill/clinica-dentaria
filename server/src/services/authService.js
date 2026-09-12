@@ -78,9 +78,10 @@ async function createUser({ email, displayName, password, role = 'receptionist',
   return toPublicUser(user);
 }
 
-async function login({ email, password, userAgent, ipAddress }) {
+async function login({ userId, email, password, userAgent, ipAddress }) {
+  const normalizedUserId = userId ? parseNumericId(userId, 'user id') : null;
   const user = await prisma.user.findUnique({
-    where: { email: normalizeEmail(email) },
+    where: normalizedUserId ? { id: normalizedUserId } : { email: normalizeEmail(email) },
     select: {
       ...PUBLIC_USER_SELECT,
       passwordHash: true,
@@ -88,7 +89,7 @@ async function login({ email, password, userAgent, ipAddress }) {
   });
 
   if (!user || !user.isActive || !verifyPassword(password, user.passwordHash)) {
-    throw new HttpError(401, 'Invalid email or password');
+    throw new HttpError(401, 'Invalid user or password');
   }
 
   const token = createSessionToken();
@@ -206,6 +207,14 @@ async function listUsers() {
   return users.map(toPublicUser);
 }
 
+async function listLoginUsers() {
+  return prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, displayName: true, role: true },
+    orderBy: { displayName: 'asc' },
+  });
+}
+
 async function setUserActive(userId, isActive, actor) {
   const id = parseNumericId(userId, 'user id');
   if (id === Number(actor?.id) && !isActive) {
@@ -229,6 +238,7 @@ module.exports = {
   createUser,
   changePassword,
   getUserFromRequest,
+  listLoginUsers,
   listUsers,
   login,
   revokeSessionFromRequest,

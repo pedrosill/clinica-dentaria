@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('creates and contacts a waitlist entry', async ({ page }) => {
   await page.goto('/waitlist');
-  await page.getByTestId('login-email').fill('browser.admin@example.test');
+  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Admin · Administrator' });
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(/\/waitlist$/);

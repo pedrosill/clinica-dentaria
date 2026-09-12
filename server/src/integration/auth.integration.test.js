@@ -85,6 +85,25 @@ test.after(async () => {
   fs.rmSync(databasePath, { force: true });
 });
 
+test('lists active login users without exposing email and accepts user id login', async () => {
+  const usersResponse = await request('/api/auth/users');
+  assert.equal(usersResponse.response.status, 200);
+  const listedUser = usersResponse.body.users.find((item) => item.id === user.id);
+
+  assert.deepEqual(listedUser, {
+    id: user.id,
+    displayName: user.displayName,
+    role: user.role,
+  });
+
+  const loginResponse = await request('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ userId: user.id, password: 'current-password-123' }),
+  });
+  assert.equal(loginResponse.response.status, 200);
+  assert.equal(loginResponse.body.user.id, user.id);
+});
+
 test('password change accepts short non-empty passwords and revokes other sessions', async () => {
   const firstSession = await login('current-password-123');
   const secondSession = await login('current-password-123');

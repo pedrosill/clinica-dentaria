@@ -33,6 +33,7 @@ async function login(req, res, next) {
     }
 
     const result = await authService.login({
+      userId: req.body?.userId,
       email: req.body?.email,
       password: req.body?.password,
       userAgent: req.get('user-agent'),
@@ -60,6 +61,12 @@ async function login(req, res, next) {
     }
     return next(error);
   }
+}
+
+async function loginUsers(req, res) {
+  const users = await authService.listLoginUsers();
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ users });
 }
 
 async function me(req, res) {
@@ -92,6 +99,7 @@ module.exports = {
   csrf,
   changePassword,
   login,
+  loginUsers,
   logout,
   me,
 };

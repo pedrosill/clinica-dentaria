@@ -19,7 +19,7 @@ test('creates an appointment, shows it on the dashboard, and reschedules it', as
 
   await page.goto('/agenda');
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByTestId('login-email').fill('browser.admin@example.test');
+  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Admin · Administrator' });
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByTestId('login-submit').click();
   await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible();
@@ -86,7 +86,7 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
   await page.context().clearCookies();
   await page.goto('/patients');
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByTestId('login-email').fill('browser.admin@example.test');
+  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Admin · Administrator' });
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByTestId('login-submit').click();
   await expect(page.getByRole('heading', { name: 'Patients', exact: true })).toBeVisible();
@@ -137,7 +137,7 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
 test('switches the clinic interface between English and European Portuguese', async ({ page }) => {
   await page.goto('/settings');
   await expect(page).toHaveURL(/\/login$/);
-  await page.getByTestId('login-email').fill('browser.admin@example.test');
+  await page.getByTestId('login-user').selectOption({ label: 'Browser Test Admin · Administrator' });
   await page.getByTestId('login-password').fill('browser-password-123');
   await page.getByTestId('login-submit').click();
   await page.getByRole('button', { name: 'Edit clinic settings', exact: true }).click();
