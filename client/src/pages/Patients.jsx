@@ -272,7 +272,7 @@ export default function Patients() {
             <p className="text-sm font-semibold text-teal-800">{t('Secretary workflow')}</p>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Patients')}</h1>
             <p className="text-sm text-slate-700">
-              {t('Search all patients and work from today&apos;s active appointment list.')}
+              {t("Search all patients and work from today's active appointment list.")}
             </p>
           </div>
 
@@ -425,7 +425,7 @@ export default function Patients() {
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
               <p className="text-sm font-medium text-slate-800">{t('No patients scheduled for today')}</p>
               <p className="mt-2 text-sm text-slate-600">
-                {t('Today&apos;s operational patient list will appear here once appointments exist.')}
+                {t("Today's operational patient list will appear here once appointments exist.")}
               </p>
             </div>
           ) : (

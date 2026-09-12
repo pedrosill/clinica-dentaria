@@ -16,6 +16,20 @@ body {
   color: #0f172a;
 }
 
+/* Do not turn a double-click on a control into accidental text selection.
+   Plain text remains selectable, as do inputs and editable clinical fields. */
+button,
+a,
+select,
+summary,
+[role='button'],
+[role='tab'],
+[role='menuitem'],
+[role='option'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 html {
   scroll-behavior: smooth;
 }
