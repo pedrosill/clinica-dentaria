@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Keep strong teal for primary actions, but use a cooler blue for soft
+   surfaces and focus states so selection, information, and success do not
+   all read as the same green signal. Emerald remains reserved for success. */
+:root {
+  --color-teal-50: #f0f9ff;
+  --color-teal-100: #e0f2fe;
+  --color-teal-200: #bae6fd;
+  --color-teal-300: #7dd3fc;
+  --color-teal-400: #38bdf8;
+}
+
 body {
   background: #eef2f7;
   color: #0f172a;
