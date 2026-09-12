@@ -7,6 +7,7 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardLoadingState from '../components/dashboard/DashboardLoadingState';
 import DashboardPatientsTable from '../components/dashboard/DashboardPatientsTable';
 import DashboardStatsCard from '../components/dashboard/DashboardStatsCard';
+import DashboardTodaySummary from '../components/dashboard/DashboardTodaySummary';
 import DashboardUpcomingAppointments from '../components/dashboard/DashboardUpcomingAppointments';
 import useDashboardData from '../hooks/useDashboardData';
 import useLanguage from '../context/useLanguage';
@@ -27,6 +28,7 @@ export default function Dashboard() {
     pageError,
     filteredPatients,
     upcomingAppointments,
+    todayAppointments,
   } = useDashboardData();
 
   if (isLoading) {
@@ -49,6 +51,8 @@ export default function Dashboard() {
         />
 
         <div className="space-y-6">
+          <DashboardTodaySummary appointments={todayAppointments} />
+
           <DashboardUpcomingAppointments appointments={upcomingAppointments} />
 
           <DashboardStatsCard

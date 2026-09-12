@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildDashboardUpcomingAppointments } from './dashboardUtils.js';
+import {
+  buildDashboardTodayAppointments,
+  buildDashboardTodaySummary,
+  buildDashboardUpcomingAppointments,
+} from './dashboardUtils.js';
 
 function localDateWithOffset(daysFromToday) {
   const value = new Date();
@@ -45,4 +49,35 @@ test('limits the dashboard list to four appointments', () => {
     buildDashboardUpcomingAppointments(appointments).map((item) => item.id),
     [1, 2, 3, 4]
   );
+});
+
+test("builds today's appointments in time order without excluding completed visits", () => {
+  const referenceDate = new Date(`${localDateWithOffset(0)}T12:00:00`);
+  const appointments = [
+    appointment(1, 0, '15:00'),
+    appointment(2, -1, '10:00'),
+    appointment(3, 0, '09:00', 'completed'),
+    appointment(4, 0, '11:00', 'arrived'),
+  ];
+
+  assert.deepEqual(
+    buildDashboardTodayAppointments(appointments, referenceDate).map((item) => item.id),
+    [3, 4, 1]
+  );
+});
+
+test('summarizes open and arrived appointments and prioritizes an arrived patient', () => {
+  const referenceDate = new Date(`${localDateWithOffset(0)}T12:00:00`);
+  const appointments = [
+    appointment(1, 0, '15:00'),
+    appointment(2, 0, '10:00', 'arrived'),
+    appointment(3, 0, '09:00', 'completed'),
+  ];
+
+  assert.deepEqual(buildDashboardTodaySummary(appointments, referenceDate), {
+    appointments: [appointments[2], appointments[1], appointments[0]],
+    activeCount: 2,
+    arrivedCount: 1,
+    nextAppointment: appointments[1],
+  });
 });

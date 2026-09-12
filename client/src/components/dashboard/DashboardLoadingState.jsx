@@ -20,6 +20,9 @@ export default function DashboardLoadingState() {
             <div className="h-48 animate-pulse rounded-3xl bg-slate-100" />
           </section>
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="h-56 animate-pulse rounded-3xl bg-slate-100" />
+          </section>
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="h-40 animate-pulse rounded-3xl bg-slate-100" />
           </section>
         </div>

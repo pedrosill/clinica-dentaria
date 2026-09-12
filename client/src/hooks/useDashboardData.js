@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import useLanguage from '../context/useLanguage';
 import { API_BASE_URL } from '../constants/agendaConstants';
 import {
+  buildDashboardTodayAppointments,
   buildDashboardUpcomingAppointments,
   filterDashboardPatients,
 } from '../utils/dashboardUtils';
@@ -93,6 +94,10 @@ export default function useDashboardData() {
     return buildDashboardUpcomingAppointments(appointments);
   }, [appointments]);
 
+  const todayAppointments = useMemo(() => {
+    return buildDashboardTodayAppointments(appointments);
+  }, [appointments]);
+
   return {
     patients,
     appointments,
@@ -102,5 +107,6 @@ export default function useDashboardData() {
     pageError,
     filteredPatients,
     upcomingAppointments,
+    todayAppointments,
   };
 }

@@ -5,6 +5,7 @@ import {
   getAppointmentDateTime,
   getAppLocale,
   getPatientDisplayName,
+  isSameDay,
   isActiveAppointmentStatus,
 } from './agendaUtils.js';
 
@@ -62,4 +63,43 @@ export function buildDashboardUpcomingAppointments(appointments) {
     })
     .sort((first, second) => getAppointmentDateTime(first) - getAppointmentDateTime(second))
     .slice(0, 4);
+}
+
+/* ================================
+   Helpers: today's operational view
+   Keep the dashboard focused on the
+   clinic's immediate workload without
+   introducing another API request.
+================================ */
+export function buildDashboardTodayAppointments(
+  appointments,
+  referenceDate = new Date()
+) {
+  return [...appointments]
+    .filter((appointment) => isSameDay(appointment.date, referenceDate))
+    .sort((first, second) => getAppointmentDateTime(first) - getAppointmentDateTime(second));
+}
+
+export function buildDashboardTodaySummary(
+  appointments,
+  referenceDate = new Date()
+) {
+  const todayAppointments = buildDashboardTodayAppointments(appointments, referenceDate);
+  const activeAppointments = todayAppointments.filter((appointment) =>
+    isActiveAppointmentStatus(appointment.status || 'scheduled')
+  );
+  const arrivedAppointments = todayAppointments.filter(
+    (appointment) => appointment.status === 'arrived'
+  );
+  const arrivedAppointment = arrivedAppointments[0] || null;
+  const nextScheduledAppointment = activeAppointments.find(
+    (appointment) => getAppointmentDateTime(appointment) >= referenceDate
+  );
+
+  return {
+    appointments: todayAppointments,
+    activeCount: activeAppointments.length,
+    arrivedCount: arrivedAppointments.length,
+    nextAppointment: arrivedAppointment || nextScheduledAppointment,
+  };
 }
