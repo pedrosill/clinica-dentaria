@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import useAuth from '../../context/useAuth';
 import useLanguage from '../../context/useLanguage';
+import AnimatedDisclosure from '../ui/AnimatedDisclosure';
 import SelectDropdown from '../ui/SelectDropdown';
 import {
   createClinicalNote,
@@ -18,7 +19,7 @@ import {
   createTreatmentPlanItem,
   deleteToothChartEntry,
   saveToothChartEntry,
-  updateClinicalNote,
+  validateClinicalNote,
   updateClinicalProfile,
   updateTreatmentPlan,
 } from '../../services/clinical';
@@ -150,6 +151,8 @@ export default function ClinicalRecordSection({
     (appointment) => !appointment.archivedAt && Number(appointment.doctorId) === Number(user.doctorId)
   );
   const canManage = user?.role === 'admin' || user?.role === 'receptionist' || dentistOwnsPatient;
+  const isTranscriber = user?.role === 'receptionist';
+  const canValidate = user?.role === 'admin' || dentistOwnsPatient;
   const [profileForm, setProfileForm] = useState(emptyProfile());
   const [selectedTooth, setSelectedTooth] = useState('11');
   const [selectedSurface, setSelectedSurface] = useState('whole');
@@ -238,7 +241,7 @@ export default function ClinicalRecordSection({
   async function handleSaveProfile(event) {
     event.preventDefault();
     const saved = await runMutation(async () => {
-      const profile = await updateClinicalProfile(patientId, profileForm);
+      const profile = await updateClinicalProfile(patientId, { ...profileForm, transcriptionMode: isTranscriber });
       setClinicalRecord((current) => ({ ...current, profile }));
     }, t('Clinical profile saved.'));
     if (saved) setEditingSection(null);
@@ -251,6 +254,7 @@ export default function ClinicalRecordSection({
         toothNumber: selectedTooth,
         surface: selectedSurface,
         ...toothForm,
+        transcriptionMode: isTranscriber,
       });
       setClinicalRecord((current) => ({
         ...current,
@@ -270,7 +274,7 @@ export default function ClinicalRecordSection({
     if (!entry) return;
 
     await runMutation(async () => {
-      await deleteToothChartEntry(patientId, entry.id);
+      await deleteToothChartEntry(patientId, entry.id, { transcriptionMode: isTranscriber });
       setClinicalRecord((current) => ({
         ...current,
         toothChart: (current.toothChart || []).filter((item) => item.id !== entry.id),
@@ -291,6 +295,7 @@ export default function ClinicalRecordSection({
         ...noteForm,
         appointmentId: noteForm.appointmentId || null,
         status: 'draft',
+        transcriptionMode: isTranscriber,
       });
       setClinicalRecord((current) => ({ ...current, notes: [note, ...(current.notes || [])] }));
       setNoteForm({
@@ -305,15 +310,18 @@ export default function ClinicalRecordSection({
     if (saved) setEditingSection(null);
   }
 
-  async function handleFinalizeNote(note) {
+  async function handleValidateNote(note) {
     await runMutation(async () => {
-      const updated = await updateClinicalNote(patientId, note.id, { ...note, status: 'final' });
+      const updated = await validateClinicalNote(patientId, note.id);
       setClinicalRecord((current) => ({
         ...current,
         notes: current.notes.map((item) => item.id === updated.id ? updated : item),
       }));
-    }, t('Clinical note finalized and locked.'));
+    }, t('Clinical note validated by the doctor and locked.'));
   }
+
+  // Backwards-compatible handler name used by the existing note card markup.
+  const handleFinalizeNote = handleValidateNote;
 
   async function handleCreatePlan(event) {
     event.preventDefault();
@@ -323,7 +331,7 @@ export default function ClinicalRecordSection({
     }
 
     const saved = await runMutation(async () => {
-      const plan = await createTreatmentPlan(patientId, planForm);
+      const plan = await createTreatmentPlan(patientId, { ...planForm, transcriptionMode: isTranscriber });
       setClinicalRecord((current) => ({ ...current, treatmentPlans: [plan, ...(current.treatmentPlans || [])] }));
       setSelectedPlanId(String(plan.id));
       setPlanForm({ title: '', notes: '' });
@@ -338,6 +346,7 @@ export default function ClinicalRecordSection({
         title: selectedPlan.title,
         notes: selectedPlan.notes,
         status,
+        transcriptionMode: isTranscriber,
       });
       setClinicalRecord((current) => ({
         ...current,
@@ -359,6 +368,7 @@ export default function ClinicalRecordSection({
         toothNumber: planItemForm.toothNumber || null,
         surface: planItemForm.surface || null,
         priority: Number(planItemForm.priority),
+        transcriptionMode: isTranscriber,
       });
       setClinicalRecord((current) => ({
         ...current,
@@ -387,7 +397,7 @@ export default function ClinicalRecordSection({
           </div>
           <div className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 ring-1 ring-slate-300">
             <Stethoscope className="h-4 w-4 text-teal-700" />
-            {canManage ? t('Editable clinical workspace') : t('Read-only clinical workspace')}
+            {isTranscriber ? t('Transcription workspace - doctor validation required') : canValidate ? t('Doctor validation enabled') : canManage ? t('Editable clinical workspace') : t('Read-only clinical workspace')}
           </div>
         </div>
 
@@ -405,7 +415,8 @@ export default function ClinicalRecordSection({
             <Edit3 className="h-4 w-4 text-teal-700" />{editingSection === 'medical' ? t('Close editor') : t('Edit medical context')}
           </button> : null}
         </div>
-        {editingSection === 'medical' && canManage ? <form onSubmit={handleSaveProfile} className="mt-5 grid gap-4 md:grid-cols-2">
+        <AnimatedDisclosure open={editingSection === 'medical' && canManage}>
+          {editingSection === 'medical' && canManage ? <form onSubmit={handleSaveProfile} className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm font-medium text-slate-700">
             {t('Allergies')}
             <textarea disabled={!canManage || isSaving} value={profileForm.allergies} onChange={(event) => setProfileForm((current) => ({ ...current, allergies: event.target.value }))} className={`${inputClass} min-h-24 resize-y`} placeholder={t('Medication, latex or other allergies')} />
@@ -433,7 +444,9 @@ export default function ClinicalRecordSection({
             </label>
           </div>
           {canManage ? <button disabled={isSaving} type="submit" className="inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save clinical profile')}</button> : null}
-        </form> : <div className="mt-5 grid gap-x-6 gap-y-4 text-sm md:grid-cols-2">
+        </form> : null}
+        </AnimatedDisclosure>
+        {editingSection !== 'medical' || !canManage ? <div className="mt-5 grid gap-x-6 gap-y-4 text-sm md:grid-cols-2">
           {[
             ['Allergies', profileForm.allergies],
             ['Current medication', profileForm.medications],
@@ -445,7 +458,7 @@ export default function ClinicalRecordSection({
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t(label)}</p>
             <p className="mt-1 whitespace-pre-wrap leading-6 text-slate-700">{value || t('Not recorded')}</p>
           </div>)}
-        </div>}
+        </div> : null}
       </section>
 
       <section className={panelClass}>
@@ -492,7 +505,8 @@ export default function ClinicalRecordSection({
             </div>
           </div>
 
-          {editingSection === 'odontogram' && canManage ? <form onSubmit={handleSaveTooth} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <AnimatedDisclosure open={editingSection === 'odontogram' && canManage}>
+            {editingSection === 'odontogram' && canManage ? <form onSubmit={handleSaveTooth} className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between gap-3 border-b border-slate-300 pb-3">
               <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-800">{t('Selected tooth')}</p><p className="mt-1 text-2xl font-semibold text-slate-950">{selectedTooth}</p></div>
               {toothChart.some((item) => item.toothNumber === selectedTooth) ? <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800 ring-1 ring-teal-200">{t('Charted')}</span> : null}
@@ -504,7 +518,9 @@ export default function ClinicalRecordSection({
               <label className="block space-y-2 text-sm font-medium text-slate-700">{t('Clinical note')}<textarea disabled={!canManage || isSaving} value={toothForm.notes} onChange={(event) => setToothForm((current) => ({ ...current, notes: event.target.value }))} className={`${inputClass} min-h-24 resize-y`} placeholder={t('Finding, material, or follow-up')} /></label>
               {canManage ? <div className="flex flex-wrap gap-2"><button disabled={isSaving} type="submit" className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save finding')}</button><button disabled={isSaving || !toothChart.some((item) => item.toothNumber === selectedTooth && item.surface === selectedSurface)} type="button" onClick={handleRemoveTooth} className="inline-flex items-center gap-2 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"><Trash2 className="h-4 w-4" />{t('Remove')}</button></div> : null}
             </div>
-          </form> : <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          </form> : null}
+          </AnimatedDisclosure>
+          {editingSection !== 'odontogram' || !canManage ? <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="border-b border-slate-200 pb-3">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-800">{t('Selected tooth')}</p>
               <p className="mt-1 text-2xl font-semibold text-slate-950">{selectedTooth}</p>
@@ -516,14 +532,14 @@ export default function ClinicalRecordSection({
               </div>)}
             </div>
             {canManage ? <p className="mt-5 text-xs text-slate-500">{t('Select Edit odontogram to change findings.')}</p> : null}
-          </div>}
+          </div> : null}
         </div>
       </section>
 
       <section className={panelClass}>
-        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between"><div className="flex items-start gap-3"><FileText className="mt-0.5 h-5 w-5 text-teal-700" /><div><h3 className="text-lg font-semibold text-slate-950">{t('Clinical notes')}</h3><p className="mt-1 text-sm text-slate-600">{t('Draft notes can be edited; finalized notes are locked for record integrity.')}</p></div></div>{canManage ? <button type="button" onClick={() => setEditingSection(editingSection === 'notes' ? null : 'notes')} className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><Plus className="h-4 w-4 text-teal-700" />{editingSection === 'notes' ? t('Close editor') : t('Add clinical note')}</button> : null}</div>
+        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between"><div className="flex items-start gap-3"><FileText className="mt-0.5 h-5 w-5 text-teal-700" /><div><h3 className="text-lg font-semibold text-slate-950">{t('Clinical notes')}</h3><p className="mt-1 text-sm text-slate-600">{isTranscriber ? t('Paper records are transcribed as drafts and must be validated by the doctor.') : t('Draft notes can be edited; finalized notes are locked for record integrity.')}</p></div></div>{canManage ? <button type="button" onClick={() => setEditingSection(editingSection === 'notes' ? null : 'notes')} className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><Plus className="h-4 w-4 text-teal-700" />{editingSection === 'notes' ? t('Close editor') : t('Add clinical note')}</button> : null}</div>
         {canManage && editingSection === 'notes' ? <form onSubmit={handleCreateNote} className="mt-5 grid gap-4 md:grid-cols-2"><div className="md:col-span-2"><SelectDropdown label={t('Related appointment')} value={noteForm.appointmentId} onChange={(value) => setNoteForm((current) => ({ ...current, appointmentId: value }))} options={[{ value: '', label: t('No linked appointment') }, ...appointments.map((appointment) => ({ value: String(appointment.id), label: formatAppointment(appointment, locale) }))]} /></div>{[['chiefComplaint', 'Chief complaint'], ['clinicalFindings', 'Clinical findings'], ['diagnosis', 'Diagnosis'], ['treatmentPerformed', 'Treatment performed'], ['recommendations', 'Recommendations']].map(([field, label]) => <label key={field} className="space-y-2 text-sm font-medium text-slate-700 md:col-span-1">{t(label)}<textarea value={noteForm[field]} onChange={(event) => setNoteForm((current) => ({ ...current, [field]: event.target.value }))} className={`${inputClass} min-h-24 resize-y`} /></label>)}<button disabled={isSaving} type="submit" className="inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"><Save className="h-4 w-4" />{t('Save draft note')}</button></form> : null}
-        <div className="mt-6 space-y-3">{notes.length === 0 ? <div className="border-t border-dashed border-slate-300 pt-6 text-center text-sm text-slate-600">{t('No clinical notes recorded yet.')}</div> : notes.map((note) => <article key={note.id} className="border-t border-slate-200 py-4 first:border-t-0 first:pt-0"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold text-slate-950">{note.appointment ? formatAppointment(note.appointment, locale) : t('General clinical note')}</p><p className="mt-1 text-xs text-slate-500">{new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(note.createdAt))}{note.author?.displayName ? ` · ${note.author.displayName}` : ''}</p></div><div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${note.status === 'final' ? 'bg-emerald-100 text-emerald-800 ring-emerald-200' : 'bg-amber-100 text-amber-800 ring-amber-200'}`}>{note.status === 'final' ? t('Final') : t('Draft')}</span>{note.status !== 'final' && canManage ? <button disabled={isSaving} type="button" onClick={() => handleFinalizeNote(note)} className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"><Check className="h-3.5 w-3.5" />{t('Finalize')}</button> : null}</div></div><div className="mt-4 grid gap-3 text-sm md:grid-cols-2">{[['chiefComplaint', 'Chief complaint'], ['clinicalFindings', 'Findings'], ['diagnosis', 'Diagnosis'], ['treatmentPerformed', 'Treatment'], ['recommendations', 'Recommendations']].filter(([field]) => note[field]).map(([field, label]) => <div key={field}><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t(label)}</p><p className="mt-1 whitespace-pre-wrap leading-6 text-slate-700">{note[field]}</p></div>)}</div></article>)}</div>
+        <div className="mt-6 space-y-3">{notes.length === 0 ? <div className="border-t border-dashed border-slate-300 pt-6 text-center text-sm text-slate-600">{t('No clinical notes recorded yet.')}</div> : notes.map((note) => <article key={note.id} className="border-t border-slate-200 py-4 first:border-t-0 first:pt-0"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold text-slate-950">{note.appointment ? formatAppointment(note.appointment, locale) : t('General clinical note')}</p><p className="mt-1 text-xs text-slate-500">{new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(note.createdAt))}{note.author?.displayName ? ` · ${note.author.displayName}` : ''}</p></div><div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${note.status === 'final' ? 'bg-emerald-100 text-emerald-800 ring-emerald-200' : 'bg-amber-100 text-amber-800 ring-amber-200'}`}>{note.status === 'final' ? t('Final') : t('Draft')}</span>{note.status !== 'final' && canValidate ? <button disabled={isSaving} type="button" onClick={() => handleFinalizeNote(note)} className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"><Check className="h-3.5 w-3.5" />{t('Validate and close')}</button> : note.status !== 'final' && isTranscriber ? <span className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800">{t('Awaiting doctor validation')}</span> : null}</div></div><div className="mt-4 grid gap-3 text-sm md:grid-cols-2">{[['chiefComplaint', 'Chief complaint'], ['clinicalFindings', 'Findings'], ['diagnosis', 'Diagnosis'], ['treatmentPerformed', 'Treatment'], ['recommendations', 'Recommendations']].filter(([field]) => note[field]).map(([field, label]) => <div key={field}><p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t(label)}</p><p className="mt-1 whitespace-pre-wrap leading-6 text-slate-700">{note[field]}</p></div>)}</div></article>)}</div>
       </section>
 
       <section className={panelClass}>

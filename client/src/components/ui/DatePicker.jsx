@@ -115,7 +115,14 @@ export default function DatePicker({
             disabled={disabled}
             inputMode="numeric"
             autoComplete="off"
-            onFocus={() => setIsOpen(true)}
+            onClick={() => setIsOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                setIsOpen(true);
+              }
+              if (event.key === 'Escape') setIsOpen(false);
+            }}
             onChange={(event) => {
               const nextValue = event.target.value;
               setDraftValue(nextValue);

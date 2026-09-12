@@ -3,6 +3,7 @@ const cors = require('cors');
 const routes = require('./routes');
 const {
   CLIENT_ORIGINS,
+  LOCAL_ONLY,
   NODE_ENV,
   TRUST_PROXY,
 } = require('./config/env');
@@ -28,7 +29,7 @@ app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
   res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
 
-  if (NODE_ENV === 'production') {
+  if (NODE_ENV === 'production' && !LOCAL_ONLY) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
 

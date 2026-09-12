@@ -17,6 +17,8 @@ const migrations = [
   '20260911200000_add_clinic_language',
   '20260911210000_add_authorization_scope_and_archiving',
   '20260911220000_add_data_governance',
+  '20260912110000_add_mfa_and_password_recovery',
+  '20260912120000_add_compliance_transcription_documents',
 ];
 const database = new Database(databasePath);
 migrations.forEach((migration) => database.exec(fs.readFileSync(path.join(serverRoot, 'prisma', 'migrations', migration, 'migration.sql'), 'utf8')));
@@ -104,7 +106,7 @@ test('lists active login users without exposing email and accepts user id login'
   assert.equal(loginResponse.body.user.id, user.id);
 });
 
-test('password change accepts short non-empty passwords and revokes other sessions', async () => {
+test('password change enforces a strong password and revokes other sessions', async () => {
   const firstSession = await login('current-password-123');
   const secondSession = await login('current-password-123');
 
@@ -130,11 +132,17 @@ test('password change accepts short non-empty passwords and revokes other sessio
     method: 'POST',
     body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: 'short' }),
   }, firstSession);
-  assert.equal(changed.response.status, 200);
+  assert.equal(changed.response.status, 400);
+
+  const accepted = await request('/api/auth/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: 'new-strong-password-123' }),
+  }, firstSession);
+  assert.equal(accepted.response.status, 200);
 
   assert.equal((await request('/api/auth/me', {}, firstSession)).response.status, 200);
   assert.equal((await request('/api/auth/me', {}, secondSession)).response.status, 401);
-  assert.equal((await login('short')).length > 0, true);
+  assert.equal((await login('new-strong-password-123')).length > 0, true);
 });
 
 test('password change requires authentication and CSRF', async () => {

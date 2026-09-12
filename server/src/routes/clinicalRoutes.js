@@ -13,6 +13,7 @@ router.put('/teeth', clinicalWrite, asyncHandler(controller.upsertToothChartEntr
 router.delete('/teeth/:entryId', clinicalWrite, asyncHandler(controller.deleteToothChartEntry));
 router.post('/notes', clinicalWrite, asyncHandler(controller.createClinicalNote));
 router.put('/notes/:noteId', clinicalWrite, asyncHandler(controller.updateClinicalNote));
+router.post('/notes/:noteId/validate', requirePermission('clinical', 'validate'), asyncHandler(controller.validateClinicalNote));
 router.post('/notes/:noteId/addenda', clinicalWrite, asyncHandler(controller.createClinicalNoteAddendum));
 router.post('/treatment-plans', clinicalWrite, asyncHandler(controller.createTreatmentPlan));
 router.put('/treatment-plans/:planId', clinicalWrite, asyncHandler(controller.updateTreatmentPlan));

@@ -1,6 +1,6 @@
 const authService = require('../services/authService');
 const { parseCookies, SESSION_COOKIE_NAME } = require('../utils/auth');
-const { NODE_ENV } = require('../config/env');
+const { LOCAL_ONLY, NODE_ENV } = require('../config/env');
 const {
   createCsrfToken,
   serializeCsrfCookie,
@@ -12,7 +12,7 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
 
 function isSecureRequest(req) {
-  return NODE_ENV === 'production' || req.secure;
+  return req.secure || (NODE_ENV === 'production' && !LOCAL_ONLY);
 }
 
 function csrf(req, res) {
@@ -40,12 +40,13 @@ async function login(req, res, next) {
       ipAddress: req.ip,
     });
 
-    req.auditActor = result.user;
+    if (result.mfaRequired) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({ mfaRequired: true, challengeToken: result.challengeToken });
+    }
 
-    res.setHeader(
-      'Set-Cookie',
-      serializeSessionCookie(result.token, { secure: isSecureRequest(req) })
-    );
+    req.auditActor = result.user;
+    res.setHeader('Set-Cookie', serializeSessionCookie(result.token, { secure: isSecureRequest(req) }));
     loginAttempts.delete(key);
     return res.json({ user: result.user });
   } catch (error) {
@@ -61,6 +62,63 @@ async function login(req, res, next) {
     }
     return next(error);
   }
+}
+
+async function verifyMfa(req, res, next) {
+  try {
+    const result = await authService.verifyMfa({
+      challengeToken: req.body?.challengeToken,
+      code: req.body?.code,
+      userAgent: req.get('user-agent'),
+      ipAddress: req.ip,
+    });
+
+    req.auditActor = result.user;
+    res.setHeader('Set-Cookie', serializeSessionCookie(result.token, { secure: isSecureRequest(req) }));
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ user: result.user });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function setupMfa(req, res) {
+  const result = await authService.setupMfa({
+    userId: req.user.id,
+    currentPassword: req.body?.currentPassword,
+  });
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json(result);
+}
+
+async function enableMfa(req, res) {
+  await authService.enableMfa({ userId: req.user.id, code: req.body?.code });
+  return res.json({ message: 'MFA enabled successfully' });
+}
+
+async function disableMfa(req, res) {
+  await authService.disableMfa({
+    userId: req.user.id,
+    currentPassword: req.body?.currentPassword,
+  });
+  return res.json({ message: 'MFA disabled successfully' });
+}
+
+async function requestPasswordRecovery(req, res) {
+  await authService.requestPasswordRecovery({ email: req.body?.email });
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(202).json({
+    message: 'If an active account matches that email, recovery instructions will be sent shortly.',
+  });
+}
+
+async function resetPassword(req, res) {
+  await authService.resetPassword({
+    token: req.body?.token,
+    newPassword: req.body?.newPassword,
+  });
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ message: 'Password reset successfully' });
 }
 
 async function loginUsers(req, res) {
@@ -98,8 +156,14 @@ async function logout(req, res, next) {
 module.exports = {
   csrf,
   changePassword,
+  disableMfa,
+  enableMfa,
   login,
   loginUsers,
   logout,
   me,
+  requestPasswordRecovery,
+  resetPassword,
+  setupMfa,
+  verifyMfa,
 };

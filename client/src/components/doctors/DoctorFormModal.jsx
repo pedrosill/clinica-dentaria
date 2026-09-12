@@ -16,7 +16,7 @@ export default function DoctorFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
       <Dialog
         isOpen={isOpen}
         onClose={onClose}

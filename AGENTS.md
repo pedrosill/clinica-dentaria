@@ -82,6 +82,24 @@ When changing scheduling behavior, inspect and update the complete path: client 
 - Do not edit `.env` files, SQLite database files, `node_modules`, or build output as part of normal feature work. Use `.env.example` for shareable configuration documentation.
 - If the Prisma schema changes, create and commit a migration; do not hand-edit generated Prisma output.
 
+## Multi-agent workflow
+
+The primary agent owns the overall implementation and acts as the technical coordinator for the task.
+
+- Keep the global view of the feature, architecture, integration points, and final validation.
+- Delegate clearly isolated work to sub-agents when this improves parallelism, specialization, or confidence.
+- Do not delegate trivial tasks when coordination overhead exceeds the benefit.
+- Give each sub-agent only the minimum context, files, constraints, and expected output needed.
+- Define the scope, acceptance criteria, and verification command for every delegated task.
+- Prefer independent tasks that can run in parallel and avoid multiple agents editing the same files.
+- Use a separate agent to investigate uncertain technical decisions or review risky changes when useful.
+- Keep clinical, security, authorization, persistence, and cross-layer integration decisions with the primary agent unless explicitly delegated for review.
+- Sub-agents must preserve unrelated user changes and must not expand the task scope.
+- Sub-agents must not commit or push changes unless the primary agent explicitly requests it.
+- The primary agent must review every delegated result and diff, resolve inconsistencies, and validate the result against this file and `docs/FEATURE_INVENTORY.md`.
+- The primary agent is responsible for integrating changes and running the final verification.
+- Minimize unnecessary context sharing and repeated repository exploration to reduce token and credit usage.
+
 ## Safe change workflow
 
 1. Read the relevant page, hook, service, controller, route, and utility before editing.

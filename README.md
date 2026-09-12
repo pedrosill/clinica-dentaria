@@ -120,7 +120,7 @@ The development defaults are never used by a production startup.
 
 ## Production operations
 
-Set `NODE_ENV=production`, an explicit HTTPS `CLIENT_ORIGIN`, `TRUST_PROXY` with the proxy's IP/CIDR (or `loopback` when the proxy is local), and a SQLite `DATABASE_URL`. The server refuses production startup when these values are missing or unsafe. TLS termination must be configured at the trusted proxy; the application sets secure session/CSRF cookies only for HTTPS production traffic.
+For the clinic's local-only deployment, set `NODE_ENV=production`, `LOCAL_ONLY=true`, `HOST=127.0.0.1`, a loopback `CLIENT_ORIGIN` (`http://localhost:5173` or `http://127.0.0.1:5173`), and a SQLite `DATABASE_URL`. The API binds to loopback, does not require a proxy, and does not mark HTTP loopback cookies as Secure. The local-only profile must not be used when other devices need access. For a network deployment, set `LOCAL_ONLY=false`, use an explicit HTTPS `CLIENT_ORIGIN`, configure `TRUST_PROXY` with the proxy's IP/CIDR (or `loopback` when the proxy is local), and terminate TLS at the trusted proxy; the application then sets secure session/CSRF cookies for HTTPS production traffic.
 
 All state-changing requests require both a permitted `Origin`/`Referer` and a CSRF token. The current frontend obtains the token automatically; other clients must first call `GET /api/auth/csrf`, retain the returned token and cookie, and send `X-CSRF-Token` on `POST`, `PUT`, `PATCH`, and `DELETE` requests.
 
@@ -135,7 +135,9 @@ npm run db:restore --prefix server -- server/backups/dentalpro-...db.enc --targe
 
 `BACKUP_DIR` selects the destination and `BACKUP_RETENTION_COUNT` controls how many matching backups remain (default: 7). Set `BACKUP_ENCRYPTION_KEY` or `BACKUP_ENCRYPTION_KEY_FILE` to enable AES-256-GCM encryption; encryption is mandatory when `NODE_ENV=production`. Keep the key outside the repository and do not assume a cloud provider. A restore validates SQLite integrity and foreign-key consistency before replacing the target. Pass `--replace` for an existing target, stop the server first, and retain the generated `.pre-restore-*.db` safety copy until the restore is accepted.
 
-The operational checklist, scheduling recommendation, and restore drill are documented in [`docs/OPERATIONS_BACKUP.md`](docs/OPERATIONS_BACKUP.md).
+Set `BACKUP_SECONDARY_DIR` for a second approved copy and run `npm run db:backup:verify --prefix server` from the operating system scheduler. The verifier checks that the latest status is recent, encrypted, and readable. The SQLite backup command does not package private document binaries: include `PRIVATE_DOCUMENTS_DIR` in the host's approved encrypted volume/file backup. Configure `MFA_ENCRYPTION_KEY` outside the repository for production and activate TOTP in each privileged account. Password recovery tokens are one-time and expire; production still needs an approved email or equivalent delivery channel.
+
+The operational checklist, scheduling recommendation, and restore drill are documented in [`docs/OPERATIONS_BACKUP.md`](docs/OPERATIONS_BACKUP.md). The full deployment and clinic acceptance runbook is in [`docs/CLINIC_DEPLOYMENT_RUNBOOK.md`](docs/CLINIC_DEPLOYMENT_RUNBOOK.md), and the compliance checklist is available under Settings > Compliance after login.
 
 ## Build the frontend
 

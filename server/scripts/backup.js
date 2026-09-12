@@ -91,6 +91,12 @@ async function applyRetention(backupDirectory, retentionCount) {
 async function createBackup(env = process.env) {
   const sourcePath = resolveSqlitePath(env.DATABASE_URL);
   const backupDirectory = resolveServerPath(env.BACKUP_DIR || 'backups');
+  const secondaryDirectory = env.BACKUP_SECONDARY_DIR
+    ? resolveServerPath(env.BACKUP_SECONDARY_DIR)
+    : null;
+  const statusFile = env.BACKUP_STATUS_FILE
+    ? resolveServerPath(env.BACKUP_STATUS_FILE)
+    : path.join(backupDirectory, 'backup-status.json');
   const retentionCount = getRequiredPositiveInteger(
     env.BACKUP_RETENTION_COUNT,
     'BACKUP_RETENTION_COUNT',
@@ -105,7 +111,12 @@ async function createBackup(env = process.env) {
 
   await fs.promises.mkdir(backupDirectory, { recursive: true });
   await fs.promises.chmod(backupDirectory, 0o700);
+  if (secondaryDirectory) {
+    await fs.promises.mkdir(secondaryDirectory, { recursive: true });
+    await fs.promises.chmod(secondaryDirectory, 0o700);
+  }
 
+  let secondaryPath = null;
   try {
     const source = new Database(sourcePath, { readonly: true, fileMustExist: true });
     try {
@@ -119,19 +130,35 @@ async function createBackup(env = process.env) {
     const outputBytes = encryptionKey ? encryptBackup(sqliteBytes, encryptionKey) : sqliteBytes;
     await fs.promises.writeFile(outputPath, outputBytes, { mode: 0o600 });
     await fs.promises.chmod(outputPath, 0o600);
+    if (secondaryDirectory) {
+      secondaryPath = path.join(secondaryDirectory, filename);
+      await fs.promises.copyFile(outputPath, secondaryPath);
+      await fs.promises.chmod(secondaryPath, 0o600);
+    }
   } finally {
     await fs.promises.rm(temporaryPath, { force: true });
   }
 
   const removed = await applyRetention(backupDirectory, retentionCount);
-  return { outputPath, encrypted: Boolean(encryptionKey), removed };
+  const result = {
+    outputPath,
+    secondaryPath,
+    encrypted: Boolean(encryptionKey),
+    removed,
+    completedAt: new Date().toISOString(),
+  };
+  await fs.promises.mkdir(path.dirname(statusFile), { recursive: true });
+  await fs.promises.writeFile(statusFile, `${JSON.stringify(result, null, 2)}\n`, { mode: 0o600 });
+  await fs.promises.chmod(statusFile, 0o600);
+  return result;
 }
 
 if (require.main === module) {
   createBackup()
-    .then(({ outputPath, encrypted, removed }) => {
+    .then(({ outputPath, secondaryPath, encrypted, removed }) => {
       console.log(`SQLite backup created: ${outputPath}`);
       console.log(`Encryption: ${encrypted ? 'enabled' : 'disabled'}`);
+      if (secondaryPath) console.log(`Secondary copy: ${secondaryPath}`);
       if (removed.length > 0) console.log(`Retention removed: ${removed.join(', ')}`);
     })
     .catch((error) => {

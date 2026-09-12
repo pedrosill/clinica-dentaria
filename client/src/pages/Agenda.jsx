@@ -169,7 +169,9 @@ export default function Agenda() {
     if (viewType === 'month') {
       const nextMonth = new Date(currentMonth);
       nextMonth.setMonth(currentMonth.getMonth() - 1);
-      setCurrentMonth(startOfDay(nextMonth));
+      const nextMonthStart = startOfDay(new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1));
+      setCurrentMonth(nextMonthStart);
+      setSelectedDate(nextMonthStart);
       return;
     }
 
@@ -180,7 +182,9 @@ export default function Agenda() {
     if (viewType === 'month') {
       const nextMonth = new Date(currentMonth);
       nextMonth.setMonth(currentMonth.getMonth() + 1);
-      setCurrentMonth(startOfDay(nextMonth));
+      const nextMonthStart = startOfDay(new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1));
+      setCurrentMonth(nextMonthStart);
+      setSelectedDate(nextMonthStart);
       return;
     }
 
@@ -236,7 +240,7 @@ export default function Agenda() {
       />
 
       {pageError ? (
-        <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+        <div role="alert" className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
           {pageError}
         </div>
       ) : null}

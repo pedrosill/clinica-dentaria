@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { BarChart3, CalendarDays, ClipboardList, Clock3, LayoutDashboard, Settings, Stethoscope, Users } from 'lucide-react';
+import { BarChart3, CalendarDays, ClipboardList, Clock3, LayoutDashboard, LogOut, Settings, Stethoscope, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import useAuth from '../context/useAuth';
 import useLanguage from '../context/useLanguage';
@@ -83,7 +83,46 @@ export default function Sidebar() {
     .toUpperCase();
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-80 shrink-0 border-r border-slate-200 bg-white xl:flex">
+    <>
+      <div className="fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur xl:hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-700">{t('Clinic workspace')}</p>
+            <p className="truncate text-lg font-semibold tracking-tight text-slate-950">DentalPro</p>
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-200"
+            aria-label={t('Sign out')}
+            title={t('Sign out')}
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+        <nav className="flex gap-2 overflow-x-auto px-4 pb-3" aria-label={t('Main navigation')}>
+          {visibleNavigationItems(user?.role).map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition ${
+                    isActive ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`
+                }
+              >
+                <Icon className="h-4 w-4" />
+                <span>{t(item.label)}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
+
+      <aside className="sticky top-0 hidden h-screen w-80 shrink-0 border-r border-slate-200 bg-white xl:flex">
       <div className="flex w-full flex-col p-5">
         {/* ================================
            Brand block
@@ -145,6 +184,7 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -20,6 +20,8 @@ const migrationNames = [
   '20260911230000_add_patient_recalls',
   '20260911240000_add_waitlist_entries',
   '20260912100000_link_waitlist_appointments',
+  '20260912110000_add_mfa_and_password_recovery',
+  '20260912120000_add_compliance_transcription_documents',
 ];
 const database = new Database(databasePath);
 for (const migrationName of migrationNames) {

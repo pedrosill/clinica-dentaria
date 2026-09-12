@@ -5,8 +5,18 @@ dotenv.config();
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DATABASE_URL = process.env.DATABASE_URL;
+const LOCAL_ONLY = ['1', 'true', 'yes'].includes(String(process.env.LOCAL_ONLY || '').trim().toLowerCase());
 
-function parseAllowedOrigins(value, { nodeEnv = NODE_ENV } = {}) {
+function isLoopbackOrigin(origin) {
+  try {
+    const hostname = new URL(origin).hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  } catch {
+    return false;
+  }
+}
+
+function parseAllowedOrigins(value, { nodeEnv = NODE_ENV, localOnly = false } = {}) {
   const origins = String(value || '')
     .split(',')
     .map((origin) => origin.trim())
@@ -38,7 +48,7 @@ function parseAllowedOrigins(value, { nodeEnv = NODE_ENV } = {}) {
       throw new Error(`CLIENT_ORIGIN must contain origins without paths: ${origin}`);
     }
 
-    if (nodeEnv === 'production' && parsed.protocol !== 'https:') {
+    if (nodeEnv === 'production' && parsed.protocol !== 'https:' && !(localOnly && parsed.protocol === 'http:' && isLoopbackOrigin(parsed.origin))) {
       throw new Error('CLIENT_ORIGIN must use HTTPS in production');
     }
 
@@ -46,11 +56,11 @@ function parseAllowedOrigins(value, { nodeEnv = NODE_ENV } = {}) {
   });
 }
 
-function parseTrustProxy(value, { nodeEnv = NODE_ENV } = {}) {
+function parseTrustProxy(value, { nodeEnv = NODE_ENV, localOnly = false } = {}) {
   const rawValue = String(value || '').trim();
 
   if (!rawValue) {
-    if (nodeEnv === 'production') {
+    if (nodeEnv === 'production' && !localOnly) {
       throw new Error('TRUST_PROXY is required in production and must identify the trusted proxy');
     }
 
@@ -100,13 +110,15 @@ function validateDatabaseUrl(value, { nodeEnv = NODE_ENV } = {}) {
 }
 
 validateDatabaseUrl(DATABASE_URL);
-const CLIENT_ORIGINS = parseAllowedOrigins(process.env.CLIENT_ORIGIN);
-const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY);
+const CLIENT_ORIGINS = parseAllowedOrigins(process.env.CLIENT_ORIGIN, { localOnly: LOCAL_ONLY });
+const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY, { localOnly: LOCAL_ONLY });
 
 module.exports = {
   CLIENT_ORIGIN: CLIENT_ORIGINS[0],
   CLIENT_ORIGINS,
   DATABASE_URL,
+  HOST: process.env.HOST || '127.0.0.1',
+  LOCAL_ONLY,
   NODE_ENV,
   PORT: Number(process.env.PORT) || 5000,
   TRUST_PROXY,

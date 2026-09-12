@@ -8,26 +8,36 @@ generator client {
 }
 
 model User {
-  id                         Int                    @id @default(autoincrement())
-  email                      String                 @unique
-  displayName                String
-  passwordHash               String
-  role                       String                 @default("receptionist")
-  isActive                   Boolean                @default(true)
-  lastLoginAt                DateTime?
-  createdAt                  DateTime               @default(now())
-  updatedAt                  DateTime               @updatedAt
-  sessions                   UserSession[]
-  doctorProfile              Doctor?
-  clinicalNotes              ClinicalNote[]         @relation("ClinicalNoteAuthor")
-  treatmentPlansCreated      TreatmentPlan[]        @relation("TreatmentPlanCreator")
-  auditEvents                AuditEvent[]           @relation("AuditEventActor")
-  consentsRecorded           ConsentRecord[]        @relation("ConsentRecordRecorder")
-  documentsCreated           PatientDocument[]      @relation("PatientDocumentCreator")
-  dataSubjectRequestsCreated DataSubjectRequest[]   @relation("DataSubjectRequestCreator")
-  retentionPoliciesUpdated   RetentionPolicy[]      @relation("RetentionPolicyUpdater")
-  retentionHoldsCreated      RetentionHold[]        @relation("RetentionHoldCreator")
-  clinicalNoteAddenda        ClinicalNoteAddendum[] @relation("ClinicalNoteAddendumAuthor")
+  id                          Int                     @id @default(autoincrement())
+  email                       String                  @unique
+  displayName                 String
+  passwordHash                String
+  role                        String                  @default("receptionist")
+  isActive                    Boolean                 @default(true)
+  mfaEnabled                  Boolean                 @default(false)
+  mfaSecret                   String?
+  mfaLastUsedStep             Int?
+  lastLoginAt                 DateTime?
+  createdAt                   DateTime                @default(now())
+  updatedAt                   DateTime                @updatedAt
+  sessions                    UserSession[]
+  doctorProfile               Doctor?
+  clinicalNotes               ClinicalNote[]          @relation("ClinicalNoteAuthor")
+  treatmentPlansCreated       TreatmentPlan[]         @relation("TreatmentPlanCreator")
+  auditEvents                 AuditEvent[]            @relation("AuditEventActor")
+  consentsRecorded            ConsentRecord[]         @relation("ConsentRecordRecorder")
+  documentsCreated            PatientDocument[]       @relation("PatientDocumentCreator")
+  dataSubjectRequestsCreated  DataSubjectRequest[]    @relation("DataSubjectRequestCreator")
+  retentionPoliciesUpdated    RetentionPolicy[]       @relation("RetentionPolicyUpdater")
+  retentionHoldsCreated       RetentionHold[]         @relation("RetentionHoldCreator")
+  clinicalNoteAddenda         ClinicalNoteAddendum[]  @relation("ClinicalNoteAddendumAuthor")
+  mfaChallenges               MfaChallenge[]
+  passwordRecoveryTokens      PasswordRecoveryToken[]
+  complianceItemsOwned        ComplianceItem[]        @relation("ComplianceItemOwner")
+  complianceItemsApproved     ComplianceItem[]        @relation("ComplianceItemApprover")
+  clinicalNotesTranscribed    ClinicalNote[]          @relation("ClinicalNoteTranscriber")
+  clinicalNotesValidated      ClinicalNote[]          @relation("ClinicalNoteValidator")
+  dataSubjectRequestsReviewed DataSubjectRequest[]    @relation("DataSubjectRequestReviewer")
 }
 
 model UserSession {
@@ -41,6 +51,34 @@ model UserSession {
   revokedAt  DateTime?
   userAgent  String?
   ipAddress  String?
+}
+
+model MfaChallenge {
+  id         Int       @id @default(autoincrement())
+  tokenHash  String    @unique
+  userId     Int
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+  consumedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model PasswordRecoveryToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
 }
 
 model ClinicSettings {
@@ -133,18 +171,18 @@ model Patient {
 }
 
 model Doctor {
-  id           Int                @id @default(autoincrement())
-  name         String
-  email        String?
-  phone        String?
-  nif          String?
-  userId       Int?               @unique
-  createdAt    DateTime           @default(now())
-  appointments Appointment[]
-  schedules    ProviderSchedule[]
-  recalls          PatientRecall[]
-  waitlistEntries  WaitlistEntry[]
-  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id              Int                @id @default(autoincrement())
+  name            String
+  email           String?
+  phone           String?
+  nif             String?
+  userId          Int?               @unique
+  createdAt       DateTime           @default(now())
+  appointments    Appointment[]
+  schedules       ProviderSchedule[]
+  recalls         PatientRecall[]
+  waitlistEntries WaitlistEntry[]
+  user            User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Appointment {
@@ -191,19 +229,19 @@ model PatientRecall {
 }
 
 model WaitlistEntry {
-  id            Int       @id @default(autoincrement())
+  id            Int          @id @default(autoincrement())
   patientId     Int
   doctorId      Int?
-  appointmentId Int?      @unique
+  appointmentId Int?         @unique
   requestedDate DateTime?
   reason        String
-  priority      String    @default("normal") // normal, urgent
-  status        String    @default("waiting") // waiting, contacted, booked, removed
+  priority      String       @default("normal") // normal, urgent
+  status        String       @default("waiting") // waiting, contacted, booked, removed
   notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor        Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor        Doctor?      @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([status, priority, requestedDate])
@@ -242,23 +280,31 @@ model ToothChartEntry {
 }
 
 model ClinicalNote {
-  id                 Int                    @id @default(autoincrement())
-  patientId          Int
-  appointmentId      Int?                   @unique
-  authorId           Int?
-  chiefComplaint     String                 @default("")
-  clinicalFindings   String                 @default("")
-  diagnosis          String                 @default("")
-  treatmentPerformed String                 @default("")
-  recommendations    String                 @default("")
-  status             String                 @default("draft")
-  signedAt           DateTime?
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
-  patient            Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  appointment        Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  author             User?                  @relation("ClinicalNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-  addenda            ClinicalNoteAddendum[]
+  id                  Int                    @id @default(autoincrement())
+  patientId           Int
+  appointmentId       Int?                   @unique
+  authorId            Int?
+  chiefComplaint      String                 @default("")
+  clinicalFindings    String                 @default("")
+  diagnosis           String                 @default("")
+  treatmentPerformed  String                 @default("")
+  recommendations     String                 @default("")
+  status              String                 @default("draft")
+  sourceType          String                 @default("clinical")
+  transcriptionStatus String                 @default("not_applicable")
+  transcribedById     Int?
+  transcribedAt       DateTime?
+  validatedById       Int?
+  validatedAt         DateTime?
+  signedAt            DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  patient             Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment         Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  author              User?                  @relation("ClinicalNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  transcribedBy       User?                  @relation("ClinicalNoteTranscriber", fields: [transcribedById], references: [id], onDelete: SetNull)
+  validatedBy         User?                  @relation("ClinicalNoteValidator", fields: [validatedById], references: [id], onDelete: SetNull)
+  addenda             ClinicalNoteAddendum[]
 
   @@index([patientId, createdAt])
 }
@@ -349,33 +395,65 @@ model ConsentRecord {
 }
 
 model PatientDocument {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   patientId   Int
   fileName    String
   mimeType    String
   sizeBytes   Int
   storageKey  String?
+  sha256      String?
+  version     Int       @default(1)
+  uploadedAt  DateTime?
+  expiresAt   DateTime?
   createdById Int?
-  createdAt   DateTime @default(now())
-  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  createdBy   User?    @relation("PatientDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy   User?     @relation("PatientDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([patientId, createdAt])
 }
 
-model DataSubjectRequest {
+model ComplianceItem {
   id             Int       @id @default(autoincrement())
-  patientId      Int
-  requestType    String
-  status         String    @default("open")
-  description    String?
-  requestedAt    DateTime  @default(now())
+  code           String    @unique
+  title          String
+  category       String
+  description    String
+  validationMode String    @default("manual")
+  automaticState String    @default("not_checked")
+  manualState    String    @default("pending")
+  evidence       String?
+  notes          String?
+  ownerId        Int?
+  approvedById   Int?
+  approvedAt     DateTime?
+  reviewDueAt    DateTime?
+  createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  createdById    Int?
-  resolvedAt     DateTime?
-  resolutionNote String?
-  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  createdBy      User?     @relation("DataSubjectRequestCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  owner          User?     @relation("ComplianceItemOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  approvedBy     User?     @relation("ComplianceItemApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([category, manualState])
+  @@index([automaticState])
+}
+
+model DataSubjectRequest {
+  id                Int       @id @default(autoincrement())
+  patientId         Int
+  requestType       String
+  status            String    @default("open")
+  description       String?
+  requestedAt       DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdById       Int?
+  resolvedAt        DateTime?
+  resolutionNote    String?
+  reviewedById      Int?
+  reviewedAt        DateTime?
+  responseReference String?
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy         User?     @relation("DataSubjectRequestCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  reviewedBy        User?     @relation("DataSubjectRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([patientId, status])
   @@index([status, requestedAt])

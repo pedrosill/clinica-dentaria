@@ -56,6 +56,7 @@ async function recordAuditEvent({
   patientId = null,
   result = 'success',
   metadata,
+  required = false,
 }) {
   try {
     return await prisma.auditEvent.create({
@@ -74,6 +75,7 @@ async function recordAuditEvent({
   } catch (error) {
     // Auditing must not turn a valid clinical operation into a 500, but the
     // failure remains visible to operators during development and in logs.
+    if (required) throw error;
     if (error?.code !== 'P2021' && error?.code !== 'P2022') {
       console.error('Audit event could not be recorded', error?.message || error);
     }
@@ -83,6 +85,8 @@ async function recordAuditEvent({
 
 function resourceForPath(pathname) {
   if (pathname.startsWith('/auth/')) return 'auth';
+  if (pathname.startsWith('/compliance')) return 'compliance';
+  if (pathname.includes('/documents')) return 'document';
   if (pathname.includes('/recalls')) return 'recall';
   if (pathname.startsWith('/patients/')) return pathname.includes('/clinical') ? 'clinical' : 'patient';
   if (pathname.startsWith('/patients')) return 'patient';
@@ -99,6 +103,8 @@ function resourceForPath(pathname) {
 function actionForRequest(req) {
   const pathname = req.path || '';
   if (pathname.endsWith('/export')) return 'export';
+  if (pathname.endsWith('/validate')) return 'validate';
+  if (pathname.endsWith('/content')) return 'download';
   if (pathname.endsWith('/login')) return 'login';
   if (pathname.endsWith('/logout')) return 'logout';
   if (req.method === 'GET' || req.method === 'HEAD') return 'read';

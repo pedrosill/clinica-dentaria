@@ -9,6 +9,7 @@ import PatientInfoSection from '../components/patient-detail/PatientInfoSection'
 import PatientGovernanceSection from '../components/patient-detail/PatientGovernanceSection';
 import PatientRecallSection from '../components/patient-detail/PatientRecallSection';
 import PatientWaitlistSection from '../components/patient-detail/PatientWaitlistSection';
+import AnimatedDisclosure from '../components/ui/AnimatedDisclosure';
 import usePatientDetailData from '../hooks/usePatientDetailData';
 import usePatientDetailForm from '../hooks/usePatientDetailForm';
 import {
@@ -153,7 +154,7 @@ export default function PatientDetail() {
           </div>
         </section>
 
-        <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+        <div role="alert" className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
           {pageError}
         </div>
       </div>
@@ -182,7 +183,7 @@ export default function PatientDetail() {
       />
 
       {successMessage ? (
-        <div className="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+        <div role="status" aria-live="polite" className="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
           {successMessage}
         </div>
       ) : null}
@@ -210,23 +211,27 @@ export default function PatientDetail() {
       </nav>
 
       {activeTab === 'clinical' ? (
-        <ClinicalRecordSection
-          patientId={patientId}
-          appointments={appointments}
-          clinicalRecord={clinicalRecord}
-          setClinicalRecord={setClinicalRecord}
-        />
+        <div className="content-transition">
+          <ClinicalRecordSection
+            patientId={patientId}
+            appointments={appointments}
+            clinicalRecord={clinicalRecord}
+            setClinicalRecord={setClinicalRecord}
+          />
+        </div>
       ) : null}
 
       {activeTab === 'operations' ? (
-        <div className="space-y-3">
+        <div className="content-transition space-y-3">
           <PatientToolToggle
             title="Patient data governance"
             description="Review consent history and export the structured patient record as JSON."
             isOpen={openPatientTool === 'governance'}
             onToggle={() => setOpenPatientTool((current) => (current === 'governance' ? null : 'governance'))}
           />
-          {openPatientTool === 'governance' ? <PatientGovernanceSection patientId={patientId} /> : null}
+          <AnimatedDisclosure open={openPatientTool === 'governance'}>
+            <PatientGovernanceSection patientId={patientId} />
+          </AnimatedDisclosure>
 
           <PatientToolToggle
             title="Recall history"
@@ -234,7 +239,9 @@ export default function PatientDetail() {
             isOpen={openPatientTool === 'recall'}
             onToggle={() => setOpenPatientTool((current) => (current === 'recall' ? null : 'recall'))}
           />
-          {openPatientTool === 'recall' ? <PatientRecallSection patientId={patientId} /> : null}
+          <AnimatedDisclosure open={openPatientTool === 'recall'}>
+            <PatientRecallSection patientId={patientId} />
+          </AnimatedDisclosure>
 
           <PatientToolToggle
             title="Waitlist history"
@@ -242,12 +249,14 @@ export default function PatientDetail() {
             isOpen={openPatientTool === 'waitlist'}
             onToggle={() => setOpenPatientTool((current) => (current === 'waitlist' ? null : 'waitlist'))}
           />
-          {openPatientTool === 'waitlist' ? <PatientWaitlistSection patientId={patientId} /> : null}
+          <AnimatedDisclosure open={openPatientTool === 'waitlist'}>
+            <PatientWaitlistSection patientId={patientId} />
+          </AnimatedDisclosure>
         </div>
       ) : null}
 
       {activeTab === 'overview' ? (
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="content-transition grid gap-6 xl:grid-cols-2">
           <PatientAppointmentsSection
             title={t('Upcoming appointments')}
             description={t('Current and future appointments for this patient.')}

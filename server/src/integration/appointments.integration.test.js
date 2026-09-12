@@ -82,6 +82,8 @@ const waitlistAppointmentsMigrationPath = path.join(
   '20260912100000_link_waitlist_appointments',
   'migration.sql'
 );
+const mfaMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912110000_add_mfa_and_password_recovery', 'migration.sql');
+const complianceMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912120000_add_compliance_transcription_documents', 'migration.sql');
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
@@ -93,6 +95,8 @@ integrationDatabase.exec(fs.readFileSync(dataGovernanceMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(patientRecallsMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(waitlistMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(waitlistAppointmentsMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(mfaMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(complianceMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
@@ -853,7 +857,7 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
     dentistCookie,
     `/api/patients/${patients[1].id}/clinical`
   );
-  assert.equal(unrelatedClinicalRead.response.status, 200);
+  assert.equal(unrelatedClinicalRead.response.status, 404);
 
   const secondDoctor = await prisma.doctor.create({ data: { name: 'Other Doctor' } });
   const otherDoctorAppointment = await request('/api/appointments', {
@@ -1108,5 +1112,5 @@ test('governance endpoints enforce admin and patient relationship boundaries', a
     dentistCookie,
     `/api/patients/${patients[1].id}/export`
   );
-  assert.equal(unrelatedExport.response.status, 404);
+  assert.equal(unrelatedExport.response.status, 403);
 });

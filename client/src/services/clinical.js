@@ -22,8 +22,8 @@ export function saveToothChartEntry(patientId, payload) {
   });
 }
 
-export function deleteToothChartEntry(patientId, entryId) {
-  return apiRequest(clinicalPath(patientId, `/teeth/${entryId}`), { method: 'DELETE' });
+export function deleteToothChartEntry(patientId, entryId, payload = {}) {
+  return apiRequest(clinicalPath(patientId, `/teeth/${entryId}`), { method: 'DELETE', body: JSON.stringify(payload) });
 }
 
 export function createClinicalNote(patientId, payload) {
@@ -38,6 +38,10 @@ export function updateClinicalNote(patientId, noteId, payload) {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
+}
+
+export function validateClinicalNote(patientId, noteId) {
+  return apiRequest(clinicalPath(patientId, `/notes/${noteId}/validate`), { method: 'POST', body: JSON.stringify({}) });
 }
 
 export function createTreatmentPlan(patientId, payload) {

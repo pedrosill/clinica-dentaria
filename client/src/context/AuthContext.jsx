@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiRequest } from '../services/api';
+import { verifyMfa as verifyMfaRequest } from '../services/auth';
 import AuthContext from './auth-context';
 
 export default function AuthProvider({ children }) {
@@ -30,8 +31,14 @@ export default function AuthProvider({ children }) {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
+    if (data.user) setUser(data.user);
+    return data;
+  }
+
+  async function verifyMfa(payload) {
+    const data = await verifyMfaRequest(payload);
     setUser(data.user || null);
-    return data.user;
+    return data;
   }
 
   async function logout() {
@@ -43,7 +50,7 @@ export default function AuthProvider({ children }) {
   }
 
   const value = useMemo(
-    () => ({ user, isLoading, isAuthenticated: Boolean(user), login, logout }),
+    () => ({ user, isLoading, isAuthenticated: Boolean(user), login, verifyMfa, logout }),
     [isLoading, user]
   );
 

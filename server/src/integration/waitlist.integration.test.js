@@ -12,6 +12,7 @@ const migrationNames = [
   '20260528011229_init_refreshed', '20260911153000_add_authentication', '20260911170000_add_clinic_settings',
   '20260911190000_add_clinical_records', '20260911200000_add_clinic_language', '20260911210000_add_authorization_scope_and_archiving',
   '20260911220000_add_data_governance', '20260911230000_add_patient_recalls', '20260911240000_add_waitlist_entries', '20260912100000_link_waitlist_appointments',
+  '20260912110000_add_mfa_and_password_recovery', '20260912120000_add_compliance_transcription_documents',
 ];
 const database = new Database(databasePath);
 for (const migrationName of migrationNames) database.exec(fs.readFileSync(path.join(serverRoot, 'prisma', 'migrations', migrationName, 'migration.sql'), 'utf8'));

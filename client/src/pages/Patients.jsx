@@ -3,12 +3,13 @@
 ================================ */
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Plus, Search, UserRound } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { createPatient } from '../services/patients';
 import { getPatientDisplayName } from '../utils/agendaUtils';
 import useLanguage from '../context/useLanguage';
 import useAuth from '../context/useAuth';
 import DatePicker from '../components/ui/DatePicker';
+import Dialog from '../components/ui/Dialog';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -53,7 +54,6 @@ function getAppointmentDateTime(appointment) {
    Page component
 ================================ */
 export default function Patients() {
-  const navigate = useNavigate();
   const { t, locale } = useLanguage();
   const { user } = useAuth();
   const canManagePatients = user?.role === 'admin' || user?.role === 'receptionist';
@@ -369,7 +369,6 @@ export default function Patients() {
               filteredPatients.map((patient) => (
                 <div
                   key={patient.id}
-                  onDoubleClick={() => navigate(getPatientDetailPath(patient.id))}
                   className="rounded-2xl border border-slate-300 bg-slate-50 p-4 transition hover:bg-slate-100/70"
                 >
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -433,7 +432,6 @@ export default function Patients() {
             todayAppointments.map((appointment) => (
               <div
                 key={appointment.id}
-                onDoubleClick={() => navigate(getPatientDetailPath(appointment.patientId))}
                 className="rounded-2xl border border-slate-300 bg-slate-50 p-4 transition hover:bg-slate-100/70"
               >
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -483,12 +481,18 @@ export default function Patients() {
          Render: create patient modal
       ================================ */}
       {isCreateModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8">
+        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+          <Dialog
+            isOpen={isCreateModalOpen}
+            onClose={handleCloseCreateModal}
+            isCloseDisabled={isCreateSubmitting}
+            labelledBy="create-patient-modal-title"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-teal-800">{t('New patient')}</p>
-                <h2 className="mt-1 text-2xl font-semibold text-slate-950">{t('Add Patient')}</h2>
+                <h2 id="create-patient-modal-title" className="mt-1 text-2xl font-semibold text-slate-950">{t('Add Patient')}</h2>
               </div>
 
               <button
@@ -496,6 +500,7 @@ export default function Patients() {
                 onClick={handleCloseCreateModal}
                 disabled={isCreateSubmitting}
                 className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
+                aria-label={t('Close modal')}
               >
                 ×
               </button>
@@ -583,7 +588,7 @@ export default function Patients() {
                 </button>
               </div>
             </form>
-          </div>
+          </Dialog>
         </div>
       ) : null}
     </div>

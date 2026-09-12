@@ -16,21 +16,21 @@ As comunicações com pacientes estão preparadas apenas ao nível dos contactos
 
 - [x] Autorização server-side por papel e por recurso, com uma matriz explícita para administrador, receção e médico dentista.
 - [x] Verificação consistente das relações paciente–consulta–nota–plano–profissional em todas as leituras e escritas abrangidas.
-- [partial] Registo de auditoria append-only para acessos e alterações clínicas, consultas, pacientes, utilizadores e definições; os eventos não guardam conteúdo clínico, mas a gravação transversal ainda é assíncrona/best-effort e precisa de tratamento fail-closed ou de uma fila durável para operações sensíveis.
+- [x] Registo de auditoria append-only para acessos e alterações clínicas, consultas, pacientes, utilizadores e definições; exportação, documentos, validação clínica, anonimização e aprovações têm auditoria fail-closed. A auditoria transversal de telemetria HTTP continua best-effort.
 - [x] Processo de alteração de notas clínicas finalizadas sem sobrescrever o original (adendas versionadas).
-- [ ] Backups automáticos, cifrados, com retenção configurável e teste documentado de restauro.
+- [partial] Backup cifrado com retenção, estado verificável e segunda cópia configurável; o scheduler, alerta, backup da pasta privada e ensaio formal de restauro têm de ser executados/documentados no host.
 - [ ] Configuração de produção segura: HTTPS atrás de proxy, cookies seguros, proteção CSRF, headers, secrets fora do repositório e arranque fail-closed.
 - [ ] Remoção de credenciais administrativas previsíveis. O fluxo seguro de alteração da password do utilizador autenticado está implementado e testado; a alteração inicial das credenciais de bootstrap continua pendente.
 - [partial] Procedimento operacional de incidente parcialmente documentado em `docs/INCIDENT_RESPONSE.md`; owners, contactos, validação da clínica/jurídica, testes e aprovação continuam pendentes.
 
 ## P1 — controlo documental e direitos dos pacientes
 
-- [partial] Consentimentos e metadados documentais têm finalidade/versão/data/responsável/estado; assinaturas, binários privados, expiry e versionamento documental continuam fora.
+- [partial] Consentimentos e metadados documentais têm finalidade/versão/data/responsável/estado; binários privados, hash, expiry e versão existem, mas assinatura formal e política documental continuam por aprovar.
 - [x] Exportação estruturada do processo de um paciente, com evento de auditoria e responsável.
-- [partial] Fluxo interno para pedidos de acesso, correção, limitação e eliminação/anonymização; existe registo e estados, mas não há executor de eliminação/anonymização.
+- [partial] Fluxo interno para pedidos de acesso, correção, limitação e eliminação/anonymização; existe registo, estados, exportação auditada e anonimização explícita protegida por holds. A resposta formal, verificação de identidade e prazos continuam a ser processo da clínica.
 - [partial] Políticas de conservação desativadas e sem duração por defeito, holds e preview/aplicação explícita; não há prazos inventados nem apagamento automático.
-- [partial] Listagens novas minimizam campos e excluem conteúdo de auditoria; a revisão global das respostas antigas continua pendente.
-- [x] Administração interna permite a administradores listar/criar/ativar/desativar utilizadores (sem auto-desativação) e cada utilizador autenticado pode alterar a sua própria password; recuperação de password, alteração administrativa e revisão periódica continuam pendentes.
+- [x] Listagens novas minimizam campos e excluem conteúdo de auditoria; downloads documentais passam pelo serviço privado e a exportação exige motivo auditado.
+- [partial] Administração interna permite gerir utilizadores, password policy, MFA/TOTP, recuperação one-time e revogação de sessões; a entrega do token de recuperação requer SMTP/canal aprovado no deployment.
 
 ## P1 — documentação da clínica, fora do código
 

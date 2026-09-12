@@ -5,6 +5,9 @@ import {
   createPatientConsent,
   exportPatientRecord,
   getPatientConsents,
+  getPatientDocuments,
+  uploadPatientDocument,
+  downloadPatientDocument,
   withdrawPatientConsent,
 } from '../../services/patients';
 
@@ -22,6 +25,7 @@ export default function PatientGovernanceSection({ patientId }) {
   const { t, locale } = useLanguage();
   const canWrite = user?.role === 'admin' || user?.role === 'receptionist';
   const [consents, setConsents] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,9 +36,9 @@ export default function PatientGovernanceSection({ patientId }) {
   useEffect(() => {
     let isMounted = true;
 
-    getPatientConsents(patientId)
-      .then((data) => {
-        if (isMounted) setConsents(Array.isArray(data) ? data : []);
+    Promise.all([getPatientConsents(patientId), getPatientDocuments(patientId)])
+      .then(([consentData, documentData]) => {
+        if (isMounted) { setConsents(Array.isArray(consentData) ? consentData : []); setDocuments(Array.isArray(documentData) ? documentData : []); }
       })
       .catch((loadError) => {
         if (isMounted) setError(loadError.message || t('Unable to load consent records.'));
@@ -112,6 +116,19 @@ export default function PatientGovernanceSection({ patientId }) {
     }
   }
 
+  async function handleUpload(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setError(''); setMessage(''); setIsSubmitting(true);
+    try { const document = await uploadPatientDocument(patientId, file); setDocuments((current) => [document, ...current]); setMessage(t('Private document uploaded and encrypted by the storage boundary.')); } catch (uploadError) { setError(uploadError.message || t('Unable to upload the document.')); } finally { setIsSubmitting(false); }
+  }
+
+  async function handleDownload(fileDocument) {
+    setError(''); setIsSubmitting(true);
+    try { const blob = await downloadPatientDocument(patientId, fileDocument.id); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = fileDocument.fileName; link.click(); URL.revokeObjectURL(url); } catch (downloadError) { setError(downloadError.message || t('Unable to download the document.')); } finally { setIsSubmitting(false); }
+  }
+
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-4">
@@ -173,6 +190,10 @@ export default function PatientGovernanceSection({ patientId }) {
             </div>
           ))}
         </div>
+      </div>
+      <div className="mt-7 border-t border-slate-200 pt-5">
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Private documents')}</h3><p className="mt-1 text-sm text-slate-500">{t('Files stay outside the public web root and downloads are authenticated and audited.')}</p></div>{canWrite ? <label className="inline-flex cursor-pointer items-center rounded-xl bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">{t('Upload document')}<input type="file" accept="application/pdf,image/jpeg,image/png,.docx" onChange={handleUpload} disabled={isSubmitting} className="sr-only" /></label> : null}</div>
+        <div className="mt-3 space-y-2">{documents.length ? documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm"><div><p className="font-medium text-slate-800">{document.fileName}</p><p className="text-xs text-slate-500">{document.mimeType} · {Math.round(document.sizeBytes / 1024)} KB · SHA-256 {document.sha256 ? document.sha256.slice(0, 12) : 'stored'}</p></div><button type="button" onClick={() => handleDownload(document)} disabled={isSubmitting} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">{t('Download')}</button></div>) : <p className="rounded-xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">{t('No private documents recorded.')}</p>}</div>
       </div>
     </section>
   );

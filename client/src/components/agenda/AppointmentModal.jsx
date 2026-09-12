@@ -105,7 +105,7 @@ export default function AppointmentModal({
   if (!isOpen) return null;
 
   return (
-    <div data-testid="appointment-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+    <div data-testid="appointment-modal" className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
       <Dialog
         isOpen={isOpen}
         onClose={onClose}

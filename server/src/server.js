@@ -1,5 +1,5 @@
 const app = require('./app');
-const { NODE_ENV, PORT } = require('./config/env');
+const { HOST, LOCAL_ONLY, NODE_ENV, PORT } = require('./config/env');
 const { runSeed } = require('./startup/seed');
 const { backfillPatientIdentityFields } = require('./startup/backfill');
 const { ensureDefaultAdmin } = require('./startup/defaultAdmin');
@@ -15,8 +15,8 @@ async function startServer() {
     await ensureDefaultAdmin();
     await ensureClinicSettings();
 
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+    app.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}${LOCAL_ONLY ? ' (local-only)' : ''}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

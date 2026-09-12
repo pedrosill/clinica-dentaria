@@ -14,7 +14,7 @@ async function upsertToothChartEntry(req, res) {
 
 async function deleteToothChartEntry(req, res) {
   res.json(
-    await clinicalService.deleteToothChartEntry(req.params.patientId, req.params.entryId, req.user)
+    await clinicalService.deleteToothChartEntry(req.params.patientId, req.params.entryId, req.user, req.body)
   );
 }
 
@@ -26,6 +26,10 @@ async function createClinicalNote(req, res) {
 
 async function updateClinicalNote(req, res) {
   res.json(await clinicalService.updateClinicalNote(req.params.patientId, req.params.noteId, req.body, req.user));
+}
+
+async function validateClinicalNote(req, res) {
+  res.json(await clinicalService.validateClinicalNote(req.params.patientId, req.params.noteId, req.user, req));
 }
 
 async function createClinicalNoteAddendum(req, res) {
@@ -65,6 +69,7 @@ module.exports = {
   deleteToothChartEntry,
   createClinicalNote,
   updateClinicalNote,
+  validateClinicalNote,
   createClinicalNoteAddendum,
   createTreatmentPlan,
   updateTreatmentPlan,

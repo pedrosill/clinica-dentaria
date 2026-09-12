@@ -1,4 +1,5 @@
 const service = require('../services/governanceService');
+const privateDocumentService = require('../services/privateDocumentService');
 
 const getPatientId = (req) => req.params.patientId;
 
@@ -7,6 +8,17 @@ async function createConsent(req, res) { res.status(201).json(await service.crea
 async function withdrawConsent(req, res) { res.json(await service.withdrawConsent(getPatientId(req), req.params.consentId, req.user)); }
 async function listDocuments(req, res) { res.json(await service.listDocuments(getPatientId(req), req.user)); }
 async function createDocument(req, res) { res.status(201).json(await service.createDocument(getPatientId(req), req.body, req.user)); }
+async function uploadDocument(req, res) {
+  const document = await privateDocumentService.uploadDocument(getPatientId(req), req.body, { fileName: req.get('x-file-name'), mimeType: req.get('x-file-type') }, req.user, req);
+  res.status(201).json(document);
+}
+async function downloadDocument(req, res) {
+  const document = await privateDocumentService.getDocument(getPatientId(req), req.params.documentId, req.user, req);
+  res.setHeader('Content-Type', document.mimeType);
+  res.setHeader('Content-Length', document.sizeBytes);
+  res.setHeader('Content-Disposition', `attachment; filename="${document.fileName.replace(/"/g, '')}"`);
+  res.sendFile(document.target);
+}
 async function exportPatient(req, res) { res.json(await service.exportPatient(getPatientId(req), req.user, req)); }
 async function createDataSubjectRequest(req, res) { res.status(201).json(await service.createDataSubjectRequest(req.body, req.user)); }
 async function listDataSubjectRequests(req, res) { res.json(await service.listDataSubjectRequests(req.user, req.query)); }
@@ -22,7 +34,7 @@ async function releaseRetentionHold(req, res) { res.json(await service.releaseRe
 
 module.exports = {
   listConsents, createConsent, withdrawConsent, listDocuments, createDocument, exportPatient,
-  createDataSubjectRequest, listDataSubjectRequests, updateDataSubjectRequest,
+  createDataSubjectRequest, listDataSubjectRequests, updateDataSubjectRequest, uploadDocument, downloadDocument,
   listAuditEvents, getAuditEvent, listRetentionPolicies, updateRetentionPolicy, retentionPreview,
   applyRetention, listRetentionHolds, releaseRetentionHold,
 };

@@ -11,17 +11,19 @@ DATABASE_URL="file:./dev.db"
 BACKUP_DIR="./backups"
 BACKUP_RETENTION_COUNT=7
 BACKUP_ENCRYPTION_KEY_FILE="C:/segredos/dentalpro-backup.key"
+BACKUP_SECONDARY_DIR="D:/dentalpro-backups"
+BACKUP_STATUS_FILE="D:/dentalpro-backups/backup-status.json"
 ```
 
 Em produção, `BACKUP_ENCRYPTION_KEY` ou `BACKUP_ENCRYPTION_KEY_FILE` é obrigatório. A chave deve ser gerida fora do repositório, com permissões restritas, e não deve ser colocada em `server/.env` se existir um gestor de segredos local disponível. Os ficheiros de backup não devem ser sincronizados ou enviados para um serviço externo sem uma decisão da clínica sobre fornecedor, localização, acesso e retenção.
 
 ## Execução e retenção
 
-Agendar `npm run db:backup --prefix server` numa conta com acesso apenas à base e à pasta de backup. O script usa o online backup API do SQLite, verifica `integrity_check` e `foreign_key_check`, escreve com permissões restritas e elimina apenas ficheiros que correspondam ao seu próprio padrão, mantendo os `BACKUP_RETENTION_COUNT` mais recentes.
+Agendar `npm run db:backup --prefix server` numa conta com acesso apenas à base e às pastas de backup. O script usa o online backup API do SQLite, verifica `integrity_check` e `foreign_key_check`, escreve com permissões restritas, pode copiar o ficheiro cifrado para `BACKUP_SECONDARY_DIR`, e grava um estado em `BACKUP_STATUS_FILE`. Elimina apenas ficheiros que correspondam ao seu próprio padrão, mantendo os `BACKUP_RETENTION_COUNT` mais recentes. Agendar também `npm run db:backup:verify --prefix server` para falhar quando o ultimo backup cifrado está ausente ou demasiado antigo.
 
 Esta rotina cria cópias locais; não é uma estratégia completa contra avaria ou perda do computador. A clínica deve configurar uma segunda cópia cifrada num local/host separado, com acesso limitado, e documentar quem verifica diariamente o resultado. Não se deve ativar sincronização automática para um serviço externo antes de aprovar fornecedor, localização dos dados, subcontratação e retenção.
 
-Um exemplo de política mínima é uma cópia diária durante sete dias. A clínica deve ajustar frequência e retenção à necessidade operacional e às obrigações aplicáveis; retenção técnica não substitui a política documental da clínica.
+Um exemplo de política mínima é uma cópia diária durante sete dias, com cópia externa aprovada e alerta diário ao owner. A clínica deve ajustar frequência e retenção à necessidade operacional e às obrigações aplicáveis; retenção técnica não substitui a política documental da clínica. A pasta privada de documentos deve estar num volume cifrado e ser incluída numa rotina de backup cifrada aprovada; o script SQLite não copia binários.
 
 ## Restauro verificado
 

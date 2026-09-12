@@ -2,6 +2,7 @@ const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
 const { parseNumericId } = require('../utils/parse');
 const { assertPermission } = require('../utils/authorization');
+const { recordAuditEvent } = require('./auditService');
 
 const VALID_TOOTH_NUMBERS = new Set([
   ...[1, 2, 3, 4].flatMap((quadrant) =>
@@ -41,6 +42,25 @@ const VALID_NOTE_STATUSES = new Set(['draft', 'final']);
 const VALID_PLAN_STATUSES = new Set(['draft', 'accepted', 'in_progress', 'completed', 'declined']);
 const VALID_PLAN_ITEM_STATUSES = new Set(['planned', 'scheduled', 'in_progress', 'completed', 'declined']);
 
+function assertTranscriptionPayload(payload, user) {
+  if (user?.role !== 'receptionist') return;
+  if (payload?.transcriptionMode !== true) {
+    throw new HttpError(403, 'The secretary may only edit clinical data in transcription mode');
+  }
+}
+
+function noteSourceData(payload, user, status = 'draft') {
+  const transcription = payload?.transcriptionMode === true || payload?.sourceType === 'paper_transcription';
+  if (!transcription) return { sourceType: 'clinical', transcriptionStatus: 'not_applicable' };
+  if (status === 'final') throw new HttpError(403, 'Paper transcriptions must be validated by the doctor');
+  return {
+    sourceType: 'paper_transcription',
+    transcriptionStatus: 'transcribed',
+    transcribedById: user.id,
+    transcribedAt: new Date(),
+  };
+}
+
 function stringValue(value) {
   return String(value ?? '').trim();
 }
@@ -68,7 +88,7 @@ async function ensurePatient(patientId, user, action = 'read') {
     where: {
       id,
       archivedAt: null,
-      ...(user.role === 'dentist' && action !== 'read'
+      ...(user.role === 'dentist'
         ? {
             appointments: {
               some: { doctorId: user.doctorId || -1, archivedAt: null },
@@ -113,6 +133,8 @@ async function getClinicalRecord(patientId, user) {
       where: { patientId: id },
       include: {
         author: { select: { id: true, displayName: true } },
+        transcribedBy: { select: { id: true, displayName: true } },
+        validatedBy: { select: { id: true, displayName: true } },
         appointment: { select: { id: true, date: true, time: true, treatmentType: true } },
         addenda: { orderBy: { version: 'asc' } },
       },
@@ -145,6 +167,7 @@ async function getClinicalRecord(patientId, user) {
 }
 
 async function updateClinicalProfile(patientId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const id = await ensurePatient(patientId, user, 'write');
   const data = {
     allergies: optionalString(payload.allergies),
@@ -163,6 +186,7 @@ async function updateClinicalProfile(patientId, payload = {}, user) {
 }
 
 async function upsertToothChartEntry(patientId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const id = await ensurePatient(patientId, user, 'write');
   const toothNumber = stringValue(payload.toothNumber);
   const surface = validateEnum(payload.surface || 'whole', VALID_SURFACES, 'tooth surface');
@@ -194,7 +218,8 @@ async function upsertToothChartEntry(patientId, payload = {}, user) {
   });
 }
 
-async function deleteToothChartEntry(patientId, entryId, user) {
+async function deleteToothChartEntry(patientId, entryId, user, payload = {}) {
+  assertTranscriptionPayload(payload, user);
   const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(entryId, 'tooth chart entry id');
   const entry = await prisma.toothChartEntry.findFirst({ where: { id, patientId: patient } });
@@ -204,6 +229,7 @@ async function deleteToothChartEntry(patientId, entryId, user) {
 }
 
 async function createClinicalNote(patientId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const id = await ensurePatient(patientId, user, 'write');
   const status = validateEnum(payload.status || 'draft', VALID_NOTE_STATUSES, 'clinical note status');
   const appointmentId = payload.appointmentId ? parseNumericId(payload.appointmentId, 'appointment id') : null;
@@ -223,6 +249,8 @@ async function createClinicalNote(patientId, payload = {}, user) {
     recommendations: optionalString(payload.recommendations),
     status,
     signedAt: status === 'final' ? new Date() : null,
+    ...noteSourceData(payload, user, status),
+    ...(status === 'final' ? { validatedById: user.id, validatedAt: new Date() } : {}),
   };
 
   try {
@@ -236,6 +264,7 @@ async function createClinicalNote(patientId, payload = {}, user) {
 }
 
 async function updateClinicalNote(patientId, noteId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(noteId, 'clinical note id');
   const existing = await prisma.clinicalNote.findUnique({
@@ -275,13 +304,31 @@ async function updateClinicalNote(patientId, noteId, payload = {}, user) {
       diagnosis: optionalString(payload.diagnosis ?? existing.diagnosis),
       treatmentPerformed: optionalString(payload.treatmentPerformed ?? existing.treatmentPerformed),
       recommendations: optionalString(payload.recommendations ?? existing.recommendations),
-      status,
+      status: user.role === 'receptionist' ? 'draft' : status,
       signedAt: status === 'final' ? new Date() : null,
+      ...noteSourceData(payload, user, status),
     },
   });
 }
 
+async function validateClinicalNote(patientId, noteId, user, req) {
+  const patient = await ensurePatient(patientId, user, 'validate');
+  const id = parseNumericId(noteId, 'clinical note id');
+  const note = await prisma.clinicalNote.findUnique({ where: { id }, select: { id: true, patientId: true, status: true, transcriptionStatus: true } });
+  if (!note || note.patientId !== patient) throw new HttpError(404, 'Clinical note not found');
+  if (note.status === 'final') throw new HttpError(409, 'Clinical note is already final');
+  if (note.transcriptionStatus !== 'transcribed') throw new HttpError(400, 'Only transcribed notes can be validated');
+  const updated = await prisma.clinicalNote.update({
+    where: { id },
+    data: { status: 'final', signedAt: new Date(), transcriptionStatus: 'validated', validatedById: user.id, validatedAt: new Date() },
+    include: { author: { select: { id: true, displayName: true } }, transcribedBy: { select: { id: true, displayName: true } }, validatedBy: { select: { id: true, displayName: true } } },
+  });
+  await recordAuditEvent({ req, actor: user, action: 'validate', resource: 'clinical_note', resourceId: id, patientId: patient, result: 'success', metadata: { transcriptionStatus: 'validated' }, required: true });
+  return updated;
+}
+
 async function createClinicalNoteAddendum(patientId, noteId, payload = {}, user) {
+  if (user?.role === 'receptionist') throw new HttpError(403, 'The secretary cannot add to a final clinical note');
   const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(noteId, 'clinical note id');
   const note = await prisma.clinicalNote.findFirst({ where: { id, patientId: patient }, select: { id: true, status: true } });
@@ -296,6 +343,7 @@ async function createClinicalNoteAddendum(patientId, noteId, payload = {}, user)
 }
 
 async function createTreatmentPlan(patientId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const id = await ensurePatient(patientId, user, 'write');
   const title = stringValue(payload.title);
   if (!title || title.length > 160) throw new HttpError(400, 'Treatment plan title is required');
@@ -314,6 +362,7 @@ async function createTreatmentPlan(patientId, payload = {}, user) {
 }
 
 async function updateTreatmentPlan(patientId, planId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(planId, 'treatment plan id');
   const existing = await prisma.treatmentPlan.findUnique({ where: { id } });
@@ -330,6 +379,7 @@ async function updateTreatmentPlan(patientId, planId, payload = {}, user) {
 }
 
 async function createTreatmentPlanItem(patientId, planId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const patient = await ensurePatient(patientId, user, 'write');
   const normalizedPlanId = parseNumericId(planId, 'treatment plan id');
   const plan = await prisma.treatmentPlan.findUnique({ where: { id: normalizedPlanId } });
@@ -364,6 +414,7 @@ async function createTreatmentPlanItem(patientId, planId, payload = {}, user) {
 }
 
 async function updateTreatmentPlanItem(patientId, itemId, payload = {}, user) {
+  assertTranscriptionPayload(payload, user);
   const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(itemId, 'treatment plan item id');
   const existing = await prisma.treatmentPlanItem.findUnique({
@@ -410,6 +461,7 @@ async function updateTreatmentPlanItem(patientId, itemId, payload = {}, user) {
 }
 
 async function deleteTreatmentPlanItem(patientId, itemId, user) {
+  if (user?.role === 'receptionist') throw new HttpError(403, 'The secretary cannot delete clinical plan items');
   const patient = await ensurePatient(patientId, user, 'write');
   const id = parseNumericId(itemId, 'treatment plan item id');
   const existing = await prisma.treatmentPlanItem.findUnique({
@@ -435,6 +487,7 @@ module.exports = {
   deleteToothChartEntry,
   createClinicalNote,
   updateClinicalNote,
+  validateClinicalNote,
   createClinicalNoteAddendum,
   createTreatmentPlan,
   updateTreatmentPlan,

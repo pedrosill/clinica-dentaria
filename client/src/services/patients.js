@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { apiRequest, API_BASE_URL } from './api';
 
 export async function createPatient(payload) {
   return apiRequest('/api/patients', {
@@ -26,4 +26,22 @@ export function withdrawPatientConsent(patientId, consentId) {
 
 export function exportPatientRecord(patientId) {
   return apiRequest(`/api/patients/${patientId}/export`);
+}
+
+export function getPatientDocuments(patientId) {
+  return apiRequest(`/api/patients/${patientId}/documents`);
+}
+
+export function uploadPatientDocument(patientId, file) {
+  return apiRequest(`/api/patients/${patientId}/documents/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream', 'X-File-Name': file.name, 'X-File-Type': file.type },
+    body: file,
+  });
+}
+
+export async function downloadPatientDocument(patientId, documentId) {
+  const response = await fetch(`${API_BASE_URL}/api/patients/${patientId}/documents/${documentId}/content`, { credentials: 'include' });
+  if (!response.ok) throw new Error('Unable to download the private document.');
+  return response.blob();
 }

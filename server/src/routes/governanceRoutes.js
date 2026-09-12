@@ -4,17 +4,21 @@ const { requirePermission, requireRole } = require('../middleware/auth');
 const controller = require('../controllers/governanceController');
 
 const router = express.Router();
-const patientRead = requirePermission('patient', 'read');
-const patientWrite = requirePermission('patient', 'write');
+const governanceRead = requirePermission('governance', 'read');
+const governanceWrite = requirePermission('governance', 'write');
+const governanceManage = requirePermission('governance', 'manage');
+const governanceExport = requirePermission('governance', 'export');
 
-router.get('/patients/:patientId/consents', patientRead, asyncHandler(controller.listConsents));
-router.post('/patients/:patientId/consents', patientWrite, asyncHandler(controller.createConsent));
-router.post('/patients/:patientId/consents/:consentId/withdraw', patientWrite, asyncHandler(controller.withdrawConsent));
-router.get('/patients/:patientId/documents', patientRead, asyncHandler(controller.listDocuments));
-router.post('/patients/:patientId/documents', patientWrite, asyncHandler(controller.createDocument));
-router.get('/patients/:patientId/export', patientRead, asyncHandler(controller.exportPatient));
+router.get('/patients/:patientId/consents', governanceRead, asyncHandler(controller.listConsents));
+router.post('/patients/:patientId/consents', governanceWrite, asyncHandler(controller.createConsent));
+router.post('/patients/:patientId/consents/:consentId/withdraw', governanceManage, asyncHandler(controller.withdrawConsent));
+router.get('/patients/:patientId/documents', governanceRead, asyncHandler(controller.listDocuments));
+router.post('/patients/:patientId/documents', governanceWrite, asyncHandler(controller.createDocument));
+router.post('/patients/:patientId/documents/upload', governanceWrite, express.raw({ type: 'application/octet-stream', limit: '25mb' }), asyncHandler(controller.uploadDocument));
+router.get('/patients/:patientId/documents/:documentId/content', governanceRead, asyncHandler(controller.downloadDocument));
+router.get('/patients/:patientId/export', governanceExport, asyncHandler(controller.exportPatient));
 
-router.post('/data-subject-requests', patientRead, asyncHandler(controller.createDataSubjectRequest));
+router.post('/data-subject-requests', governanceWrite, asyncHandler(controller.createDataSubjectRequest));
 router.get('/data-subject-requests', requireRole('admin'), asyncHandler(controller.listDataSubjectRequests));
 router.patch('/data-subject-requests/:requestId', requireRole('admin'), asyncHandler(controller.updateDataSubjectRequest));
 

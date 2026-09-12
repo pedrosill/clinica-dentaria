@@ -1,5 +1,5 @@
-import { Mail, Phone, Trash2, UserRound } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Mail, Phone, Trash2, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import useLanguage from '../../context/useLanguage';
 
 export default function DoctorsListSection({
@@ -7,7 +7,6 @@ export default function DoctorsListSection({
   onOpenDeleteModal,
   canManageDoctors = false,
 }) {
-  const navigate = useNavigate();
   const { t } = useLanguage();
 
   return (
@@ -16,7 +15,7 @@ export default function DoctorsListSection({
         <div>
           <h2 className="text-lg font-semibold text-slate-950">{t('Doctors')}</h2>
           <p className="text-sm text-slate-700">
-            {t('All existing staff records. Double-click a card to open the doctor profile.')}
+            {t('Review staff records and open a doctor profile.')}
           </p>
         </div>
 
@@ -37,7 +36,6 @@ export default function DoctorsListSection({
           doctors.map((doctor) => (
             <div
               key={doctor.id}
-              onDoubleClick={() => navigate(`/doctors/${doctor.id}`)}
               className="border-t border-slate-200 py-4 first:border-t-0 first:pt-0"
             >
               <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -73,16 +71,23 @@ export default function DoctorsListSection({
                   </div>
                 </div>
 
-                {canManageDoctors ? <div className="flex flex-wrap gap-2">
-                  <button
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to={`/doctors/${doctor.id}`}
+                    className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-200"
+                  >
+                    {t('Open doctor')}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                  {canManageDoctors ? <button
                     type="button"
                     onClick={() => onOpenDeleteModal(doctor)}
                     className="inline-flex items-center justify-center rounded-xl border border-red-300 bg-white px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-50"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     {t('Delete')}
-                  </button>
-                </div> : null}
+                  </button> : null}
+                </div>
               </div>
             </div>
           ))

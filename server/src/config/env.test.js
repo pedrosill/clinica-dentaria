@@ -21,6 +21,18 @@ test('production origins must be explicit HTTPS origins', () => {
   );
 });
 
+test('local-only production permits loopback HTTP without permitting network origins', () => {
+  assert.deepEqual(
+    parseAllowedOrigins('http://localhost:5173,http://127.0.0.1:5173', { nodeEnv: 'production', localOnly: true }),
+    ['http://localhost:5173', 'http://127.0.0.1:5173']
+  );
+  assert.throws(
+    () => parseAllowedOrigins('http://clinic.local:5173', { nodeEnv: 'production', localOnly: true }),
+    /HTTPS in production/
+  );
+  assert.equal(parseTrustProxy('', { nodeEnv: 'production', localOnly: true }), false);
+});
+
 test('production trust proxy configuration rejects broad or hop-count trust', () => {
   assert.equal(parseTrustProxy('loopback', { nodeEnv: 'production' }), 'loopback');
   assert.deepEqual(parseTrustProxy('10.0.0.10,192.0.2.10', { nodeEnv: 'production' }), [

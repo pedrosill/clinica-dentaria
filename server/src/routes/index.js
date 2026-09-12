@@ -9,6 +9,7 @@ const userRoutes = require('./userRoutes');
 const recallRoutes = require('./recallRoutes');
 const waitlistRoutes = require('./waitlistRoutes');
 const reportRoutes = require('./reportRoutes');
+const complianceRoutes = require('./complianceRoutes');
 const { requireAuth } = require('../middleware/auth');
 const { auditRequest } = require('../services/auditService');
 
@@ -25,5 +26,6 @@ router.use('/users', requireAuth, userRoutes);
 router.use('/', requireAuth, recallRoutes);
 router.use('/', requireAuth, waitlistRoutes);
 router.use('/reports', requireAuth, reportRoutes);
+router.use('/compliance', requireAuth, complianceRoutes);
 
 module.exports = router;

@@ -89,6 +89,10 @@ function documentSelect() {
     fileName: true,
     mimeType: true,
     sizeBytes: true,
+    sha256: true,
+    version: true,
+    uploadedAt: true,
+    expiresAt: true,
     createdAt: true,
     createdBy: { select: { id: true, displayName: true } },
   };
@@ -144,6 +148,7 @@ async function exportPatient(patientId, user, req) {
     },
   });
   if (!patient) throw new HttpError(404, 'Patient not found');
+  const reason = text(req?.query?.reason || req?.body?.reason || 'internal governance request', 'Export reason', 300, { required: true });
   await recordAuditEvent({
     req,
     actor: user,
@@ -152,7 +157,8 @@ async function exportPatient(patientId, user, req) {
     resourceId: id,
     patientId: id,
     result: 'success',
-    metadata: { sections: ['identity', 'appointments', 'clinical', 'consents', 'documents', 'requests'] },
+    metadata: { reason, sections: ['identity', 'appointments', 'clinical', 'consents', 'documents', 'requests'] },
+    required: true,
   });
   return { exportedAt: new Date().toISOString(), patient };
 }
@@ -190,9 +196,23 @@ async function updateDataSubjectRequest(requestId, payload = {}, user) {
   const resolutionNote = payload.resolutionNote === undefined
     ? existing.resolutionNote
     : text(payload.resolutionNote, 'Resolution note', 2000) || null;
+  const responseReference = payload.responseReference === undefined ? existing.responseReference : text(payload.responseReference, 'Response reference', 500) || null;
+  if (payload.action === 'anonymize') {
+    if (payload.confirm !== true) throw new HttpError(400, 'Explicit confirmation is required to anonymize a patient');
+    if (!['erasure', 'anonymization'].includes(existing.requestType)) throw new HttpError(400, 'Only erasure or anonymization requests can be anonymized');
+    const hold = await prisma.retentionHold.findFirst({ where: { patientId: existing.patientId, releasedAt: null } });
+    if (hold) throw new HttpError(409, 'An active retention hold prevents anonymization');
+    const now = new Date();
+    const anonymized = await prisma.$transaction(async (transaction) => {
+      await transaction.patient.update({ where: { id: existing.patientId }, data: { fullName: `ANONYMIZED-${existing.patientId}`, phone: '', email: '', nif: `ANONYMIZED-${existing.patientId}`, nationality: '', dateOfBirth: null, archivedAt: now } });
+      return transaction.dataSubjectRequest.update({ where: { id }, data: { status: 'completed', resolutionNote: resolutionNote || 'Contact data anonymized after review. Clinical records retained where legally required.', responseReference, reviewedById: user.id, reviewedAt: now, resolvedAt: now } });
+    });
+    await recordAuditEvent({ req: null, actor: user, action: 'anonymize', resource: 'data_subject_request', resourceId: id, patientId: existing.patientId, result: 'success', metadata: { requestType: existing.requestType }, required: true });
+    return anonymized;
+  }
   return prisma.dataSubjectRequest.update({
     where: { id },
-    data: { status, resolutionNote, resolvedAt: ['completed', 'rejected'].includes(status) ? new Date() : null },
+    data: { status, resolutionNote, responseReference, reviewedById: user.id, reviewedAt: new Date(), resolvedAt: ['completed', 'rejected'].includes(status) ? new Date() : null },
   });
 }
 
