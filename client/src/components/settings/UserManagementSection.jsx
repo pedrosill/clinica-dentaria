@@ -3,6 +3,7 @@ import { Edit3, UserPlus, Users } from 'lucide-react';
 import { createUser, getUsers, setUserActive } from '../../services/users';
 import { getDoctors } from '../../services/doctors';
 import useLanguage from '../../context/useLanguage';
+import SelectDropdown from '../ui/SelectDropdown';
 
 const inputClass =
   'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100';
@@ -50,6 +51,10 @@ export default function UserManagementSection({ currentUserId }) {
       [event.target.name]: event.target.value,
       ...(event.target.name === 'role' && event.target.value !== 'dentist' ? { doctorId: '' } : {}),
     }));
+  }
+
+  function updateFormValue(name, value) {
+    updateForm({ target: { name, value } });
   }
 
   async function handleCreateUser(event) {
@@ -104,8 +109,8 @@ export default function UserManagementSection({ currentUserId }) {
       {isEditorOpen ? <form onSubmit={handleCreateUser} autoComplete="off" className="mt-6 grid gap-3 md:grid-cols-2">
         <label className="space-y-2 text-sm font-medium text-slate-700">{t('Display name')}<input required name="displayName" autoComplete="off" className={inputClass} value={form.displayName} onChange={updateForm} disabled={isSaving} /></label>
         <label className="space-y-2 text-sm font-medium text-slate-700">{t('Email')}<input required type="email" name="email" autoComplete="off" className={inputClass} value={form.email} onChange={updateForm} disabled={isSaving} /></label>
-        <label className="space-y-2 text-sm font-medium text-slate-700">{t('Role')}<select name="role" className={inputClass} value={form.role} onChange={updateForm} disabled={isSaving}>{Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}</select></label>
-        {form.role === 'dentist' ? <label className="space-y-2 text-sm font-medium text-slate-700">{t('Linked doctor')}<select required name="doctorId" className={inputClass} value={form.doctorId} onChange={updateForm} disabled={isSaving || doctors.length === 0}><option value="">{t('Select doctor')}</option>{doctors.filter((doctor) => !users.some((listedUser) => String(listedUser.doctorProfile?.id) === String(doctor.id))).map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select>{doctors.length === 0 ? <span className="block text-xs font-normal text-amber-700">{t('Create a doctor profile before creating a dentist account.')}</span> : null}</label> : null}
+        <SelectDropdown label={t('Role')} value={form.role} onChange={(value) => updateFormValue('role', value)} testId="select-role" disabled={isSaving} options={Object.entries(roleLabels).map(([value, label]) => ({ value, label: t(label) }))} />
+        {form.role === 'dentist' ? <div><SelectDropdown label={t('Linked doctor')} value={form.doctorId} onChange={(value) => updateFormValue('doctorId', value)} testId="select-linked-doctor" disabled={isSaving || doctors.length === 0} options={[{ value: '', label: t('Select doctor') }, ...doctors.filter((doctor) => !users.some((listedUser) => String(listedUser.doctorProfile?.id) === String(doctor.id))).map((doctor) => ({ value: String(doctor.id), label: doctor.name }))]} />{doctors.length === 0 ? <span className="block text-xs font-normal text-amber-700">{t('Create a doctor profile before creating a dentist account.')}</span> : null}</div> : null}
         <label className="space-y-2 text-sm font-medium text-slate-700">{t('Temporary password')}<input required type="password" name="password" autoComplete="off" className={inputClass} value={form.password} onChange={updateForm} disabled={isSaving} /></label>
         <button type="submit" disabled={isSaving} className="inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"><UserPlus className="h-4 w-4" />{isSaving ? t('Saving…') : t('Create user')}</button>
       </form> : null}

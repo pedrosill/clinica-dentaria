@@ -55,12 +55,10 @@ function parseStatusFilter(value) {
 }
 
 function patientScope(user) {
-  return {
-    archivedAt: null,
-    ...(user?.role === 'dentist'
-      ? { appointments: { some: { doctorId: Number(user.doctorId) || -1, archivedAt: null } } }
-      : {}),
-  };
+  // Dentists can see the whole clinic patient register and can create a
+  // scheduling request for any patient. The requested doctor is still
+  // constrained to the signed-in dentist by validateDoctor().
+  return { archivedAt: null };
 }
 
 function entryScope(user) {
@@ -107,11 +105,18 @@ function waitlistSelect() {
     updatedAt: true,
     patient: { select: { id: true, fullName: true } },
     doctor: { select: { id: true, name: true } },
+    appointment: { select: { id: true, date: true, time: true, status: true } },
   };
 }
 
 function serializeEntry(entry) {
-  return { ...entry, requestedDate: entry.requestedDate ? formatLocalDate(entry.requestedDate) : null };
+  return {
+    ...entry,
+    requestedDate: entry.requestedDate ? formatLocalDate(entry.requestedDate) : null,
+    appointment: entry.appointment
+      ? { ...entry.appointment, date: formatLocalDate(entry.appointment.date) }
+      : null,
+  };
 }
 
 async function listWaitlist(query = {}, user) {
@@ -149,8 +154,11 @@ async function createWaitlistEntry(patientIdValue, payload = {}, user, req) {
   const requestedDate = payload.requestedDate === undefined || payload.requestedDate === null || payload.requestedDate === '' ? null : parseDateOnly(payload.requestedDate, 'requested date');
   const requestedDoctorId = payload.doctorId === undefined || payload.doctorId === null || payload.doctorId === '' ? null : positiveId(payload.doctorId, 'doctor id');
   const doctorId = await validateDoctor(requestedDoctorId, user);
-  const existing = await prisma.waitlistEntry.findMany({ where: { patientId, status: { in: ACTIVE_STATUSES } }, select: { doctorId: true, requestedDate: true, reason: true } });
   const requestedDateKey = requestedDate ? formatLocalDate(requestedDate) : null;
+  if (requestedDateKey && requestedDateKey < formatLocalDate(new Date())) {
+    throw new HttpError(400, 'Requested date cannot be in the past');
+  }
+  const existing = await prisma.waitlistEntry.findMany({ where: { patientId, status: { in: ACTIVE_STATUSES } }, select: { doctorId: true, requestedDate: true, reason: true } });
   if (existing.some((entry) => entry.doctorId === doctorId && (entry.requestedDate ? formatLocalDate(entry.requestedDate) : null) === requestedDateKey && normalizeText(entry.reason).toLocaleLowerCase('en-GB') === reason.toLocaleLowerCase('en-GB'))) {
     throw new HttpError(409, 'An equivalent active waitlist entry already exists');
   }
@@ -165,7 +173,33 @@ async function transitionWaitlistEntry(entryIdValue, payload = {}, user, req) {
   const status = String(payload.status || '').trim();
   if (!WAITLIST_STATUSES.has(status)) throw new HttpError(400, 'Invalid waitlist status');
   if (!TRANSITIONS[existing.status]?.has(status)) throw new HttpError(409, `Cannot transition waitlist entry from ${existing.status} to ${status}`);
-  const updatedCount = await prisma.waitlistEntry.updateMany({ where: { id: existing.id, status: existing.status }, data: { status } });
+  let appointmentId = null;
+  if (status === 'booked') {
+    appointmentId = payload.appointmentId === undefined || payload.appointmentId === null || payload.appointmentId === ''
+      ? null
+      : positiveId(payload.appointmentId, 'appointment id');
+    if (!appointmentId) throw new HttpError(400, 'A booked waitlist entry must be linked to an appointment');
+
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        patientId: existing.patientId,
+        archivedAt: null,
+        patient: { archivedAt: null },
+        ...(existing.doctorId ? { doctorId: existing.doctorId } : {}),
+      },
+      select: { id: true, doctorId: true },
+    });
+    if (!appointment) throw new HttpError(400, 'The linked appointment must belong to the patient and requested doctor');
+    if (user.role === 'dentist' && Number(appointment.doctorId) !== Number(user.doctorId)) {
+      throw new HttpError(403, 'Dentists may only link their own appointments');
+    }
+  }
+
+  const updatedCount = await prisma.waitlistEntry.updateMany({
+    where: { id: existing.id, status: existing.status, ...(status === 'booked' ? { appointmentId: null } : {}) },
+    data: { status, ...(status === 'booked' ? { appointmentId } : {}) },
+  });
   if (updatedCount.count !== 1) throw new HttpError(409, 'Waitlist entry changed before the transition could be saved');
   const updated = await prisma.waitlistEntry.findUnique({ where: { id: existing.id }, select: waitlistSelect() });
   await recordAuditEvent({ req, actor: user, action: 'transition', resource: 'waitlist', resourceId: existing.id, patientId: updated.patientId, metadata: { fromStatus: existing.status, toStatus: status } });

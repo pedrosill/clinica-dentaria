@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import useLanguage from '../../context/useLanguage';
+import SelectDropdown from '../ui/SelectDropdown';
+import DatePicker from '../ui/DatePicker';
 
 function localDateInput() {
   const date = new Date();
@@ -36,18 +38,15 @@ export default function RecallForm({ patientId = null, patients = [], isSubmitti
       </div>
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         {patientId === null ? (
-          <label className="space-y-2 text-sm font-medium text-slate-700">
-            {t('Patient')}
-            <select data-testid="recall-patient" name="patientId" value={form.patientId} onChange={handleChange} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800">
-              <option value="">{t('Select patient')}</option>
-              {patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.fullName}</option>)}
-            </select>
-          </label>
+          <SelectDropdown
+            label={t('Patient')}
+            value={form.patientId}
+            onChange={(value) => setForm((current) => ({ ...current, patientId: value }))}
+            testId="recall-patient"
+            options={[{ value: '', label: t('Select patient') }, ...patients.map((patient) => ({ value: String(patient.id), label: patient.fullName }))]}
+          />
         ) : <input type="hidden" name="patientId" value={patientId} />}
-        <label className="space-y-2 text-sm font-medium text-slate-700">
-          {t('Due date')}
-          <input data-testid="recall-due-date" type="date" name="dueDate" value={form.dueDate} onChange={handleChange} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800" />
-        </label>
+        <DatePicker label={t('Due date')} value={form.dueDate} onChange={(value) => setForm((current) => ({ ...current, dueDate: value }))} testId="recall-due-date" />
         <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-1">
           {t('Reason')}
           <input data-testid="recall-reason" name="reason" value={form.reason} onChange={handleChange} maxLength={240} placeholder={t('e.g. Six-month check-up')} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800" />

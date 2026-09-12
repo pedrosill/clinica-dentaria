@@ -35,6 +35,7 @@ export default function useAppointmentForm({
   setAppointments,
   setSelectedDate,
   preferredDoctorId = '',
+  restrictedDoctorId = '',
 }) {
   const { t } = useLanguage();
   /* ================================
@@ -64,6 +65,7 @@ export default function useAppointmentForm({
   const [duration, setDuration] = useState('30');
   const [treatmentType, setTreatmentType] = useState('');
   const [notes, setNotes] = useState('');
+  const [waitlistEntryId, setWaitlistEntryId] = useState(null);
 
   /* ================================
      State: submit status
@@ -121,17 +123,20 @@ export default function useAppointmentForm({
   ================================ */
   const doctorSearchResults = useMemo(() => {
     const term = doctorSearch.trim().toLowerCase();
+    const selectableDoctors = restrictedDoctorId
+      ? doctors.filter((doctor) => String(doctor.id) === String(restrictedDoctorId))
+      : doctors;
 
-    if (!term) return doctors;
+    if (!term) return selectableDoctors;
 
-    return doctors.filter((doctor) => {
+    return selectableDoctors.filter((doctor) => {
       const name = String(doctor.name || '').toLowerCase();
       const email = String(doctor.email || '').toLowerCase();
       const phone = String(doctor.phone || '').toLowerCase();
 
       return name.includes(term) || email.includes(term) || phone.includes(term);
     });
-  }, [doctors, doctorSearch]);
+  }, [doctors, doctorSearch, restrictedDoctorId]);
 
   /* ================================
      Derived: calendar days
@@ -242,9 +247,15 @@ export default function useAppointmentForm({
   ================================ */
   function resetFormState(baseSelectedDate = selectedDate, initialValues = {}) {
     const baseDate = startOfDay(baseSelectedDate);
-    const preferredDoctor = doctors.find((doctor) => String(doctor.id) === String(preferredDoctorId));
+    const restrictedDoctor = restrictedDoctorId
+      ? doctors.find((doctor) => String(doctor.id) === String(restrictedDoctorId))
+      : null;
+    const preferredDoctor = restrictedDoctor || doctors.find((doctor) => String(doctor.id) === String(preferredDoctorId));
     const initialPatient = patients.find((patient) => String(patient.id) === String(initialValues.patientId));
-    const initialDoctor = doctors.find((doctor) => String(doctor.id) === String(initialValues.doctorId)) || preferredDoctor;
+    const requestedInitialDoctor = doctors.find((doctor) => String(doctor.id) === String(initialValues.doctorId));
+    const initialDoctor = requestedInitialDoctor && (!restrictedDoctorId || String(requestedInitialDoctor.id) === String(restrictedDoctorId))
+      ? requestedInitialDoctor
+      : preferredDoctor;
     const initialType = activeAppointmentTypes.find((type) => type.name === initialValues.treatmentType);
 
     setEditingAppointmentId(null);
@@ -263,6 +274,7 @@ export default function useAppointmentForm({
     setDuration(initialValues.duration ? String(initialValues.duration) : firstType ? String(firstType.duration) : '');
     setTreatmentType(initialValues.treatmentType || firstType?.name || '');
     setNotes(initialValues.notes || '');
+    setWaitlistEntryId(initialValues.waitlistEntryId || null);
     setSubmitError('');
   }
 
@@ -353,6 +365,7 @@ export default function useAppointmentForm({
   }
 
   function handleDoctorSearchChange(value) {
+    if (restrictedDoctorId) return;
     setDoctorSearch(value);
     setDoctorId('');
     setDoctorSelectorOpen(true);
@@ -365,6 +378,7 @@ export default function useAppointmentForm({
   }
 
   function handleSelectDoctor(doctor) {
+    if (restrictedDoctorId && String(doctor.id) !== String(restrictedDoctorId)) return;
     setDoctorId(String(doctor.id));
     setDoctorSearch(doctor.name || '');
     setDoctorSelectorOpen(false);
@@ -405,14 +419,15 @@ export default function useAppointmentForm({
       setIsSubmitting(true);
       setSubmitError('');
 
-      const payload = {
+    const payload = {
         patientId: Number(patientId),
         doctorId: Number(doctorId),
         date: appointmentDate,
         time: normalizedTime,
         duration: Number(duration || 30),
         treatmentType,
-        notes,
+      notes,
+      ...(waitlistEntryId ? { waitlistEntryId } : {}),
       };
 
       const data = await apiRequest(
@@ -470,6 +485,7 @@ export default function useAppointmentForm({
     recommendedPatientIds,
     patientSearchResults,
     doctorSearchResults,
+    isDoctorSelectionRestricted: Boolean(restrictedDoctorId),
     appointmentCalendarDays,
     timeOptions,
     durationOptions,

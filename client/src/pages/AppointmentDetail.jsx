@@ -15,6 +15,7 @@ import useAppointmentDetailData from '../hooks/useAppointmentDetailData';
 import useAppointmentDetailForm from '../hooks/useAppointmentDetailForm';
 import RescheduleAppointmentModal from '../components/appointment-detail/RescheduleAppointmentModal';
 import CancelAppointmentModal from '../components/appointment-detail/CancelAppointmentModal';
+import useAuth from '../context/useAuth';
 
 /* ================================
    Page component
@@ -23,6 +24,7 @@ export default function AppointmentDetail() {
   const { appointmentId: appointmentIdParam } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const appointmentId = useMemo(() => {
     if (!appointmentIdParam) return null;
@@ -43,6 +45,12 @@ export default function AppointmentDetail() {
     isCompletedAppointment,
     isTerminalAppointment,
   } = useAppointmentDetailData(appointmentId);
+
+  const canModifyAppointment = user?.role !== 'dentist'
+    || Number(user.doctorId) === Number(appointment?.doctorId);
+  const editableDoctors = user?.role === 'dentist'
+    ? doctors.filter((doctor) => Number(doctor.id) === Number(user.doctorId))
+    : doctors;
 
   const {
     isEditing,
@@ -112,6 +120,7 @@ export default function AppointmentDetail() {
         onStartEdit={handleStartEdit}
         onStartReschedule={handleStartReschedule}
         onOpenConcludeModal={handleOpenConcludeModal}
+        canModifyAppointment={canModifyAppointment}
       />
 
       {saveSuccess ? (
@@ -130,7 +139,7 @@ export default function AppointmentDetail() {
         <AppointmentInfoSection
           appointment={appointment}
           patients={patients}
-          doctors={doctors}
+          doctors={editableDoctors}
           appointmentTypes={appointmentTypes}
           isEditing={isEditing}
           isCompletedAppointment={isCompletedAppointment}
@@ -161,6 +170,7 @@ export default function AppointmentDetail() {
             onStatusChange={handleStatusChange}
             onOpenCancelModal={handleOpenCancelModal}
             isSubmitting={isSubmitting}
+            canModifyAppointment={canModifyAppointment}
           />
         </div>
       </div>

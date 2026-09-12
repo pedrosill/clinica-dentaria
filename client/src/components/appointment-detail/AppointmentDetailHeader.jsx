@@ -17,6 +17,7 @@ export default function AppointmentDetailHeader({
   onStartEdit,
   onStartReschedule,
   onOpenConcludeModal,
+  canModifyAppointment = true,
 }) {
   const { t } = useLanguage();
   return (
@@ -55,7 +56,7 @@ export default function AppointmentDetailHeader({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          {!isEditing && !isTerminalAppointment ? (
+          {canModifyAppointment && !isEditing && !isTerminalAppointment ? (
             <button
               type="button"
               onClick={onStartEdit}
@@ -66,7 +67,7 @@ export default function AppointmentDetailHeader({
             </button>
           ) : null}
 
-          {!isTerminalAppointment ? (
+          {canModifyAppointment && !isTerminalAppointment ? (
             <button
               type="button"
               onClick={onStartReschedule}
@@ -76,7 +77,7 @@ export default function AppointmentDetailHeader({
             </button>
           ) : null}
 
-          {!isTerminalAppointment ? (
+          {canModifyAppointment && !isTerminalAppointment ? (
             <button
               type="button"
               onClick={onOpenConcludeModal}
@@ -85,6 +86,11 @@ export default function AppointmentDetailHeader({
               <CheckCircle2 className="h-4 w-4" />
               {t('Conclude Appointment')}
             </button>
+          ) : null}
+          {!canModifyAppointment ? (
+            <p className="max-w-xs text-sm text-slate-500">
+              {t('You can view this appointment, but only the assigned dentist can change it.')}
+            </p>
           ) : null}
         </div>
       </div>

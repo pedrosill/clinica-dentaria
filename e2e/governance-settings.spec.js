@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+async function selectAppDropdown(page, testId, optionName) {
+  await page.getByTestId(testId).click();
+  await page.getByRole('option', { name: optionName, exact: true }).click();
+}
+
 const admin = {
   password: 'browser-password-123',
 };
@@ -39,7 +44,7 @@ test('creates and deactivates a receptionist from Settings', async ({ page }) =>
 
   await page.getByLabel('Display name', { exact: true }).fill(displayName);
   await page.getByLabel('Email', { exact: true }).fill(uniqueEmail);
-  await page.locator('select[name="role"]').selectOption('receptionist');
+  await selectAppDropdown(page, 'select-role', 'Receptionist');
   await page.locator('input[name="password"]').fill('browser-receptionist-password');
   await page.getByRole('button', { name: 'Create user', exact: true }).click();
 
@@ -60,8 +65,8 @@ test('creates a dentist account with scoped agenda and follow-up workflow', asyn
   const dentistEmail = `browser.dentist.${Date.now()}@example.test`;
   await page.getByLabel('Display name', { exact: true }).fill('Browser Test Dentist');
   await page.getByLabel('Email', { exact: true }).fill(dentistEmail);
-  await page.locator('select[name="role"]').selectOption('dentist');
-  await page.locator('select[name="doctorId"]').selectOption({ label: 'Browser Test Doctor' });
+  await selectAppDropdown(page, 'select-role', 'Dentist');
+  await selectAppDropdown(page, 'select-linked-doctor', 'Browser Test Doctor');
   await page.locator('input[name="password"]').fill('browser-dentist-password');
   await page.getByRole('button', { name: 'Create user', exact: true }).click();
   await expect(page.getByText('Browser Test Dentist', { exact: true })).toBeVisible();
@@ -91,8 +96,8 @@ test('creates a dentist account with scoped agenda and follow-up workflow', asyn
   await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible();
 
   const doctorFilter = page.getByTestId('agenda-doctor-filter');
-  await expect(doctorFilter).toBeDisabled();
-  await expect(doctorFilter.locator('option:checked')).toHaveText('Browser Test Doctor');
+  await expect(doctorFilter).toBeEnabled();
+  await expect(doctorFilter).toHaveText('All doctors');
   await page.getByRole('link', { name: 'Open appointment', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Edit appointment', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reschedule', exact: true })).toBeVisible();

@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+async function selectAppDropdown(page, testId, optionName) {
+  await page.getByTestId(testId).click();
+  await page.getByRole('option', { name: optionName, exact: true }).click();
+}
+
 test('opens operational reports and filters appointments by status', async ({ page }) => {
   await page.goto('/reports');
   await expect(page).toHaveURL(/\/login$/);
@@ -12,7 +17,7 @@ test('opens operational reports and filters appointments by status', async ({ pa
   await expect(page.getByTestId('reports-from')).toBeVisible();
   await expect(page.getByTestId('reports-doctor')).toBeVisible();
 
-  await page.getByTestId('reports-status').selectOption('completed');
+  await selectAppDropdown(page, 'reports-status', 'Completed');
   const reportResponse = page.waitForResponse((response) => (
     response.url().includes('/api/reports/appointments')
       && response.url().includes('status=completed')

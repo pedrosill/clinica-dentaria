@@ -19,6 +19,7 @@ export default function AppointmentModal({
   doctorSelectorOpen,
   patientSearchResults,
   doctorSearchResults,
+  isDoctorSelectionRestricted = false,
   recommendedPatientIds,
   appointmentDate,
   calendarMonth,
@@ -217,12 +218,16 @@ export default function AppointmentModal({
 
             <div className="space-y-2 lg:col-span-2">
               <label className="text-sm font-medium text-slate-800">{t('Doctor')}</label>
+              {isDoctorSelectionRestricted ? (
+                <p className="text-xs text-slate-600">{t('Dentists can only schedule appointments for themselves.')}</p>
+              ) : null}
               <div className="relative">
                 <input
                   data-testid="appointment-doctor"
                   type="text"
                   value={doctorSearch}
                   placeholder={t('Search by doctor name, email or phone')}
+                  readOnly={isDoctorSelectionRestricted}
                   onFocus={onDoctorFocus}
                   onBlur={onDoctorBlur}
                   onChange={(event) => onDoctorSearchChange(event.target.value)}

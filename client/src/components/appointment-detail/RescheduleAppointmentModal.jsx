@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../../constants/agendaConstants';
 import Dialog from '../ui/Dialog';
 import { getAppointmentDurationOptions } from '../../utils/appointmentTypeUtils';
 import useLanguage from '../../context/useLanguage';
+import SelectDropdown from '../ui/SelectDropdown';
 
 function pad(value) {
   return String(value).padStart(2, '0');
@@ -533,21 +534,13 @@ export default function RescheduleAppointmentModal({
                       </p>
                     </div>
 
-                    <div className="space-y-2">
-                       <label className="text-sm font-medium text-slate-700">{t('Duration')}</label>
-                      <select
-                        value={selectedDuration}
-                        onChange={(event) => onDurationChange(event.target.value)}
-                        disabled={isSubmitting}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-600 focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
-                      >
-                        {durationOptions.map((option) => (
-                           <option key={option.value} value={option.value}>
-                             {option.value} {t('min')}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <SelectDropdown
+                      label={t('Duration')}
+                      value={selectedDuration}
+                      onChange={onDurationChange}
+                      disabled={isSubmitting}
+                      options={durationOptions.map((option) => ({ value: String(option.value), label: `${option.value} ${t('min')}` }))}
+                    />
 
                     <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">

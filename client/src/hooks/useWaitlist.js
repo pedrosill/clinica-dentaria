@@ -3,8 +3,8 @@ import { apiRequest } from '../services/api';
 import { createPatientWaitlistEntry, getWaitlist, updateWaitlistStatus } from '../services/waitlist';
 
 export const WAITLIST_TRANSITIONS = {
-  waiting: ['contacted', 'booked', 'removed'],
-  contacted: ['waiting', 'booked', 'removed'],
+  waiting: ['contacted', 'removed'],
+  contacted: ['waiting', 'removed'],
   booked: [],
   removed: [],
 };

@@ -52,7 +52,7 @@ async function getRescheduleOptions(req, res, next) {
 
 async function createAppointment(req, res, next) {
   try {
-    const appointment = await appointmentService.createAppointment(req.body, req.user);
+    const appointment = await appointmentService.createAppointment(req.body, req.user, req);
     res.status(201).json(appointment);
   } catch (error) {
     next(error);

@@ -20,6 +20,7 @@ const migrationNames = [
   '20260911220000_add_data_governance',
   '20260911230000_add_patient_recalls',
   '20260911240000_add_waitlist_entries',
+  '20260912100000_link_waitlist_appointments',
 ];
 const integrationDatabase = new Database(temporaryDatabasePath);
 migrationNames.forEach((migrationName) => {

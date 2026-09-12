@@ -6,7 +6,7 @@ const { assertPermission } = require('../utils/authorization');
 async function getDoctors(user) {
   assertPermission(user, 'doctor', 'read');
   return prisma.doctor.findMany({
-    where: user.role === 'dentist' ? { userId: user.id } : {},
+    where: {},
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
 }
@@ -22,10 +22,6 @@ async function getDoctorById(doctorId, user) {
   if (!doctor) {
     throw new HttpError(404, 'Doctor not found');
   }
-  if (user.role === 'dentist' && doctor.userId !== user.id) {
-    throw new HttpError(403, 'Dentists may only access their own doctor profile');
-  }
-
   return doctor;
 }
 

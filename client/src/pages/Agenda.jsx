@@ -43,9 +43,7 @@ export default function Agenda() {
   }, [location.search]);
   const [selectedDate, setSelectedDate] = useState(initialAgendaDate);
   const [currentMonth, setCurrentMonth] = useState(initialAgendaDate);
-  const [selectedDoctorId, setSelectedDoctorId] = useState(() => (
-    isDentist && user?.doctorId ? String(user.doctorId) : 'all'
-  ));
+  const [selectedDoctorId, setSelectedDoctorId] = useState('all');
   const followUpLaunchRef = useRef('');
 
   const {
@@ -80,6 +78,7 @@ export default function Agenda() {
     recommendedPatientIds,
     patientSearchResults,
     doctorSearchResults,
+    isDoctorSelectionRestricted,
     appointmentCalendarDays,
     timeOptions,
     durationOptions,
@@ -112,28 +111,35 @@ export default function Agenda() {
     setAppointments,
     setSelectedDate,
     preferredDoctorId: selectedDoctorId === 'all' ? '' : selectedDoctorId,
+    restrictedDoctorId: isDentist ? (user?.doctorId ? String(user.doctorId) : '__unlinked__') : '',
   });
 
   useEffect(() => {
     const followUp = location.state?.openFollowUp;
-    if (!followUp) {
+    const waitlistEntry = location.state?.openWaitlistEntry;
+    if (!followUp && !waitlistEntry) {
       followUpLaunchRef.current = '';
       return;
     }
     if (isLoading) return;
 
-    const launchKey = `${location.key}:${location.search}:${followUp.patientId}:${followUp.doctorId}`;
+    const launchKey = `${location.key}:${location.search}:${followUp?.patientId || waitlistEntry.patientId}:${followUp?.doctorId || waitlistEntry.doctorId || ''}`;
     if (followUpLaunchRef.current === launchKey) return;
     followUpLaunchRef.current = launchKey;
 
     const dateParam = new URLSearchParams(location.search).get('date');
-    const followUpDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam || '')
+    const launchDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam || '')
       ? new Date(`${dateParam}T00:00:00`)
       : selectedDate;
 
-    openCreateModal(followUpDate, followUp);
+    openCreateModal(launchDate, followUp || {
+      waitlistEntryId: waitlistEntry.id,
+      patientId: waitlistEntry.patientId,
+      doctorId: waitlistEntry.doctorId || '',
+      notes: waitlistEntry.reason || '',
+    });
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
-  }, [isLoading, location.pathname, location.search, location.state, navigate, openCreateModal, selectedDate]);
+  }, [isLoading, location.key, location.pathname, location.search, location.state, navigate, openCreateModal, selectedDate]);
 
   const visibleAppointments = useMemo(() => {
     if (selectedDoctorId === 'all') return appointments;
@@ -227,7 +233,6 @@ export default function Agenda() {
         doctors={doctors}
         selectedDoctorId={selectedDoctorId}
         onDoctorChange={setSelectedDoctorId}
-        isDentist={isDentist}
       />
 
       {pageError ? (
@@ -298,6 +303,7 @@ export default function Agenda() {
         doctorSelectorOpen={doctorSelectorOpen}
         patientSearchResults={patientSearchResults}
         doctorSearchResults={doctorSearchResults}
+        isDoctorSelectionRestricted={isDoctorSelectionRestricted}
         recommendedPatientIds={recommendedPatientIds}
         appointmentDate={appointmentDate}
         calendarMonth={calendarMonth}

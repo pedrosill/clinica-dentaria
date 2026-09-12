@@ -52,6 +52,17 @@ const navigationItems = [
   },
 ];
 
+function visibleNavigationItems(role) {
+  // Keep the shared navigation useful without exposing administrative
+  // screens to dentists. Their operational request workflow remains in the
+  // waitlist, while agenda, patients, doctors and operational reports remain
+  // available as read views.
+  if (role === 'dentist') {
+    return navigationItems.filter((item) => item.to !== '/settings');
+  }
+  return navigationItems;
+}
+
 /* ================================
    Component
 ================================ */
@@ -59,6 +70,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const roleLabel = {
+    admin: 'Administrator',
     administrator: 'Administrator',
     receptionist: 'Receptionist',
     dentist: 'Dentist',
@@ -88,7 +100,7 @@ export default function Sidebar() {
            Navigation block
         ================================ */}
         <nav className="mt-6 flex-1 space-y-2">
-          {navigationItems.map((item) => {
+          {visibleNavigationItems(user?.role).map((item) => {
             const Icon = item.icon;
 
             return (

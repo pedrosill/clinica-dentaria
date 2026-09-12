@@ -8,9 +8,14 @@ export default function SelectDropdown({
   placeholder = 'Select an option',
   disabled = false,
   className = '',
+  id,
+  testId,
+  ariaLabel,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const optionRefs = useRef([]);
+  const controlId = id || testId || (label ? `select-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -26,22 +31,38 @@ export default function SelectDropdown({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const selectedIndex = options.findIndex((option) => String(option.value) === String(value));
+    const firstEnabledIndex = options.findIndex((option) => !option.disabled);
+    optionRefs.current[selectedIndex >= 0 ? selectedIndex : firstEnabledIndex]?.focus();
+  }, [isOpen, options, value]);
+
   const selectedLabel =
     options.find((option) => String(option.value) === String(value))?.label || placeholder;
 
   return (
     <div className={`space-y-2 ${className}`}>
-      {label ? <label className="text-sm font-medium text-slate-800">{label}</label> : null}
+      {label ? <label htmlFor={controlId} className="text-sm font-medium text-slate-800">{label}</label> : null}
 
       <div ref={containerRef} className="relative">
         <button
           type="button"
+          id={controlId}
           disabled={disabled}
           onClick={() => setIsOpen((current) => !current)}
-          data-testid={`select-${label.toLowerCase().replace(/\s+/g, '-')}`}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setIsOpen(false);
+            if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !isOpen) {
+              event.preventDefault();
+              setIsOpen(true);
+            }
+          }}
+          data-testid={testId || (label ? `select-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined)}
           className="flex w-full items-center justify-between rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-left text-sm text-slate-800 shadow-sm transition hover:bg-white focus:border-teal-700 focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
           aria-haspopup="listbox"
           aria-expanded={isOpen}
+          aria-label={ariaLabel}
         >
           <span className="truncate">{selectedLabel}</span>
 
@@ -62,8 +83,8 @@ export default function SelectDropdown({
         </button>
 
         {isOpen ? (
-          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-slate-300 bg-white shadow-lg">
-            {options.map((option) => {
+          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-slate-300 bg-white shadow-lg" role="listbox" aria-label={label || ariaLabel || placeholder}>
+            {options.map((option, index) => {
               const isSelected = String(option.value) === String(value);
 
               return (
@@ -71,10 +92,24 @@ export default function SelectDropdown({
                   key={option.value}
                   type="button"
                   disabled={option.disabled}
-                  onMouseDown={() => {
+                  ref={(element) => { optionRefs.current[index] = element; }}
+                  onClick={() => {
                     if (option.disabled) return;
                     onChange(option.value);
                     setIsOpen(false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      setIsOpen(false);
+                    }
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      const direction = event.key === 'ArrowDown' ? 1 : -1;
+                      let nextIndex = index + direction;
+                      while (nextIndex >= 0 && nextIndex < options.length && options[nextIndex].disabled) nextIndex += direction;
+                      if (nextIndex >= 0 && nextIndex < options.length) optionRefs.current[nextIndex]?.focus();
+                    }
                   }}
                   className={`w-full px-4 py-2.5 text-left text-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 ${
                     isSelected ? 'bg-slate-50 text-slate-950' : 'text-slate-800'

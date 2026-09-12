@@ -1,27 +1,14 @@
 const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
 const { parseNumericId } = require('../utils/parse');
-const { normalizePatientPayload } = require('../utils/patientUtils');
+const { normalizePatientPayload, validatePatientContacts } = require('../utils/patientUtils');
 const { assertPermission } = require('../utils/authorization');
-
-function dentistPatientWhere(user) {
-  return user?.role === 'dentist'
-    ? {
-        appointments: {
-          some: {
-            doctorId: user.doctorId || -1,
-            archivedAt: null,
-          },
-        },
-      }
-    : {};
-}
 
 async function ensurePatientAccess(patientId, user, { write = false } = {}) {
   assertPermission(user, 'patient', write ? 'write' : 'read');
   const id = parseNumericId(patientId, 'patient id');
   const patient = await prisma.patient.findFirst({
-    where: { id, archivedAt: null, ...dentistPatientWhere(user) },
+    where: { id, archivedAt: null },
     select: { id: true },
   });
 
@@ -67,7 +54,7 @@ async function ensureUniquePatientNif(nif, excludedPatientId = null) {
 async function getPatients(user) {
   assertPermission(user, 'patient', 'read');
   return prisma.patient.findMany({
-    where: { archivedAt: null, ...dentistPatientWhere(user) },
+    where: { archivedAt: null },
     orderBy: {
       createdAt: 'desc',
     },
@@ -78,7 +65,6 @@ async function getPatientById(patientId, user) {
   const id = await ensurePatientAccess(patientId, user);
   const appointmentWhere = {
     archivedAt: null,
-    ...(user?.role === 'dentist' ? { doctorId: user.doctorId || -1 } : {}),
   };
 
   const patient = await prisma.patient.findUnique({
@@ -115,6 +101,12 @@ async function createPatient(payload, user) {
     );
   }
 
+  try {
+    validatePatientContacts(normalized);
+  } catch (error) {
+    throw new HttpError(400, error.message);
+  }
+
   validatePortugueseNif(normalized.nif, normalized.nationality);
   await ensureUniquePatientNif(normalized.nif);
 
@@ -145,6 +137,12 @@ async function updatePatient(patientId, payload, user) {
       400,
       'Full name, phone, email, nif and nationality are required'
     );
+  }
+
+  try {
+    validatePatientContacts(normalized);
+  } catch (error) {
+    throw new HttpError(400, error.message);
   }
 
   const existingPatient = await prisma.patient.findUnique({

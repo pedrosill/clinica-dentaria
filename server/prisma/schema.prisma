@@ -166,6 +166,7 @@ model Appointment {
   clinicalNote       ClinicalNote?
   treatmentPlanItems TreatmentPlanItem[]
   recalls            PatientRecall[]
+  waitlistEntry      WaitlistEntry?
 }
 
 model PatientRecall {
@@ -193,6 +194,7 @@ model WaitlistEntry {
   id            Int       @id @default(autoincrement())
   patientId     Int
   doctorId      Int?
+  appointmentId Int?      @unique
   requestedDate DateTime?
   reason        String
   priority      String    @default("normal") // normal, urgent
@@ -202,6 +204,7 @@ model WaitlistEntry {
   updatedAt     DateTime  @updatedAt
   patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
   doctor        Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([status, priority, requestedDate])
   @@index([patientId, status, requestedDate])

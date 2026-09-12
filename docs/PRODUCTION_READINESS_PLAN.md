@@ -6,6 +6,12 @@ Este plano define o mínimo necessário para a primeira versão desktop de uma c
 
 Enquanto os itens P0 não estiverem concluídos e testados, a aplicação só deve usar dados fictícios ou dados de teste controlados. Mobile e faturação estão fora do escopo desta versão.
 
+## Limite técnico importante
+
+O backend usa SQLite. Os backups podem ser cifrados pelo script existente, mas a base ativa não é cifrada pelo Prisma/better-sqlite3. Em produção, a clínica deve usar cifragem do disco/volume e permissões do sistema operativo, colocar o servidor atrás de HTTPS terminado num proxy controlado e guardar a chave dos backups fora do repositório. Não se deve descrever esta aplicação como cifrada de ponta a ponta apenas porque os backups têm AES-GCM.
+
+As comunicações com pacientes estão preparadas apenas ao nível dos contactos e da validação; o envio automático permanece deliberadamente desligado. Ver `docs/COMMUNICATIONS_PLAN.md` antes de contratar ou configurar um fornecedor.
+
 ## P0 — bloqueadores antes de dados reais
 
 - [x] Autorização server-side por papel e por recurso, com uma matriz explícita para administrador, receção e médico dentista.

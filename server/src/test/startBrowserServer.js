@@ -68,6 +68,13 @@ const waitlistMigrationPath = path.join(
   '20260911240000_add_waitlist_entries',
   'migration.sql'
 );
+const waitlistAppointmentsMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260912100000_link_waitlist_appointments',
+  'migration.sql'
+);
 
 process.env.DATABASE_URL = `file:${databasePath.replaceAll('\\', '/')}`;
 
@@ -81,6 +88,7 @@ database.exec(fs.readFileSync(authorizationScopeMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(dataGovernanceMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(patientRecallsMigrationPath, 'utf8'));
 database.exec(fs.readFileSync(waitlistMigrationPath, 'utf8'));
+database.exec(fs.readFileSync(waitlistAppointmentsMigrationPath, 'utf8'));
 database.close();
 
 const app = require('../app');

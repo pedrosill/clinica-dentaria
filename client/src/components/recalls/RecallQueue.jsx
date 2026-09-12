@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import useLanguage from '../../context/useLanguage';
 import { RECALL_TRANSITIONS } from '../../hooks/useRecalls';
+import SelectDropdown from '../ui/SelectDropdown';
 
 function formatDueDate(value, locale) {
   return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
@@ -27,7 +28,18 @@ export default function RecallQueue({ recalls, isLoading, onTransition, isSubmit
               </div>
               <div className="flex items-center gap-3">
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300">{statusLabel(recall.status, t)}</span>
-                {RECALL_TRANSITIONS[recall.status]?.length > 0 ? <select data-testid={`recall-status-${recall.id}`} aria-label={`${t('Update recall')} ${recall.patient?.fullName || ''}`} disabled={isSubmitting} defaultValue="" onChange={(event) => { if (event.target.value) onTransition(recall.id, event.target.value); }} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800"><option value="">{t('Update')}</option>{RECALL_TRANSITIONS[recall.status].map((nextStatus) => <option key={nextStatus} value={nextStatus}>{statusLabel(nextStatus, t)}</option>)}</select> : null}
+                {RECALL_TRANSITIONS[recall.status]?.length > 0 ? (
+                  <SelectDropdown
+                    value=""
+                    placeholder={t('Update')}
+                    ariaLabel={`${t('Update recall')} ${recall.patient?.fullName || ''}`}
+                    testId={`recall-status-${recall.id}`}
+                    disabled={isSubmitting}
+                    className="min-w-32"
+                    options={RECALL_TRANSITIONS[recall.status].map((nextStatus) => ({ value: nextStatus, label: statusLabel(nextStatus, t) }))}
+                    onChange={(nextStatus) => onTransition(recall.id, nextStatus)}
+                  />
+                ) : null}
               </div>
             </div>
           </div>

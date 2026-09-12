@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+async function selectAppDropdown(page, testId, optionName) {
+  await page.getByTestId(testId).click();
+  await page.getByRole('option', { name: optionName, exact: true }).click();
+}
+
 function formatDateInput(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -112,7 +117,7 @@ test('records a clinical profile, tooth finding, note, and treatment plan', asyn
 
   await page.getByRole('button', { name: 'Edit odontogram', exact: true }).click();
   await page.getByRole('button', { name: 'Tooth 16', exact: true }).click();
-  await page.getByTestId('tooth-condition').selectOption('caries');
+  await selectAppDropdown(page, 'tooth-condition', 'Caries');
   await page.getByLabel('Clinical note').fill('Review occlusal surface');
   await page.getByRole('button', { name: 'Save finding', exact: true }).click();
   await expect(page.getByText('Tooth 16 chart updated.', { exact: true })).toBeVisible();
@@ -147,7 +152,7 @@ test('switches the clinic interface between English and European Portuguese', as
   await expect(page.getByTestId('language-select')).toBeVisible();
   await expect(page.getByTestId('language-select')).toBeEnabled();
 
-  await page.getByTestId('language-select').selectOption('pt-PT');
+  await selectAppDropdown(page, 'language-select', 'Portuguese (Portugal)');
   await page.getByTestId('save-clinic-settings').click();
   await expect(page.getByRole('link', { name: 'Definições', exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT');
@@ -175,7 +180,7 @@ test('switches the clinic interface between English and European Portuguese', as
   await page.goto('/settings');
   await page.getByRole('button', { name: 'Editar definições da clínica', exact: true }).click();
   await expect(page.getByTestId('language-select')).toBeVisible();
-  await page.getByTestId('language-select').selectOption('en');
+  await selectAppDropdown(page, 'language-select', 'Inglês');
   await page.getByTestId('save-clinic-settings').click();
   await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');

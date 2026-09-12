@@ -11,6 +11,9 @@ export function createPatientWaitlistEntry(patientId, payload) {
   return apiRequest(`/api/patients/${patientId}/waitlist`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export function updateWaitlistStatus(entryId, status) {
-  return apiRequest(`/api/waitlist/${entryId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+export function updateWaitlistStatus(entryId, status, appointmentId = null) {
+  return apiRequest(`/api/waitlist/${entryId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, ...(appointmentId ? { appointmentId } : {}) }),
+  });
 }

@@ -11,7 +11,7 @@ process.env.DATABASE_URL = `file:./${databaseFilename}`;
 const migrationNames = [
   '20260528011229_init_refreshed', '20260911153000_add_authentication', '20260911170000_add_clinic_settings',
   '20260911190000_add_clinical_records', '20260911200000_add_clinic_language', '20260911210000_add_authorization_scope_and_archiving',
-  '20260911220000_add_data_governance', '20260911230000_add_patient_recalls', '20260911240000_add_waitlist_entries',
+  '20260911220000_add_data_governance', '20260911230000_add_patient_recalls', '20260911240000_add_waitlist_entries', '20260912100000_link_waitlist_appointments',
 ];
 const database = new Database(databasePath);
 for (const migrationName of migrationNames) database.exec(fs.readFileSync(path.join(serverRoot, 'prisma', 'migrations', migrationName, 'migration.sql'), 'utf8'));
@@ -20,6 +20,7 @@ database.close();
 const app = require('../app');
 const prisma = require('../../db');
 const { hashPassword } = require('../utils/auth');
+const { ensureClinicSettings } = require('../services/clinicSettingsService');
 
 let server;
 let baseUrl;
@@ -114,8 +115,15 @@ test('creates, lists with the default active filter, transitions, and audits a w
   const contacted = await requestWithCookie(receptionistCookie, `/api/waitlist/${created.body.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'contacted' }) });
   assert.equal(contacted.response.status, 200);
   assert.equal(contacted.body.status, 'contacted');
-  const booked = await requestWithCookie(receptionistCookie, `/api/waitlist/${created.body.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'booked' }) });
+  const missingLink = await requestWithCookie(receptionistCookie, `/api/waitlist/${created.body.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'booked' }) });
+  assert.equal(missingLink.response.status, 400);
+  await ensureClinicSettings();
+  const appointment = await requestWithCookie(receptionistCookie, '/api/appointments', { method: 'POST', body: JSON.stringify({ patientId: patient.id, doctorId: doctor.id, date: '2099-05-20', time: '10:00', duration: 30, treatmentType: 'Consultation', waitlistEntryId: created.body.id }) });
+  assert.equal(appointment.response.status, 201);
+  const booked = await requestWithCookie(receptionistCookie, `/api/waitlist?status=all&patientId=${patient.id}`);
   assert.equal(booked.response.status, 200);
+  assert.equal(booked.body[0].appointment.id, appointment.body.id);
+  assert.equal(booked.body[0].status, 'booked');
   const invalid = await requestWithCookie(receptionistCookie, `/api/waitlist/${created.body.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'waiting' }) });
   assert.equal(invalid.response.status, 409);
   const audits = await prisma.auditEvent.findMany({ where: { resource: 'waitlist' }, orderBy: { id: 'asc' } });
@@ -123,7 +131,7 @@ test('creates, lists with the default active filter, transitions, and audits a w
   assert.ok(audits.some((event) => event.action === 'transition' && event.patientId === patient.id));
 });
 
-test('rejects equivalent active entries and limits dentists to their own patient/doctor scope', async () => {
+test('rejects equivalent active entries and lets dentists request scheduling for any patient while keeping doctor scope', async () => {
   const first = await requestWithCookie(receptionistCookie, `/api/patients/${patient.id}/waitlist`, { method: 'POST', body: JSON.stringify({ requestedDate: '2099-06-01', reason: '  Implant review  ', doctorId: doctor.id }) });
   assert.equal(first.response.status, 201);
   const duplicate = await requestWithCookie(receptionistCookie, `/api/patients/${patient.id}/waitlist`, { method: 'POST', body: JSON.stringify({ requestedDate: '2099-06-01', reason: 'implant   review', doctorId: doctor.id }) });
@@ -135,7 +143,8 @@ test('rejects equivalent active entries and limits dentists to their own patient
   const dentistList = await requestWithCookie(dentistCookie, '/api/waitlist?status=all');
   assert.deepEqual(dentistList.body.map((entry) => entry.id), [first.body.id]);
   const forbiddenCreate = await requestWithCookie(dentistCookie, `/api/patients/${otherPatient.id}/waitlist`, { method: 'POST', body: JSON.stringify({ reason: 'Out of scope' }) });
-  assert.equal(forbiddenCreate.response.status, 404);
+  assert.equal(forbiddenCreate.response.status, 201);
+  assert.equal(forbiddenCreate.body.doctorId, doctor.id);
   const forbiddenDoctor = await requestWithCookie(dentistCookie, `/api/patients/${patient.id}/waitlist`, { method: 'POST', body: JSON.stringify({ reason: 'Wrong doctor', doctorId: otherDoctor.id }) });
   assert.equal(forbiddenDoctor.response.status, 403);
 });

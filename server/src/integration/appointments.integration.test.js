@@ -68,6 +68,20 @@ const patientRecallsMigrationPath = path.join(
   '20260911230000_add_patient_recalls',
   'migration.sql'
 );
+const waitlistMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260911240000_add_waitlist_entries',
+  'migration.sql'
+);
+const waitlistAppointmentsMigrationPath = path.join(
+  serverRoot,
+  'prisma',
+  'migrations',
+  '20260912100000_link_waitlist_appointments',
+  'migration.sql'
+);
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
@@ -77,6 +91,8 @@ integrationDatabase.exec(fs.readFileSync(clinicLanguageMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authorizationScopeMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(dataGovernanceMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(patientRecallsMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(waitlistMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(waitlistAppointmentsMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
@@ -837,7 +853,7 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
     dentistCookie,
     `/api/patients/${patients[1].id}/clinical`
   );
-  assert.equal(unrelatedClinicalRead.response.status, 404);
+  assert.equal(unrelatedClinicalRead.response.status, 200);
 
   const secondDoctor = await prisma.doctor.create({ data: { name: 'Other Doctor' } });
   const otherDoctorAppointment = await request('/api/appointments', {
@@ -855,7 +871,19 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
     dentistCookie,
     `/api/appointments/${otherDoctorAppointment.body.id}`
   );
-  assert.equal(unrelatedAppointmentRead.response.status, 403);
+  assert.equal(unrelatedAppointmentRead.response.status, 200);
+
+  const dentistAppointments = await requestWithSession(dentistCookie, '/api/appointments');
+  assert.equal(dentistAppointments.response.status, 200);
+  assert.equal(dentistAppointments.body.some((item) => item.id === otherDoctorAppointment.body.id), true);
+
+  const dentistPatients = await requestWithSession(dentistCookie, '/api/patients');
+  assert.equal(dentistPatients.response.status, 200);
+  assert.equal(dentistPatients.body.some((item) => item.id === patients[1].id), true);
+
+  const dentistDoctors = await requestWithSession(dentistCookie, '/api/doctors');
+  assert.equal(dentistDoctors.response.status, 200);
+  assert.equal(dentistDoctors.body.some((item) => item.id === secondDoctor.id), true);
 
   const unrelatedAppointmentEdit = await requestWithSession(
     dentistCookie,

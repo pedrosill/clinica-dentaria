@@ -16,6 +16,7 @@ const {
 } = require('../utils/appointmentScheduling');
 const { getDoctorScheduleForDate } = require('./clinicSettingsService');
 const { assertPermission } = require('../utils/authorization');
+const { recordAuditEvent } = require('./auditService');
 
 const appointmentListInclude = {
   patient: true,
@@ -28,10 +29,7 @@ function appointmentDetailIncludeFor(user) {
     patient: {
       include: {
         appointments: {
-          where: {
-            archivedAt: null,
-            ...(user?.role === 'dentist' ? { doctorId: user.doctorId || -1 } : {}),
-          },
+          where: { archivedAt: null },
           orderBy: [{ date: 'desc' }, { time: 'desc' }],
           include: {
             doctor: true,
@@ -178,7 +176,7 @@ const TERMINAL_APPOINTMENT_STATUSES = ['completed', 'cancelled', 'no_show'];
 function assertAppointmentAccess(user, appointment, action) {
   assertPermission(user, 'appointment', action);
 
-  if (user.role === 'dentist' && Number(user.doctorId) !== Number(appointment.doctorId)) {
+  if (action !== 'read' && user.role === 'dentist' && Number(user.doctorId) !== Number(appointment.doctorId)) {
     throw new HttpError(403, 'Dentists may only access appointments assigned to them');
   }
 }
@@ -194,9 +192,9 @@ function assertReceptionistAppointmentPayload(user, payload) {
   }
 }
 
-async function ensureDoctorAccess(user, doctorId) {
+async function ensureDoctorAccess(user, doctorId, { readOnly = false } = {}) {
   assertPermission(user, 'appointment', 'read');
-  if (user.role === 'dentist' && Number(user.doctorId) !== Number(doctorId)) {
+  if (!readOnly && user.role === 'dentist' && Number(user.doctorId) !== Number(doctorId)) {
     throw new HttpError(403, 'Dentists may only access their own agenda');
   }
 }
@@ -446,7 +444,9 @@ async function getAppointmentAvailability({
   excludeAppointmentId = null,
   user,
 }) {
-  await ensureDoctorAccess(user, doctorId);
+  // A dentist may inspect another doctor's free/busy calendar, but this
+  // read-only endpoint must never grant permission to schedule there.
+  await ensureDoctorAccess(user, doctorId, { readOnly: true });
   const availability = await getAvailableStartTimes({
     doctorId,
     date,
@@ -605,7 +605,6 @@ async function getAppointments(user) {
     where: {
       archivedAt: null,
       patient: { archivedAt: null },
-      ...(user.role === 'dentist' ? { doctorId: user.doctorId || -1 } : {}),
     },
     include: appointmentListInclude,
     orderBy: [{ date: 'asc' }, { time: 'asc' }],
@@ -637,10 +636,13 @@ async function getAppointmentById(appointmentId, user) {
   return appointment;
 }
 
-async function createAppointment(payload, user) {
+async function createAppointment(payload, user, req) {
   assertPermission(user, 'appointment', 'schedule');
   assertReceptionistAppointmentPayload(user, payload);
   const normalized = normalizeAppointmentPayload(payload);
+  const waitlistEntryId = payload.waitlistEntryId === undefined || payload.waitlistEntryId === null || payload.waitlistEntryId === ''
+    ? null
+    : parseNumericId(payload.waitlistEntryId, 'waitlist id');
   await ensureDoctorAccess(user, normalized.doctorId);
   const schedulingRules = await getDoctorScheduleForDate({
     doctorId: normalized.doctorId,
@@ -668,21 +670,71 @@ async function createAppointment(payload, user) {
     );
   }
 
-  return prisma.appointment.create({
-    data: {
-      patientId: normalized.patientId,
-      doctorId: normalized.doctorId,
-      date: new Date(`${normalized.date}T00:00:00`),
-      time: normalized.time,
-      duration: normalized.duration,
-      treatmentType: normalized.treatmentType,
-      performedTreatment: normalized.performedTreatment,
-      status: normalized.status,
-      notes: normalized.notes,
-      completionNotes: normalized.completionNotes,
-    },
-    include: appointmentListInclude,
+  if (waitlistEntryId) {
+    const pendingEntry = await prisma.waitlistEntry.findFirst({
+      where: {
+        id: waitlistEntryId,
+        patientId: normalized.patientId,
+        status: { in: ['waiting', 'contacted'] },
+        patient: { archivedAt: null },
+        OR: [{ doctorId: null }, { doctorId: normalized.doctorId }],
+      },
+      select: { id: true },
+    });
+    if (!pendingEntry) {
+      throw new HttpError(409, 'The waitlist request is no longer active or does not match this appointment');
+    }
+  }
+
+  const appointment = await prisma.$transaction(async (transaction) => {
+    const created = await transaction.appointment.create({
+      data: {
+        patientId: normalized.patientId,
+        doctorId: normalized.doctorId,
+        date: new Date(`${normalized.date}T00:00:00`),
+        time: normalized.time,
+        duration: normalized.duration,
+        treatmentType: normalized.treatmentType,
+        performedTreatment: normalized.performedTreatment,
+        status: normalized.status,
+        notes: normalized.notes,
+        completionNotes: normalized.completionNotes,
+      },
+      include: appointmentListInclude,
+    });
+
+    if (waitlistEntryId) {
+      const linked = await transaction.waitlistEntry.updateMany({
+        where: {
+          id: waitlistEntryId,
+          patientId: normalized.patientId,
+          status: { in: ['waiting', 'contacted'] },
+          appointmentId: null,
+          OR: [{ doctorId: null }, { doctorId: normalized.doctorId }],
+        },
+        data: { status: 'booked', appointmentId: created.id },
+      });
+      if (linked.count !== 1) {
+        throw new HttpError(409, 'The waitlist request was already resolved or changed');
+      }
+    }
+
+    return created;
   });
+
+  if (waitlistEntryId) {
+    await recordAuditEvent({
+      req,
+      actor: user,
+      action: 'transition',
+      resource: 'waitlist',
+      resourceId: waitlistEntryId,
+      patientId: normalized.patientId,
+      metadata: { fromStatus: 'waiting_or_contacted', toStatus: 'booked', appointmentId: appointment.id },
+    });
+  }
+
+  return appointment;
 }
 
 async function updateAppointment(appointmentId, payload, user) {
@@ -833,6 +885,8 @@ async function deleteAppointment(appointmentId, user) {
   if (existingAppointment.archivedAt) {
     throw new HttpError(404, 'Appointment not found');
   }
+
+  assertAppointmentAccess(user, existingAppointment, 'archive');
 
   await prisma.appointment.update({
     where: {

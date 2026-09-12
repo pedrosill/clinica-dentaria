@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import useLanguage from '../../context/useLanguage';
+import SelectDropdown from '../ui/SelectDropdown';
+import DatePicker from '../ui/DatePicker';
 
 function localDateInput() {
   const date = new Date();
@@ -25,11 +27,11 @@ export default function WaitlistForm({ patientId = null, patients = [], doctors 
     <form onSubmit={handleSubmit} data-testid="waitlist-create-form" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="border-b border-slate-200 pb-4"><h2 className="text-lg font-semibold text-slate-950">{t('Add to waitlist')}</h2><p className="text-sm text-slate-600">{t('Keep a short operational request for a future opening.')}</p></div>
       <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {patientId === null ? <label className="space-y-2 text-sm font-medium text-slate-700">{t('Patient')}<select data-testid="waitlist-patient" name="patientId" value={form.patientId} onChange={handleChange} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm"><option value="">{t('Select patient')}</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.fullName}</option>)}</select></label> : <input type="hidden" name="patientId" value={patientId} />}
-        <label className="space-y-2 text-sm font-medium text-slate-700">{t('Requested date')}<input data-testid="waitlist-requested-date" type="date" name="requestedDate" value={form.requestedDate} onChange={handleChange} min={localDateInput()} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm" /></label>
-        <label className="space-y-2 text-sm font-medium text-slate-700">{t('Priority')}<select name="priority" value={form.priority} onChange={handleChange} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm"><option value="normal">{t('Normal')}</option><option value="urgent">{t('Urgent')}</option></select></label>
+        {patientId === null ? <SelectDropdown label={t('Patient')} value={form.patientId} onChange={(value) => setForm((current) => ({ ...current, patientId: value }))} testId="waitlist-patient" options={[{ value: '', label: t('Select patient') }, ...patients.map((patient) => ({ value: String(patient.id), label: patient.fullName }))]} /> : <input type="hidden" name="patientId" value={patientId} />}
+        <DatePicker label={t('Requested date')} value={form.requestedDate} onChange={(value) => setForm((current) => ({ ...current, requestedDate: value }))} min={localDateInput()} testId="waitlist-requested-date" clearable />
+        <SelectDropdown label={t('Priority')} value={form.priority} onChange={(value) => setForm((current) => ({ ...current, priority: value }))} options={[{ value: 'normal', label: t('Normal') }, { value: 'urgent', label: t('Urgent') }]} />
         <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-2">{t('Reason')}<input data-testid="waitlist-reason" name="reason" value={form.reason} onChange={handleChange} maxLength={240} placeholder={t('e.g. Earlier appointment')} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm" /></label>
-        <label className="space-y-2 text-sm font-medium text-slate-700">{t('Doctor (optional)')}<select name="doctorId" value={form.doctorId} onChange={handleChange} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm"><option value="">{t('Any doctor')}</option>{doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select></label>
+        <SelectDropdown label={t('Doctor (optional)')} value={form.doctorId} onChange={(value) => setForm((current) => ({ ...current, doctorId: value }))} options={[{ value: '', label: t('Any doctor') }, ...doctors.map((doctor) => ({ value: String(doctor.id), label: doctor.name }))]} />
         <label className="space-y-2 text-sm font-medium text-slate-700 md:col-span-3">{t('Short notes')}<textarea name="notes" value={form.notes} onChange={handleChange} maxLength={500} rows="2" placeholder={t('Optional operational note')} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm" /></label>
       </div>
       {formError ? <p className="mt-3 text-sm font-medium text-red-700">{formError}</p> : null}

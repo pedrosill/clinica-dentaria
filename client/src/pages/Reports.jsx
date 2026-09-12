@@ -2,6 +2,8 @@ import { BarChart3, Download, RefreshCw } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import useLanguage from '../context/useLanguage';
 import useReportsData from '../hooks/useReportsData';
+import SelectDropdown from '../components/ui/SelectDropdown';
+import DatePicker from '../components/ui/DatePicker';
 import {
   addLocalDays,
   downloadAppointmentReportCsv,
@@ -39,11 +41,6 @@ export default function Reports() {
   const [filterError, setFilterError] = useState('');
   const { doctors, report, isLoading, pageError } = useReportsData(appliedFilters);
   const byStatus = report.summary?.byStatus || {};
-
-  function updateFilter(event) {
-    const { name, value } = event.target;
-    setDraftFilters((current) => ({ ...current, [name]: value }));
-  }
 
   function applyFilters(event) {
     event.preventDefault();
@@ -89,54 +86,28 @@ export default function Reports() {
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <form className="grid gap-4 xl:grid-cols-[1fr_1fr_1.2fr_1.2fr_auto] xl:items-end" onSubmit={applyFilters}>
-          <label className="text-sm font-medium text-slate-700">
-            {t('From')}
-            <input
-              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-              type="date"
-              name="from"
-              value={draftFilters.from}
-              onChange={updateFilter}
-              data-testid="reports-from"
-            />
-          </label>
-          <label className="text-sm font-medium text-slate-700">
-            {t('To')}
-            <input
-              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-              type="date"
-              name="to"
-              value={draftFilters.to}
-              onChange={updateFilter}
-              data-testid="reports-to"
-            />
-          </label>
-          <label className="text-sm font-medium text-slate-700">
-            {t('Doctor')}
-            <select
-              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-              name="doctorId"
-              value={draftFilters.doctorId}
-              onChange={updateFilter}
-              data-testid="reports-doctor"
-            >
-              <option value="">{t('All doctors')}</option>
-              {doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-slate-700">
-            {t('Status')}
-            <select
-              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-              name="status"
-              value={draftFilters.status}
-              onChange={updateFilter}
-              data-testid="reports-status"
-            >
-              <option value="">{t('All statuses')}</option>
-              {REPORT_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{t(STATUS_LABELS[status])}</option>)}
-            </select>
-          </label>
+          <DatePicker label={t('From')} value={draftFilters.from} onChange={(value) => setDraftFilters((current) => ({ ...current, from: value }))} testId="reports-from" />
+          <DatePicker label={t('To')} value={draftFilters.to} onChange={(value) => setDraftFilters((current) => ({ ...current, to: value }))} testId="reports-to" />
+          <SelectDropdown
+            label={t('Doctor')}
+            value={draftFilters.doctorId}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, doctorId: value }))}
+            testId="reports-doctor"
+            options={[
+              { value: '', label: t('All doctors') },
+              ...doctors.map((doctor) => ({ value: String(doctor.id), label: doctor.name })),
+            ]}
+          />
+          <SelectDropdown
+            label={t('Status')}
+            value={draftFilters.status}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, status: value }))}
+            testId="reports-status"
+            options={[
+              { value: '', label: t('All statuses') },
+              ...REPORT_STATUS_OPTIONS.map((status) => ({ value: status, label: t(STATUS_LABELS[status]) })),
+            ]}
+          />
           <button
             type="submit"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800"

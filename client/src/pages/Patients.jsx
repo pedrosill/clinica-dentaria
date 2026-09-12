@@ -8,6 +8,7 @@ import { createPatient } from '../services/patients';
 import { getPatientDisplayName } from '../utils/agendaUtils';
 import useLanguage from '../context/useLanguage';
 import useAuth from '../context/useAuth';
+import DatePicker from '../components/ui/DatePicker';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -560,15 +561,7 @@ export default function Patients() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800">{t('Date of birth')}</label>
-                  <input
-                    type="date"
-                    value={createDateOfBirth}
-                    onChange={(event) => setCreateDateOfBirth(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-teal-700 focus:bg-white focus:outline-none"
-                  />
-                </div>
+                <DatePicker label={t('Date of birth')} value={createDateOfBirth} onChange={setCreateDateOfBirth} />
               </div>
 
               <div className="flex flex-col-reverse gap-3 border-t border-slate-300 pt-4 sm:flex-row sm:justify-end">

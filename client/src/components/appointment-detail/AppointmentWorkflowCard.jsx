@@ -15,6 +15,7 @@ export default function AppointmentWorkflowCard({
   onStatusChange,
   onOpenCancelModal,
   isSubmitting,
+  canModifyAppointment = true,
 }) {
   const { t } = useLanguage();
   return (
@@ -46,7 +47,7 @@ export default function AppointmentWorkflowCard({
           </span>
         </div>
 
-        {!isTerminalAppointment ? (
+        {canModifyAppointment && !isTerminalAppointment ? (
           <div className="grid gap-2 sm:grid-cols-2">
             {appointment.status === 'scheduled' ? (
               <button
@@ -71,7 +72,7 @@ export default function AppointmentWorkflowCard({
           </div>
         ) : null}
 
-        {!isTerminalAppointment ? (
+        {canModifyAppointment && !isTerminalAppointment ? (
           <button
             type="button"
             onClick={onOpenCancelModal}
@@ -83,7 +84,13 @@ export default function AppointmentWorkflowCard({
           </button>
         ) : null}
 
-        {isTerminalAppointment ? (
+        {!canModifyAppointment ? (
+          <div className="border-t border-slate-200 pt-4 text-sm text-slate-600">
+            {t('You can view this appointment, but only the assigned dentist can change its status.')}
+          </div>
+        ) : null}
+
+        {canModifyAppointment && isTerminalAppointment ? (
           <div className="border-t border-slate-200 pt-4 text-sm text-slate-600">
             {isCompletedAppointment
               ? t('This appointment has already been concluded.')

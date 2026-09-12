@@ -68,7 +68,7 @@ async function ensurePatient(patientId, user, action = 'read') {
     where: {
       id,
       archivedAt: null,
-      ...(user.role === 'dentist'
+      ...(user.role === 'dentist' && action !== 'read'
         ? {
             appointments: {
               some: { doctorId: user.doctorId || -1, archivedAt: null },

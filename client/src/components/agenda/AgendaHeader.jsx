@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import useLanguage from '../../context/useLanguage';
+import SelectDropdown from '../ui/SelectDropdown';
 
 export default function AgendaHeader({
   viewType,
@@ -11,7 +12,6 @@ export default function AgendaHeader({
   doctors = [],
   selectedDoctorId = 'all',
   onDoctorChange,
-  isDentist = false,
 }) {
   const { t } = useLanguage();
   return (
@@ -63,19 +63,17 @@ export default function AgendaHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <span className="whitespace-nowrap">{t('Agenda for')}</span>
-            <select
-              data-testid="agenda-doctor-filter"
-              value={selectedDoctorId}
-              onChange={(event) => onDoctorChange(event.target.value)}
-              disabled={isDentist}
-              className="max-w-52 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-100"
-            >
-              {!isDentist ? <option value="all">{t('All doctors')}</option> : null}
-              {doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}
-            </select>
-          </label>
+          <SelectDropdown
+            label={t('Agenda for')}
+            value={selectedDoctorId}
+            onChange={onDoctorChange}
+            testId="agenda-doctor-filter"
+            className="min-w-52"
+            options={[
+              { value: 'all', label: t('All doctors') },
+              ...doctors.map((doctor) => ({ value: String(doctor.id), label: doctor.name })),
+            ]}
+          />
           <button
             type="button"
             onClick={onPreviousRange}
