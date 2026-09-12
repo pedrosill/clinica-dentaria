@@ -80,6 +80,27 @@ function normalizeSchedule(schedule, weekday) {
   };
 }
 
+function normalizeWeekday(value) {
+  const weekday = Number(value);
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+    throw new HttpError(400, 'Weekday must be an integer from 0 (Sunday) to 6 (Saturday)');
+  }
+  return weekday;
+}
+
+function normalizeWeeklySchedules(schedules) {
+  const normalized = schedules.map((schedule) => (
+    normalizeSchedule(schedule, normalizeWeekday(schedule.weekday))
+  ));
+  const weekdays = new Set(normalized.map((schedule) => schedule.weekday));
+
+  if (weekdays.size !== 7) {
+    throw new HttpError(400, 'A schedule entry is required for every day of the week');
+  }
+
+  return normalized;
+}
+
 function dateKey(value) {
   const date = new Date(value);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -176,7 +197,7 @@ async function updateClinicSettings(payload = {}, user) {
     throw new HttpError(400, 'A schedule entry is required for every day of the week');
   }
 
-  const normalizedSchedules = schedules.map((schedule, index) => normalizeSchedule(schedule, index));
+  const normalizedSchedules = normalizeWeeklySchedules(schedules);
   const existingSettings = await ensureClinicSettings();
   const language = requestedLanguage || existingSettings.language || 'en';
 
@@ -284,13 +305,9 @@ async function updateProviderSchedule(doctorId, payload = {}, user) {
   if (!doctor) throw new HttpError(404, 'Doctor not found');
   if (days.length !== 7) throw new HttpError(400, 'A schedule entry is required for every day of the week');
 
-  const normalizedDays = days.map((day, index) => {
-    const normalized = normalizeSchedule(
-      { ...day, isOpen: day.isWorking },
-      index
-    );
-    return { ...normalized, isWorking: normalized.isOpen };
-  });
+  const normalizedDays = normalizeWeeklySchedules(
+    days.map((day) => ({ ...day, isOpen: day.isWorking }))
+  ).map((day) => ({ ...day, isWorking: day.isOpen }));
 
   await prisma.$transaction(async (transaction) => {
     await transaction.providerSchedule.deleteMany({ where: { doctorId: normalizedDoctorId } });

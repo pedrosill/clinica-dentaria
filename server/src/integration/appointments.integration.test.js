@@ -530,6 +530,28 @@ test('clinic settings control closures and appointment templates', async () => {
   assert.equal(initialSettings.body.slotIntervalMinutes, 30);
   assert.equal(initialSettings.body.schedules.find((day) => day.weekday === 1).startTime, '08:00');
 
+  // The settings UI presents Monday first and Sunday last. The API must use
+  // each entry's explicit weekday instead of treating array position as the day.
+  const uiOrderedSchedules = [1, 2, 3, 4, 5, 6, 0].map((weekday) => ({
+    ...initialSettings.body.schedules.find((day) => day.weekday === weekday),
+    isOpen: weekday !== 0,
+  }));
+  const weeklyScheduleUpdate = await request('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clinicName: initialSettings.body.clinicName,
+      timezone: initialSettings.body.timezone,
+      language: initialSettings.body.language,
+      slotIntervalMinutes: 30,
+      schedules: uiOrderedSchedules,
+    }),
+  });
+
+  assert.equal(weeklyScheduleUpdate.response.status, 200);
+  assert.equal(weeklyScheduleUpdate.body.schedules.find((day) => day.weekday === 0).isOpen, false);
+  assert.equal(weeklyScheduleUpdate.body.schedules.find((day) => day.weekday === 6).isOpen, true);
+
   const closureResult = await request('/api/settings/closures', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
