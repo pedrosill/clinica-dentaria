@@ -1,6 +1,5 @@
 const prisma = require('../lib/prisma');
 const { assertPermission } = require('../utils/authorization');
-const complianceService = require('./complianceService');
 
 const ACTIVE_APPOINTMENT_STATUSES = ['scheduled', 'arrived'];
 const PRIORITY_ORDER = { urgent: 0, high: 1, normal: 2, low: 3 };
@@ -80,7 +79,7 @@ async function getWorkQueue(user) {
   const today = localDateOnly(now);
   const role = user.role;
 
-  const [appointments, recalls, waitlist, notes, compliance] = await Promise.all([
+  const [appointments, recalls, waitlist, notes] = await Promise.all([
     prisma.appointment.findMany({
       where: appointmentWhere(user),
       include: { patient: true, doctor: true },
@@ -118,7 +117,6 @@ async function getWorkQueue(user) {
       orderBy: { transcribedAt: 'asc' },
       take: 50,
     }),
-    role === 'admin' || role === 'receptionist' ? complianceService.listCompliance(user) : Promise.resolve([]),
   ]);
 
   const items = [];
@@ -206,20 +204,6 @@ async function getWorkQueue(user) {
       action: action('Open patient record', `/patients/${note.patientId}`),
       patient: { id: note.patient.id, name: patientName(note.patient) },
     });
-  });
-
-  compliance.forEach((item) => {
-    if (item.effectiveState === 'pending' || item.effectiveState === 'blocked' || (item.reviewDueAt && new Date(item.reviewDueAt) <= now)) {
-      items.push({
-        id: `compliance:${item.id}`,
-        type: 'compliance_review',
-        priority: item.effectiveState === 'blocked' || (item.reviewDueAt && new Date(item.reviewDueAt) <= now) ? 'high' : 'normal',
-        title: `Review compliance · ${item.title}`,
-        reason: item.effectiveState === 'blocked' ? 'This item was marked as blocked.' : item.description,
-        dueAt: item.reviewDueAt ? new Date(item.reviewDueAt).toISOString() : null,
-        action: action('Open compliance', '/settings?section=compliance'),
-      });
-    }
   });
 
   const counts = {

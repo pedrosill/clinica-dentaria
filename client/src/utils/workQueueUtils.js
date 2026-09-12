@@ -8,7 +8,6 @@ export function getWorkQueuePresentation(item, t) {
     recall_due: `${t('Follow-up due')} · ${name}`,
     urgent_waitlist: `${t('Review urgent request')} · ${name}`,
     transcription_validation: `${t('Validate transcription')} · ${name}`,
-    compliance_review: t('Review compliance'),
   };
   const actionByType = {
     arrived_waiting: 'Open appointment',
@@ -18,7 +17,6 @@ export function getWorkQueuePresentation(item, t) {
     recall_due: 'Open follow-ups',
     urgent_waitlist: 'Open waitlist',
     transcription_validation: 'Open patient record',
-    compliance_review: 'Open compliance',
   };
 
   return {
