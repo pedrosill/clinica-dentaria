@@ -241,6 +241,7 @@ const translations = {
     'Open doctor': 'Abrir médico',
     'Review staff records and open a doctor profile.': 'Consulte os registos da equipa e abra o perfil de um médico.',
     'Validate and close': 'Validar e fechar',
+    'Finalize and close': 'Finalizar e fechar',
     'Awaiting doctor validation': 'A aguardar validação da doutora',
     'Patients with appointments today': 'Pacientes com consultas hoje',
     'No patients scheduled for today': 'Não há pacientes marcados para hoje',

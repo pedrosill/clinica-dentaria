@@ -3,6 +3,7 @@ const test = require('node:test');
 const {
   parseAllowedOrigins,
   parseTrustProxy,
+  validateHost,
   validateDatabaseUrl,
 } = require('./env');
 
@@ -49,4 +50,18 @@ test('database configuration remains SQLite-only', () => {
   assert.equal(validateDatabaseUrl('file:./clinic.db', { nodeEnv: 'production' }), 'file:./clinic.db');
   assert.throws(() => validateDatabaseUrl('', { nodeEnv: 'production' }), /DATABASE_URL is required/);
   assert.throws(() => validateDatabaseUrl('postgres://example', { nodeEnv: 'development' }), /SQLite/);
+});
+
+test('local-only configuration rejects an exposed host', () => {
+  assert.equal(validateHost('127.0.0.1', { localOnly: true }), '127.0.0.1');
+  assert.equal(validateHost('::1', { localOnly: true }), '::1');
+  assert.equal(validateHost('localhost', { localOnly: true }), 'localhost');
+  assert.throws(
+    () => validateHost('0.0.0.0', { localOnly: true }),
+    /loopback address when LOCAL_ONLY is enabled/
+  );
+  assert.throws(
+    () => validateHost('192.168.1.20', { localOnly: true }),
+    /loopback address when LOCAL_ONLY is enabled/
+  );
 });

@@ -26,6 +26,14 @@ const appointmentListInclude = {
 function appointmentDetailIncludeFor(user) {
   return {
     doctor: true,
+    clinicalNote: {
+      include: {
+        author: { select: { id: true, displayName: true } },
+        transcribedBy: { select: { id: true, displayName: true } },
+        validatedBy: { select: { id: true, displayName: true } },
+        addenda: { orderBy: { version: 'asc' } },
+      },
+    },
     patient: {
       include: {
         appointments: {
@@ -849,6 +857,9 @@ async function concludeAppointment(appointmentId, payload, user) {
     where: {
       id,
     },
+    include: {
+      clinicalNote: true,
+    },
   });
 
   if (!existingAppointment) {
@@ -860,16 +871,47 @@ async function concludeAppointment(appointmentId, payload, user) {
   }
   assertAppointmentAccess(user, existingAppointment, 'clinicalWrite');
 
-  return prisma.appointment.update({
-    where: {
-      id,
-    },
-    data: {
-      status: 'completed',
-      performedTreatment,
-      completionNotes,
-    },
-    include: appointmentDetailIncludeFor(user),
+  if (!['scheduled', 'arrived'].includes(existingAppointment.status)) {
+    throw new HttpError(409, 'Only scheduled or arrived appointments can be concluded');
+  }
+
+  if (performedTreatment.length > 2000) {
+    throw new HttpError(400, 'Performed treatment must be 2000 characters or fewer');
+  }
+
+  if (completionNotes && completionNotes.length > 5000) {
+    throw new HttpError(400, 'Completion notes must be 5000 characters or fewer');
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const clinicalNote = existingAppointment.clinicalNote
+      ? await transaction.clinicalNote.update({
+        where: { id: existingAppointment.clinicalNote.id },
+        data: existingAppointment.clinicalNote.treatmentPerformed
+          ? {}
+          : { treatmentPerformed: performedTreatment },
+      })
+      : await transaction.clinicalNote.create({
+        data: {
+          patientId: existingAppointment.patientId,
+          appointmentId: id,
+          authorId: user.id,
+          treatmentPerformed: performedTreatment,
+          status: 'draft',
+          sourceType: 'clinical',
+          transcriptionStatus: 'not_applicable',
+        },
+      });
+
+    return transaction.appointment.update({
+      where: { id },
+      data: {
+        status: 'completed',
+        performedTreatment,
+        completionNotes,
+      },
+      include: appointmentDetailIncludeFor(user),
+    });
   });
 }
 

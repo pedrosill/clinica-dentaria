@@ -32,6 +32,10 @@ async function validateClinicalNote(req, res) {
   res.json(await clinicalService.validateClinicalNote(req.params.patientId, req.params.noteId, req.user, req));
 }
 
+async function finalizeClinicalNote(req, res) {
+  res.json(await clinicalService.finalizeClinicalNote(req.params.patientId, req.params.noteId, req.user, req));
+}
+
 async function createClinicalNoteAddendum(req, res) {
   res.status(201).json(await clinicalService.createClinicalNoteAddendum(
     req.params.patientId, req.params.noteId, req.body, req.user
@@ -69,6 +73,7 @@ module.exports = {
   deleteToothChartEntry,
   createClinicalNote,
   updateClinicalNote,
+  finalizeClinicalNote,
   validateClinicalNote,
   createClinicalNoteAddendum,
   createTreatmentPlan,

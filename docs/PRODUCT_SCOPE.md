@@ -59,7 +59,7 @@ Local deployment still requires access controls on the computer/network, encrypt
 
 ## Planned next increments
 
-- Complete the clinical workflow that links appointment conclusion to a draft/final clinical note.
+- Complete the clinical workflow with richer note editing/addenda and an explicit paper-migration register.
 - Finish Portuguese localization and locale-aware date formatting.
 - Complete the clinic-approved retention configuration and its operational execution.
 - Add email appointment confirmations/reminders with patient preferences, response tracking, delivery logs, and retry handling. This work remains experimental until explicitly integrated into the main branch.

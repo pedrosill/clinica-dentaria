@@ -55,6 +55,50 @@ function encryptBackup(buffer, key) {
   return Buffer.concat([BACKUP_MAGIC, header, ciphertext]);
 }
 
+function decryptBackup(buffer, key) {
+  if (!buffer.subarray(0, BACKUP_MAGIC.length).equals(BACKUP_MAGIC)) return buffer;
+
+  const headerStart = BACKUP_MAGIC.length;
+  const headerEnd = buffer.indexOf(0x0a, headerStart);
+  if (headerEnd === -1) throw new Error('Encrypted backup header is incomplete');
+
+  let header;
+  try {
+    header = JSON.parse(buffer.subarray(headerStart, headerEnd).toString('utf8'));
+  } catch {
+    throw new Error('Encrypted backup header is invalid');
+  }
+
+  if (header.algorithm !== 'aes-256-gcm' || header.kdf !== 'scrypt') {
+    throw new Error('Encrypted backup uses an unsupported format');
+  }
+
+  if (!key) throw new Error('BACKUP_ENCRYPTION_KEY or BACKUP_ENCRYPTION_KEY_FILE is required');
+
+  let salt;
+  let iv;
+  let authTag;
+  try {
+    salt = Buffer.from(header.salt, 'base64url');
+    iv = Buffer.from(header.iv, 'base64url');
+    authTag = Buffer.from(header.authTag, 'base64url');
+  } catch {
+    throw new Error('Encrypted backup header is invalid');
+  }
+
+  try {
+    const encryptionKey = crypto.scryptSync(String(key), salt, 32);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, iv);
+    decipher.setAuthTag(authTag);
+    return Buffer.concat([
+      decipher.update(buffer.subarray(headerEnd + 1)),
+      decipher.final(),
+    ]);
+  } catch {
+    throw new Error('Backup decryption failed; check the encryption key');
+  }
+}
+
 function verifySqliteFile(filename) {
   const database = new Database(filename, { readonly: true, fileMustExist: true });
 
@@ -171,6 +215,7 @@ module.exports = {
   BACKUP_MAGIC,
   applyRetention,
   createBackup,
+  decryptBackup,
   encryptBackup,
   getEncryptionKey,
   verifySqliteFile,

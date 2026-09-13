@@ -7,6 +7,31 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const DATABASE_URL = process.env.DATABASE_URL;
 const LOCAL_ONLY = ['1', 'true', 'yes'].includes(String(process.env.LOCAL_ONLY || '').trim().toLowerCase());
 
+function isLoopbackHost(value) {
+  const host = String(value || '').trim().replace(/^\[|\]$/g, '').toLowerCase();
+  if (host === 'localhost' || host === '::1') return true;
+
+  if (net.isIP(host) === 4) {
+    return host.split('.').length === 4 && host.split('.')[0] === '127';
+  }
+
+  return false;
+}
+
+function validateHost(value, { localOnly = false } = {}) {
+  const host = String(value || '127.0.0.1').trim();
+
+  if (!host) {
+    throw new Error('HOST must not be empty');
+  }
+
+  if (localOnly && !isLoopbackHost(host)) {
+    throw new Error('HOST must be a loopback address when LOCAL_ONLY is enabled');
+  }
+
+  return host;
+}
+
 function isLoopbackOrigin(origin) {
   try {
     const hostname = new URL(origin).hostname.replace(/^\[|\]$/g, '').toLowerCase();
@@ -112,17 +137,19 @@ function validateDatabaseUrl(value, { nodeEnv = NODE_ENV } = {}) {
 validateDatabaseUrl(DATABASE_URL);
 const CLIENT_ORIGINS = parseAllowedOrigins(process.env.CLIENT_ORIGIN, { localOnly: LOCAL_ONLY });
 const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY, { localOnly: LOCAL_ONLY });
+const HOST = validateHost(process.env.HOST, { localOnly: LOCAL_ONLY });
 
 module.exports = {
   CLIENT_ORIGIN: CLIENT_ORIGINS[0],
   CLIENT_ORIGINS,
   DATABASE_URL,
-  HOST: process.env.HOST || '127.0.0.1',
+  HOST,
   LOCAL_ONLY,
   NODE_ENV,
   PORT: Number(process.env.PORT) || 5000,
   TRUST_PROXY,
   parseAllowedOrigins,
   parseTrustProxy,
+  validateHost,
   validateDatabaseUrl,
 };

@@ -472,13 +472,15 @@ test('clinical record supports profile, odontogram, notes, and treatment plans',
   assert.equal(noteResult.response.status, 201);
   assert.equal(noteResult.body.status, 'draft');
 
-  const finalNoteResult = await request(`/api/patients/${patients[0].id}/clinical/notes/${noteResult.body.id}`, {
-    method: 'PUT',
+  const finalNoteResult = await request(`/api/patients/${patients[0].id}/clinical/notes/${noteResult.body.id}/finalize`, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...noteResult.body, status: 'final' }),
+    body: JSON.stringify({}),
   });
   assert.equal(finalNoteResult.response.status, 200);
   assert.equal(finalNoteResult.body.status, 'final');
+  assert.ok(finalNoteResult.body.validatedById);
+  assert.ok(finalNoteResult.body.validatedAt);
 
   const addendumResult = await request(`/api/patients/${patients[0].id}/clinical/notes/${noteResult.body.id}/addenda`, {
     method: 'POST',
@@ -754,6 +756,17 @@ test('preserves arrived status and blocks terminal appointment edits', async () 
 
   assert.equal(cancelledStatusResult.response.status, 200);
 
+  const cancelledConclusionResult = await request(
+    `/api/appointments/${arrivedResult.body.id}/conclude`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ performedTreatment: 'Must be rejected' }),
+    }
+  );
+
+  assert.equal(cancelledConclusionResult.response.status, 409);
+
   const reopenedStatusResult = await request(
     `/api/appointments/${arrivedResult.body.id}/status`,
     {
@@ -849,6 +862,19 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
   );
   assert.equal(dentistConclusion.response.status, 200);
   assert.equal(dentistConclusion.body.status, 'completed');
+  assert.equal(dentistConclusion.body.clinicalNote.status, 'draft');
+  assert.equal(dentistConclusion.body.clinicalNote.treatmentPerformed, 'Completed by assigned dentist');
+
+  const repeatedDentistConclusion = await requestWithSession(
+    dentistCookie,
+    `/api/appointments/${ownAppointment.body.id}/conclude`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ performedTreatment: 'Must not create a second note' }),
+    }
+  );
+  assert.equal(repeatedDentistConclusion.response.status, 409);
 
   const dentistTerminalEdit = await requestWithSession(
     dentistCookie,

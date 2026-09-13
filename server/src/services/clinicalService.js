@@ -280,10 +280,17 @@ async function updateClinicalNote(patientId, noteId, payload = {}, user) {
       diagnosis: true,
       treatmentPerformed: true,
       recommendations: true,
+      sourceType: true,
+      transcriptionStatus: true,
+      transcribedById: true,
+      transcribedAt: true,
     },
   });
   if (!existing || existing.patientId !== patient) throw new HttpError(404, 'Clinical note not found');
   if (existing.status === 'final') throw new HttpError(409, 'Final clinical notes cannot be edited');
+  if (user.role === 'receptionist' && existing.sourceType !== 'paper_transcription') {
+    throw new HttpError(403, 'The secretary may only edit paper transcriptions');
+  }
 
   const status = validateEnum(payload.status || existing.status, VALID_NOTE_STATUSES, 'clinical note status');
   const appointmentId = payload.appointmentId === undefined || payload.appointmentId === null || payload.appointmentId === ''
@@ -293,6 +300,19 @@ async function updateClinicalNote(patientId, noteId, payload = {}, user) {
   if (appointmentId) {
     await ensureAppointmentForPatient(appointmentId, patient, user);
   }
+
+  if (existing.transcriptionStatus === 'transcribed' && status === 'final') {
+    throw new HttpError(403, 'Paper transcriptions must be validated by the doctor');
+  }
+
+  const sourceData = existing.sourceType === 'paper_transcription'
+    ? {
+        sourceType: 'paper_transcription',
+        transcriptionStatus: 'transcribed',
+        transcribedById: existing.transcribedById,
+        transcribedAt: existing.transcribedAt,
+      }
+    : noteSourceData(payload, user, status);
 
   return prisma.clinicalNote.update({
     where: { id },
@@ -306,9 +326,64 @@ async function updateClinicalNote(patientId, noteId, payload = {}, user) {
       recommendations: optionalString(payload.recommendations ?? existing.recommendations),
       status: user.role === 'receptionist' ? 'draft' : status,
       signedAt: status === 'final' ? new Date() : null,
-      ...noteSourceData(payload, user, status),
+      validatedById: status === 'final' ? user.id : null,
+      validatedAt: status === 'final' ? new Date() : null,
+      ...sourceData,
     },
   });
+}
+
+async function finalizeClinicalNote(patientId, noteId, user, req) {
+  const patient = await ensurePatient(patientId, user, 'validate');
+  const id = parseNumericId(noteId, 'clinical note id');
+  const note = await prisma.clinicalNote.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      patientId: true,
+      status: true,
+      transcriptionStatus: true,
+    },
+  });
+
+  if (!note || note.patientId !== patient) throw new HttpError(404, 'Clinical note not found');
+  if (note.status === 'final') throw new HttpError(409, 'Clinical note is already final');
+
+  if (note.transcriptionStatus === 'transcribed' && user.role !== 'dentist') {
+    throw new HttpError(403, 'Only the dentist may validate a paper transcription');
+  }
+
+  const isPaperTranscription = note.transcriptionStatus === 'transcribed';
+  const updated = await prisma.clinicalNote.update({
+    where: { id },
+    data: {
+      status: 'final',
+      signedAt: new Date(),
+      transcriptionStatus: isPaperTranscription ? 'validated' : 'not_applicable',
+      validatedById: user.id,
+      validatedAt: new Date(),
+    },
+    include: {
+      author: { select: { id: true, displayName: true } },
+      transcribedBy: { select: { id: true, displayName: true } },
+      validatedBy: { select: { id: true, displayName: true } },
+      addenda: { orderBy: { version: 'asc' } },
+    },
+  });
+
+  await recordAuditEvent({
+    req,
+    actor: user,
+    action: isPaperTranscription ? 'validate' : 'finalize',
+    resource: 'clinical_note',
+    resourceId: id,
+    patientId: patient,
+    result: 'success',
+    metadata: { transcriptionStatus: updated.transcriptionStatus },
+    required: true,
+  });
+
+  return updated;
 }
 
 async function validateClinicalNote(patientId, noteId, user, req) {
@@ -487,6 +562,7 @@ module.exports = {
   deleteToothChartEntry,
   createClinicalNote,
   updateClinicalNote,
+  finalizeClinicalNote,
   validateClinicalNote,
   createClinicalNoteAddendum,
   createTreatmentPlan,

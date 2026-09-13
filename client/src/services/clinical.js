@@ -44,6 +44,10 @@ export function validateClinicalNote(patientId, noteId) {
   return apiRequest(clinicalPath(patientId, `/notes/${noteId}/validate`), { method: 'POST', body: JSON.stringify({}) });
 }
 
+export function finalizeClinicalNote(patientId, noteId) {
+  return apiRequest(clinicalPath(patientId, `/notes/${noteId}/finalize`), { method: 'POST', body: JSON.stringify({}) });
+}
+
 export function createTreatmentPlan(patientId, payload) {
   return apiRequest(clinicalPath(patientId, '/treatment-plans'), {
     method: 'POST',
