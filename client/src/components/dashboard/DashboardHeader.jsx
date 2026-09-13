@@ -24,7 +24,7 @@ export default function DashboardHeader() {
 
         <Link
           to="/patients"
-          className="inline-flex items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
+          className="inline-flex self-start items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800"
         >
           {t('Open Patients')}
         </Link>

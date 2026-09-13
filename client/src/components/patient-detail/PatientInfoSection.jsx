@@ -111,42 +111,42 @@ export default function PatientInfoSection({
           </div>
         </form>
       ) : (
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="min-w-0 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Full name')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">
               {getPatientDisplayName(patient)}
             </p>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="min-w-0 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Phone')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{patient.phone}</p>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="min-w-0 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Email')}</p>
-            <p className="mt-2 text-base font-semibold text-slate-950">{patient.email}</p>
+            <p className="mt-2 break-all text-base font-semibold text-slate-950">{patient.email}</p>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="min-w-0 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('NIF')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{patient.nif}</p>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="min-w-0 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Nationality')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">{patient.nationality ? t(patient.nationality) : t('Not recorded')}</p>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="min-w-0 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Date of birth')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">
               {patient.dateOfBirth ? formatDisplayDate(patient.dateOfBirth) : t('Not recorded')}
             </p>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="min-w-0 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">{t('Created')}</p>
             <p className="mt-2 text-base font-semibold text-slate-950">
               {formatDisplayDate(patient.createdAt)}
