@@ -62,14 +62,10 @@ export default function Reports() {
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-teal-700">{t('Operational overview')}</p>
-            <h1 className="mt-2 flex items-center gap-3 text-3xl font-semibold tracking-tight text-slate-900">
+            <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-slate-900">
               <BarChart3 className="h-7 w-7 text-teal-700" />
               {t('Reports')}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              {t('Review appointment volume by date, doctor, and status. This report contains operational data only.')}
-            </p>
           </div>
           <button
             type="button"

@@ -23,7 +23,6 @@ export default function DashboardUpcomingAppointments({ appointments }) {
 
         <div>
           <h2 className="text-xl font-semibold text-slate-900">{t('Upcoming agenda')}</h2>
-          <p className="text-sm text-slate-500">{t('Next scheduled appointments')}</p>
         </div>
       </div>
 

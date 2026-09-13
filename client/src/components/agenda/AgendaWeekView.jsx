@@ -21,9 +21,6 @@ export default function AgendaWeekView({
       <div className="mb-5 flex flex-col gap-2 border-b border-slate-300 pb-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-950">{weekLabel}</h2>
-          <p className="text-sm text-slate-700">
-            {t('Select a day or open an appointment.')}
-          </p>
         </div>
       </div>
 

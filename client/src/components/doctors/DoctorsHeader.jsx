@@ -11,12 +11,8 @@ export default function DoctorsHeader({
   return (
     <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-teal-800">{t('Secretary workflow')}</p>
+        <div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Doctors')}</h1>
-          <p className="text-sm text-slate-700">
-            {t('Search all doctors and manage clinical staff records.')}
-          </p>
         </div>
 
         {canManageDoctors ? <button

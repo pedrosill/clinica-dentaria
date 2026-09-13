@@ -111,7 +111,6 @@ export default function AppointmentDetail() {
   return (
     <div className="w-full space-y-6">
       <AppointmentDetailHeader
-        appointment={appointment}
         isEditing={isEditing}
         isCompletedAppointment={isCompletedAppointment}
         isTerminalAppointment={isTerminalAppointment}

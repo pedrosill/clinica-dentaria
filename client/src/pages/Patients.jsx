@@ -268,12 +268,8 @@ export default function Patients() {
       ================================ */}
       <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-teal-800">{t('Secretary workflow')}</p>
+          <div>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Patients')}</h1>
-            <p className="text-sm text-slate-700">
-              {t("Search all patients and work from today's active appointment list.")}
-            </p>
           </div>
 
           {canManagePatients ? <button

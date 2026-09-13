@@ -14,9 +14,8 @@ export default function Recalls() {
   return (
     <div className="w-full space-y-6">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-        <p className="text-sm font-medium text-teal-700">{t('Patient follow-up')}</p>
-        <div className="mt-2 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div><h1 className="text-3xl font-semibold tracking-tight text-slate-900">{t('Recall queue')}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{t('Keep patient follow-ups visible and easy to update.')}</p></div>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{t('Recall queue')}</h1>
           <SelectDropdown
             label={t('Filter by status')}
             value={status}

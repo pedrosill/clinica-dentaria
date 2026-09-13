@@ -99,7 +99,6 @@ export default function DashboardTodaySummary({ appointments }) {
                 ? t('No appointments scheduled today')
                 : t('No active appointments remain today.')}
             </p>
-            <p className="mt-1 text-sm text-slate-600">{t("Open today's agenda")}</p>
           </div>
         )}
       </div>

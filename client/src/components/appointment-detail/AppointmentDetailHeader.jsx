@@ -9,7 +9,6 @@ import { getAppointmentReturnContext, getAppointmentReturnPath } from '../../uti
    Component
 ================================ */
 export default function AppointmentDetailHeader({
-  appointment,
   isEditing,
   isCompletedAppointment,
   isTerminalAppointment,
@@ -48,13 +47,8 @@ export default function AppointmentDetailHeader({
               {isCompletedAppointment ? t('Completed appointment') : t('Appointment detail')}
             </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
-              {t('Appointment')} #{appointment.id}
+              {t('Appointment')}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              {isCompletedAppointment
-                ? t('Review the completed visit outcome and recorded notes.')
-                : t('Review timing, treatment, completion outcome, and reschedule safely when needed.')}
-            </p>
           </div>
         </div>
 
