@@ -6,6 +6,8 @@ These instructions apply to the whole repository. Read them before changing code
 
 DentalPro is an internal dental-clinic management application. It manages patients, doctors, appointments, the agenda, appointment details, rescheduling, and the dashboard's upcoming agenda.
 
+The current clinic-specific product scope, user responsibilities, deployment boundary, and planned increments are defined in `docs/PRODUCT_SCOPE.md`. Implementation status is tracked in `docs/FEATURE_INVENTORY.md`; keep both documents synchronized when requirements or feature coverage change.
+
 The current stack is:
 
 - Frontend: React 19, Vite 8, React Router, Tailwind CSS v4, and Lucide React.
