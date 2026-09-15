@@ -74,6 +74,10 @@ function getDoctorName(appointment, t) {
   return appointment?.doctor?.name || t('No doctor assigned');
 }
 
+function getNavigationStepLabel(rangeMode, t) {
+  return t(rangeMode === 'month' ? 'Month' : rangeMode === 'week' ? 'Week' : 'Day');
+}
+
 function getPatientName(appointment, t) {
   if (!appointment?.patient) return t('Unknown patient');
   if (appointment.patient.fullName) return appointment.patient.fullName;
@@ -160,6 +164,11 @@ export default function RescheduleAppointmentModal({
     if (!inspectedDate) return t('Loading day...');
     return formatLongDate(inspectedDate, locale);
   }, [inspectedDate, locale, t]);
+
+  const navigationStepLabel = useMemo(
+    () => getNavigationStepLabel(rangeMode, t),
+    [rangeMode, t]
+  );
 
   const dayTimelineItems = useMemo(() => {
     return daySlots.map((slotTime) => ({
@@ -275,14 +284,10 @@ export default function RescheduleAppointmentModal({
         className="flex h-[calc(100dvh-2rem)] max-h-[94vh] min-h-0 w-full max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-slate-300 bg-white shadow-2xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 md:px-8">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-teal-800">{t('Scheduling workflow')}</p>
+          <div>
             <h2 id="reschedule-appointment-modal-title" className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
               {t(isFollowUp ? 'Schedule follow-up appointment' : 'Reschedule Appointment')}
             </h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              {t("Inspect the doctor's day timeline, choose a valid free slot, and keep the booking flow safely aligned with backend conflict rules.")}
-            </p>
           </div>
 
           <button
@@ -301,8 +306,9 @@ export default function RescheduleAppointmentModal({
             <div className="border-b border-slate-200 px-6 py-5 md:px-8">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">{t('Inspected day schedule')}</p>
-                  <p className="mt-1 text-sm text-slate-600">{inspectedDateLabel}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t('Viewing date')}</p>
+                  <p className="mt-1 text-lg font-semibold capitalize text-slate-950">{inspectedDateLabel}</p>
+                  <p className="mt-1 text-sm text-teal-700">{t('Navigation step')}: {navigationStepLabel}</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -328,7 +334,7 @@ export default function RescheduleAppointmentModal({
 
               <div className="mt-3 flex w-fit rounded-xl border border-slate-300 bg-slate-100 p-1" aria-label={t('Date navigation range')}>
                 {['month', 'week', 'day'].map((mode) => (
-                  <button key={mode} type="button" onClick={() => setRangeMode(mode)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${rangeMode === mode ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+                  <button key={mode} type="button" onClick={() => setRangeMode(mode)} aria-pressed={rangeMode === mode} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${rangeMode === mode ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-300' : 'text-slate-600 hover:text-slate-900'}`}>
                     {t(mode === 'month' ? 'Month' : mode === 'week' ? 'Week' : 'Day')}
                   </button>
                 ))}
@@ -475,7 +481,6 @@ export default function RescheduleAppointmentModal({
 
                     <div>
                        <p className="text-sm font-semibold text-slate-950">{t('Appointment summary')}</p>
-                       <p className="text-sm text-slate-600">{t('Current booking context')}</p>
                     </div>
                   </div>
 
@@ -517,7 +522,6 @@ export default function RescheduleAppointmentModal({
 
                     <div>
                        <p className="text-sm font-semibold text-slate-950">{t('Selected slot')}</p>
-                       <p className="text-sm text-slate-600">{t('What will be submitted')}</p>
                     </div>
                   </div>
 
@@ -561,9 +565,6 @@ export default function RescheduleAppointmentModal({
 
                 <section className="rounded-3xl border border-slate-300 bg-white p-5 shadow-sm">
                    <p className="text-sm font-semibold text-slate-950">{t('Inspected day bookings')}</p>
-                   <p className="mt-1 text-sm text-slate-600">
-                     {t('Existing appointments already blocking this doctor on')} {inspectedDateLabel}.
-                  </p>
 
                   <div className="mt-4 space-y-3">
                     {dayAppointmentsSummary.length > 0 ? (
@@ -609,9 +610,6 @@ export default function RescheduleAppointmentModal({
                        <div className="border-t border-dashed border-slate-300 pt-6 text-center">
                         <p className="text-sm font-medium text-slate-800">
                            {t('No bookings found for this inspected day.')}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-600">
-                           {t('All valid timeline starts for the selected duration are currently open.')}
                         </p>
                       </div>
                     )}

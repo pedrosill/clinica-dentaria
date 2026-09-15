@@ -551,6 +551,8 @@ const translations = {
     'Reschedule appointment': 'Reagendar consulta',
     'Scheduling workflow': 'Fluxo de agendamento',
     'Close reschedule modal': 'Fechar janela de reagendamento',
+    'Viewing date': 'Data em consulta',
+    'Navigation step': 'Intervalo de navegação',
     'Inspected day schedule': 'Agenda do dia consultado',
     'Inspected day bookings': 'Consultas do dia consultado',
     'Appointment summary': 'Resumo da consulta',
