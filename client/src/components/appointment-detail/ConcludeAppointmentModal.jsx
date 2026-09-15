@@ -1,7 +1,7 @@
 /* ================================
    Imports
 ================================ */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { CheckCircle2, Paperclip, Plus, Trash2 } from 'lucide-react';
 import Dialog from '../ui/Dialog';
 import {
@@ -9,6 +9,7 @@ import {
   getAppointmentTypeOptions,
 } from '../../utils/appointmentTypeUtils';
 import useLanguage from '../../context/useLanguage';
+import ToothPickerDialog from './ToothPickerDialog';
 
 /* ================================
    Component
@@ -30,6 +31,7 @@ export default function ConcludeAppointmentModal({
   onSubmit,
 }) {
   const { t } = useLanguage();
+  const [toothPickerIndex, setToothPickerIndex] = useState(null);
 
   const treatmentOptions = useMemo(
     () => {
@@ -58,17 +60,13 @@ export default function ConcludeAppointmentModal({
         onClose={onClose}
         isCloseDisabled={isSubmitting}
         labelledBy="conclude-appointment-modal-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl md:p-8"
+        className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl md:p-8"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-teal-700">{t('Doctor workflow')}</p>
-            <h2 id="conclude-appointment-modal-title" className="mt-1 text-2xl font-semibold text-slate-900">
+            <h2 id="conclude-appointment-modal-title" className="text-2xl font-semibold text-slate-900">
               {t('Conclude Appointment')}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {t('Record what was done, mark the appointment completed, and optionally continue to follow-up scheduling.')}
-            </p>
           </div>
 
           <button
@@ -101,13 +99,19 @@ export default function ConcludeAppointmentModal({
             </div>
             {treatments.map((treatment, index) => (
               <div key={`${index}-${treatment.procedureName}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_120px_150px_auto] md:items-end">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_150px_auto] md:items-end">
                   <label className="space-y-1 text-xs font-semibold text-slate-600">
                     {t('Treatment')}
                     <input list={`performed-treatments-${index}`} value={treatment.procedureName || ''} onChange={(event) => updateTreatment(index, 'procedureName', event.target.value)} placeholder={t('Select an option')} required maxLength={200} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none" />
                     <datalist id={`performed-treatments-${index}`}>{treatmentOptions.map((option) => <option key={option.value} value={option.value} />)}</datalist>
                   </label>
-                  <label className="space-y-1 text-xs font-semibold text-slate-600">{t('Tooth')}<input value={treatment.toothNumber || ''} onChange={(event) => updateTreatment(index, 'toothNumber', event.target.value)} placeholder="ex. 16" maxLength={2} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none" /></label>
+                  <div className="space-y-1 text-xs font-semibold text-slate-600">
+                    <span className="block">{t('Tooth')}</span>
+                    <button type="button" onClick={() => setToothPickerIndex(index)} disabled={isSubmitting} className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-left text-sm font-normal text-slate-800 transition hover:border-teal-600 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60">
+                      <span>{treatment.toothNumber ? `${t('Tooth')} ${treatment.toothNumber}` : t('Select tooth')}</span>
+                      <span className="text-xs text-teal-700">{t('Open')}</span>
+                    </button>
+                  </div>
                   <label className="space-y-1 text-xs font-semibold text-slate-600">{t('Surface')}<select value={treatment.surface || ''} onChange={(event) => updateTreatment(index, 'surface', event.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none"><option value="">{t('Whole tooth / not specified')}</option><option value="mesial">{t('Mesial')}</option><option value="distal">{t('Distal')}</option><option value="occlusal">{t('Occlusal')}</option><option value="incisal">{t('Incisal')}</option><option value="buccal">{t('Buccal')}</option><option value="lingual">{t('Lingual')}</option><option value="palatal">{t('Palatal')}</option></select></label>
                   <button type="button" onClick={() => onTreatmentsChange(treatments.filter((_, itemIndex) => itemIndex !== index))} disabled={isSubmitting || treatments.length <= 1} aria-label={t('Remove treatment')} className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 px-3 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 className="h-4 w-4" /></button>
                 </div>
@@ -198,6 +202,15 @@ export default function ConcludeAppointmentModal({
           </div>
         </form>
       </Dialog>
+      <ToothPickerDialog
+        isOpen={toothPickerIndex !== null}
+        patientId={appointment?.patientId}
+        selectedTooth={toothPickerIndex === null ? '' : treatments[toothPickerIndex]?.toothNumber}
+        onSelect={(toothNumber) => {
+          if (toothPickerIndex !== null) updateTreatment(toothPickerIndex, 'toothNumber', toothNumber);
+        }}
+        onClose={() => setToothPickerIndex(null)}
+      />
     </div>
   );
 }
