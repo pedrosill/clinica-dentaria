@@ -20,7 +20,6 @@ export default function AppointmentPatientCard({ appointment }) {
 
         <div>
           <h2 className="text-lg font-semibold text-slate-900">{t('Patient')}</h2>
-          <p className="text-sm text-slate-500">{t('Linked patient information')}</p>
         </div>
       </div>
 

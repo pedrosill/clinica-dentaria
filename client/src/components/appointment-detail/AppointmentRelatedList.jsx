@@ -22,7 +22,6 @@ export default function AppointmentRelatedList({ relatedAppointments }) {
 
         <div>
           <h2 className="text-lg font-semibold text-slate-900">{t('Related appointments')}</h2>
-          <p className="text-sm text-slate-500">{t('Recent appointments for this patient')}</p>
         </div>
       </div>
 

@@ -4,6 +4,8 @@
 import { ArrowLeft, CheckCircle2, Pencil } from 'lucide-react';
 import useLanguage from '../../context/useLanguage';
 import { getAppointmentReturnContext, getAppointmentReturnPath } from '../../utils/appointmentNavigation';
+import { formatLongDate } from '../../utils/appointmentDetailUtils';
+import { getPatientDisplayName } from '../../utils/agendaUtils';
 
 /* ================================
    Component
@@ -14,6 +16,7 @@ export default function AppointmentDetailHeader({
   isTerminalAppointment,
   navigate,
   location,
+  appointment,
   onStartEdit,
   onStartReschedule,
   onOpenConcludeModal,
@@ -47,8 +50,11 @@ export default function AppointmentDetailHeader({
               {isCompletedAppointment ? t('Completed appointment') : t('Appointment detail')}
             </p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
-              {t('Appointment')}
+              {getPatientDisplayName(appointment?.patient) || t('Appointment')}
             </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              {formatLongDate(appointment.date)} · {appointment.time} · {appointment.treatmentType || t('Not recorded')}
+            </p>
           </div>
         </div>
 

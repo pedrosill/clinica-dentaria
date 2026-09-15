@@ -87,11 +87,6 @@ export default function AppointmentInfoSection({
           <h2 className="text-xl font-semibold text-slate-900">
             {isCompletedAppointment ? t('Completion record') : t('Appointment information')}
           </h2>
-          <p className="text-sm text-slate-500">
-            {isCompletedAppointment
-              ? t('Final outcome and clinical notes for this completed visit.')
-              : t('Scheduling and follow-up use the same validated booking flow.')}
-          </p>
         </div>
       </div>
 

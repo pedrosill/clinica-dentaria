@@ -27,9 +27,6 @@ export default function AppointmentWorkflowCard({
 
         <div>
           <h2 className="text-lg font-semibold text-slate-900">{t('Appointment status')}</h2>
-          <p className="text-sm text-slate-500">
-            {t('Record attendance here. Rescheduling and completion are available in the top actions.')}
-          </p>
         </div>
       </div>
 

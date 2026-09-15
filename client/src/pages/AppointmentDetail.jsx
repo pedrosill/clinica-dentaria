@@ -119,6 +119,7 @@ export default function AppointmentDetail() {
         isTerminalAppointment={isTerminalAppointment}
         navigate={navigate}
         location={location}
+        appointment={appointment}
         onStartEdit={handleStartEdit}
         onStartReschedule={handleStartReschedule}
         onOpenConcludeModal={handleOpenConcludeModal}
@@ -137,7 +138,7 @@ export default function AppointmentDetail() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <AppointmentInfoSection
           appointment={appointment}
           patients={patients}
@@ -161,10 +162,6 @@ export default function AppointmentDetail() {
         <div className="space-y-6">
           <AppointmentPatientCard appointment={appointment} />
 
-          {!isCompletedAppointment ? (
-            <AppointmentRelatedList relatedAppointments={relatedAppointments} />
-          ) : null}
-
           <AppointmentWorkflowCard
             appointment={appointment}
             isCompletedAppointment={isCompletedAppointment}
@@ -174,6 +171,10 @@ export default function AppointmentDetail() {
             isSubmitting={isSubmitting}
             canModifyAppointment={canModifyAppointment}
           />
+
+          {!isCompletedAppointment ? (
+            <AppointmentRelatedList relatedAppointments={relatedAppointments} />
+          ) : null}
         </div>
       </div>
 
