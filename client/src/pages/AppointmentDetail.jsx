@@ -112,7 +112,7 @@ export default function AppointmentDetail() {
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="mx-auto w-full max-w-[1800px] space-y-6">
       <AppointmentDetailHeader
         isEditing={isEditing}
         isCompletedAppointment={isCompletedAppointment}
