@@ -32,10 +32,10 @@ export function getPatientDocuments(patientId) {
   return apiRequest(`/api/patients/${patientId}/documents`);
 }
 
-export function uploadPatientDocument(patientId, file) {
+export function uploadPatientDocument(patientId, file, appointmentId = '') {
   return apiRequest(`/api/patients/${patientId}/documents/upload`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream', 'X-File-Name': file.name, 'X-File-Type': file.type },
+    headers: { 'Content-Type': 'application/octet-stream', 'X-File-Name': file.name, 'X-File-Type': file.type, ...(appointmentId ? { 'X-Appointment-Id': String(appointmentId) } : {}) },
     body: file,
   });
 }

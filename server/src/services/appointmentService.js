@@ -17,6 +17,7 @@ const {
 const { getDoctorScheduleForDate } = require('./clinicSettingsService');
 const { assertPermission } = require('../utils/authorization');
 const { recordAuditEvent } = require('./auditService');
+const { normalizeClinicalTreatments } = require('./clinicalService');
 
 const appointmentListInclude = {
   patient: true,
@@ -32,7 +33,20 @@ function appointmentDetailIncludeFor(user) {
         transcribedBy: { select: { id: true, displayName: true } },
         validatedBy: { select: { id: true, displayName: true } },
         addenda: { orderBy: { version: 'asc' } },
+        treatments: { orderBy: { createdAt: 'asc' } },
       },
+    },
+    documents: {
+      select: {
+        id: true,
+        fileName: true,
+        mimeType: true,
+        sizeBytes: true,
+        sha256: true,
+        uploadedAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
     },
     patient: {
       include: {
@@ -848,6 +862,8 @@ async function concludeAppointment(appointmentId, payload, user) {
   const id = parseNumericId(appointmentId, 'appointment id');
   const performedTreatment = String(payload.performedTreatment || '').trim();
   const completionNotes = payload.completionNotes?.trim() || null;
+  const treatments = Array.isArray(payload.treatments) ? payload.treatments : [];
+  const normalizedTreatments = normalizeClinicalTreatments({ performedTreatment, treatments });
 
   if (!performedTreatment) {
     throw new HttpError(400, 'Performed treatment is required');
@@ -884,14 +900,20 @@ async function concludeAppointment(appointmentId, payload, user) {
   }
 
   return prisma.$transaction(async (transaction) => {
-    const clinicalNote = existingAppointment.clinicalNote
-      ? await transaction.clinicalNote.update({
+    if (existingAppointment.clinicalNote?.status === 'final') {
+      throw new HttpError(409, 'The linked clinical note is already final');
+    }
+
+    if (existingAppointment.clinicalNote) {
+      await transaction.clinicalNote.update({
         where: { id: existingAppointment.clinicalNote.id },
-        data: existingAppointment.clinicalNote.treatmentPerformed
-          ? {}
-          : { treatmentPerformed: performedTreatment },
-      })
-      : await transaction.clinicalNote.create({
+        data: {
+          treatmentPerformed: existingAppointment.clinicalNote.treatmentPerformed || performedTreatment,
+          treatments: { deleteMany: {}, create: normalizedTreatments },
+        },
+      });
+    } else {
+      await transaction.clinicalNote.create({
         data: {
           patientId: existingAppointment.patientId,
           appointmentId: id,
@@ -900,8 +922,10 @@ async function concludeAppointment(appointmentId, payload, user) {
           status: 'draft',
           sourceType: 'clinical',
           transcriptionStatus: 'not_applicable',
+          treatments: { create: normalizedTreatments },
         },
       });
+    }
 
     return transaction.appointment.update({
       where: { id },

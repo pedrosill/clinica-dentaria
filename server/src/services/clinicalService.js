@@ -81,6 +81,33 @@ function validateEnum(value, allowed, label) {
   return normalized;
 }
 
+function normalizeClinicalTreatments(payload = {}) {
+  const source = Array.isArray(payload.treatments) && payload.treatments.length > 0
+    ? payload.treatments
+    : [{ procedureName: payload.performedTreatment }];
+
+  if (source.length > 30) throw new HttpError(400, 'A visit cannot contain more than 30 treatments');
+
+  return source.map((item) => {
+    const procedureName = optionalString(item?.procedureName, 200);
+    if (!procedureName) throw new HttpError(400, 'Each treatment must have a name');
+    const toothNumber = stringValue(item?.toothNumber);
+    if (toothNumber && !VALID_TOOTH_NUMBERS.has(toothNumber)) {
+      throw new HttpError(400, 'Invalid FDI tooth number in treatment');
+    }
+    const surface = stringValue(item?.surface);
+    if (surface && !VALID_SURFACES.has(surface)) {
+      throw new HttpError(400, 'Invalid tooth surface in treatment');
+    }
+    return {
+      procedureName,
+      toothNumber: toothNumber || null,
+      surface: surface || null,
+      notes: optionalString(item?.notes, 1000),
+    };
+  });
+}
+
 async function ensurePatient(patientId, user, action = 'read') {
   assertPermission(user, 'clinical', action);
   const id = parseNumericId(patientId, 'patient id');
@@ -137,6 +164,7 @@ async function getClinicalRecord(patientId, user) {
         validatedBy: { select: { id: true, displayName: true } },
         appointment: { select: { id: true, date: true, time: true, treatmentType: true } },
         addenda: { orderBy: { version: 'asc' } },
+        treatments: { orderBy: { createdAt: 'asc' } },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -251,6 +279,7 @@ async function createClinicalNote(patientId, payload = {}, user) {
     signedAt: status === 'final' ? new Date() : null,
     ...noteSourceData(payload, user, status),
     ...(status === 'final' ? { validatedById: user.id, validatedAt: new Date() } : {}),
+    ...(payload.treatments ? { treatments: { create: normalizeClinicalTreatments(payload) } } : {}),
   };
 
   try {
@@ -284,6 +313,7 @@ async function updateClinicalNote(patientId, noteId, payload = {}, user) {
       transcriptionStatus: true,
       transcribedById: true,
       transcribedAt: true,
+      treatments: true,
     },
   });
   if (!existing || existing.patientId !== patient) throw new HttpError(404, 'Clinical note not found');
@@ -329,6 +359,7 @@ async function updateClinicalNote(patientId, noteId, payload = {}, user) {
       validatedById: status === 'final' ? user.id : null,
       validatedAt: status === 'final' ? new Date() : null,
       ...sourceData,
+      ...(payload.treatments ? { treatments: { deleteMany: {}, create: normalizeClinicalTreatments(payload) } } : {}),
     },
   });
 }
@@ -368,6 +399,7 @@ async function finalizeClinicalNote(patientId, noteId, user, req) {
       transcribedBy: { select: { id: true, displayName: true } },
       validatedBy: { select: { id: true, displayName: true } },
       addenda: { orderBy: { version: 'asc' } },
+      treatments: { orderBy: { createdAt: 'asc' } },
     },
   });
 
@@ -562,6 +594,7 @@ module.exports = {
   deleteToothChartEntry,
   createClinicalNote,
   updateClinicalNote,
+  normalizeClinicalTreatments,
   finalizeClinicalNote,
   validateClinicalNote,
   createClinicalNoteAddendum,

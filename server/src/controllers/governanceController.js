@@ -9,7 +9,7 @@ async function withdrawConsent(req, res) { res.json(await service.withdrawConsen
 async function listDocuments(req, res) { res.json(await service.listDocuments(getPatientId(req), req.user)); }
 async function createDocument(req, res) { res.status(201).json(await service.createDocument(getPatientId(req), req.body, req.user)); }
 async function uploadDocument(req, res) {
-  const document = await privateDocumentService.uploadDocument(getPatientId(req), req.body, { fileName: req.get('x-file-name'), mimeType: req.get('x-file-type') }, req.user, req);
+  const document = await privateDocumentService.uploadDocument(getPatientId(req), req.body, { fileName: req.get('x-file-name'), mimeType: req.get('x-file-type'), appointmentId: req.get('x-appointment-id') }, req.user, req);
   res.status(201).json(document);
 }
 async function downloadDocument(req, res) {

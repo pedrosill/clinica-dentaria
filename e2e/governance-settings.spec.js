@@ -129,10 +129,12 @@ test('creates a dentist account with scoped agenda and follow-up workflow', asyn
   await concludeModal.getByText('Finish and continue to reschedule', { exact: true }).click();
   await concludeModal.getByRole('button', { name: 'Complete Appointment', exact: true }).click();
 
+  const followUpModal = page.getByTestId('reschedule-modal');
+  await expect(followUpModal).toBeVisible();
+  await expect(followUpModal.getByRole('heading', { name: 'Schedule follow-up appointment', exact: true })).toBeVisible();
+  await followUpModal.getByRole('button', { name: /^09:00\b/ }).click();
+  await followUpModal.getByRole('button', { name: 'Save follow-up appointment', exact: true }).click();
   await expect(page).toHaveURL(/\/agenda\?date=/);
-  await expect(page.getByTestId('appointment-modal')).toBeVisible();
-  await expect(page.getByTestId('appointment-patient')).toHaveValue('Browser Test Patient');
-  await expect(page.getByTestId('appointment-doctor')).toHaveValue('Browser Test Doctor');
 });
 
 test('records patient consent and exposes the JSON export', async ({ page }) => {

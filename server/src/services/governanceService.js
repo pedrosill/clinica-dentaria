@@ -23,7 +23,7 @@ function text(value, field, maxLength, { required = false } = {}) {
 }
 
 async function ensurePatientAccess(patientId, user, { write = false } = {}) {
-  assertPermission(user, 'patient', write ? 'write' : 'read');
+  assertPermission(user, 'patient', user?.role === 'dentist' ? 'read' : write ? 'write' : 'read');
   const id = parseNumericId(patientId, 'patient id');
   const patient = await prisma.patient.findFirst({
     where: {
@@ -86,6 +86,7 @@ function documentSelect() {
   return {
     id: true,
     patientId: true,
+    appointmentId: true,
     fileName: true,
     mimeType: true,
     sizeBytes: true,

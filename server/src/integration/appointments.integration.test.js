@@ -85,6 +85,7 @@ const waitlistAppointmentsMigrationPath = path.join(
 const mfaMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912110000_add_mfa_and_password_recovery', 'migration.sql');
 const complianceMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912120000_add_compliance_transcription_documents', 'migration.sql');
 const arrivedAtMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260912130000_add_appointment_arrived_at', 'migration.sql');
+const completionDetailsMigrationPath = path.join(serverRoot, 'prisma', 'migrations', '20260915090000_add_clinical_completion_details', 'migration.sql');
 const integrationDatabase = new Database(temporaryDatabasePath);
 integrationDatabase.exec(fs.readFileSync(migrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(authMigrationPath, 'utf8'));
@@ -99,6 +100,7 @@ integrationDatabase.exec(fs.readFileSync(waitlistAppointmentsMigrationPath, 'utf
 integrationDatabase.exec(fs.readFileSync(mfaMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(complianceMigrationPath, 'utf8'));
 integrationDatabase.exec(fs.readFileSync(arrivedAtMigrationPath, 'utf8'));
+integrationDatabase.exec(fs.readFileSync(completionDetailsMigrationPath, 'utf8'));
 integrationDatabase.close();
 
 const app = require('../app');
@@ -856,6 +858,10 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         performedTreatment: 'Completed by assigned dentist',
+        treatments: [
+          { procedureName: 'Limpeza', toothNumber: '', surface: '', notes: 'Profilaxia' },
+          { procedureName: 'Restauração', toothNumber: '16', surface: 'occlusal', notes: 'Compósito' },
+        ],
         completionNotes: 'Clinical conclusion persisted',
       }),
     }
@@ -864,6 +870,9 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
   assert.equal(dentistConclusion.body.status, 'completed');
   assert.equal(dentistConclusion.body.clinicalNote.status, 'draft');
   assert.equal(dentistConclusion.body.clinicalNote.treatmentPerformed, 'Completed by assigned dentist');
+  assert.equal(dentistConclusion.body.clinicalNote.treatments.length, 2);
+  assert.equal(dentistConclusion.body.clinicalNote.treatments[1].toothNumber, '16');
+  assert.equal(dentistConclusion.body.clinicalNote.treatments[1].surface, 'occlusal');
 
   const repeatedDentistConclusion = await requestWithSession(
     dentistCookie,

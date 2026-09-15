@@ -32,12 +32,25 @@ function safeStoragePath(storageKey) {
 }
 
 function selectDocument() {
-  return { id: true, patientId: true, fileName: true, mimeType: true, sizeBytes: true, sha256: true, version: true, uploadedAt: true, expiresAt: true, createdAt: true, createdBy: { select: { id: true, displayName: true } } };
+  return { id: true, patientId: true, appointmentId: true, fileName: true, mimeType: true, sizeBytes: true, sha256: true, version: true, uploadedAt: true, expiresAt: true, createdAt: true, createdBy: { select: { id: true, displayName: true } } };
 }
 
 async function uploadDocument(patientId, buffer, metadata, user, req) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 1 || buffer.length > MAX_DOCUMENT_BYTES) throw new HttpError(400, 'Document size must be between 1 byte and 25 MB');
   const id = await ensurePatientAccess(patientId, user, { write: true });
+  const appointmentId = metadata.appointmentId ? parseNumericId(metadata.appointmentId, 'appointment id') : null;
+  if (appointmentId) {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: { id: true, patientId: true, doctorId: true, archivedAt: true },
+    });
+    if (!appointment || appointment.archivedAt || appointment.patientId !== id) {
+      throw new HttpError(400, 'The evidence appointment does not belong to this patient');
+    }
+    if (user.role === 'dentist' && Number(user.doctorId) !== Number(appointment.doctorId)) {
+      throw new HttpError(403, 'Dentists may only attach evidence to their own appointments');
+    }
+  }
   const fileName = safeFileName(metadata.fileName);
   const mimeType = String(metadata.mimeType || '').toLowerCase();
   if (!MIME_TYPES.has(mimeType)) throw new HttpError(400, 'Unsupported document MIME type');
@@ -47,7 +60,7 @@ async function uploadDocument(patientId, buffer, metadata, user, req) {
   await fs.promises.writeFile(target, buffer, { flag: 'wx', mode: 0o600 });
   try {
     const document = await prisma.patientDocument.create({
-      data: { patientId: id, fileName, mimeType, sizeBytes: buffer.length, storageKey, sha256: crypto.createHash('sha256').update(buffer).digest('hex'), version: 1, uploadedAt: new Date(), createdById: user.id },
+      data: { patientId: id, appointmentId, fileName, mimeType, sizeBytes: buffer.length, storageKey, sha256: crypto.createHash('sha256').update(buffer).digest('hex'), version: 1, uploadedAt: new Date(), createdById: user.id },
       select: selectDocument(),
     });
     await recordAuditEvent({ req, actor: user, action: 'upload', resource: 'document', resourceId: document.id, patientId: id, result: 'success', metadata: { mimeType, sizeBytes: buffer.length }, required: true });

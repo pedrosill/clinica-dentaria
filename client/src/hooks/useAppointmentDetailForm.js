@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../services/api';
 import { formatDateInput } from '../utils/agendaUtils';
 import useLanguage from '../context/useLanguage';
+import { uploadPatientDocument } from '../services/patients';
 
 /* ================================
    Hook: appointment detail form
@@ -30,6 +31,7 @@ export default function useAppointmentDetailForm({
   const [isEditing, setIsEditing] = useState(false);
   const [isConcludeModalOpen, setIsConcludeModalOpen] = useState(false);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [isFollowUpReschedule, setIsFollowUpReschedule] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,6 +58,8 @@ export default function useAppointmentDetailForm({
      State: completion workflow
   ================================ */
   const [performedTreatment, setPerformedTreatment] = useState('');
+  const [treatments, setTreatments] = useState([]);
+  const [evidenceFiles, setEvidenceFiles] = useState([]);
   const [completionNotes, setCompletionNotes] = useState('');
   const [afterConcludeAction, setAfterConcludeAction] = useState('stay');
 
@@ -123,6 +127,10 @@ export default function useAppointmentDetailForm({
     setSubmitError('');
     setSaveSuccess('');
     setPerformedTreatment(appointment?.performedTreatment || appointment?.treatmentType || '');
+    setTreatments(appointment?.clinicalNote?.treatments?.length
+      ? appointment.clinicalNote.treatments.map((item) => ({ procedureName: item.procedureName, toothNumber: item.toothNumber || '', surface: item.surface || '', notes: item.notes || '' }))
+      : [{ procedureName: appointment?.performedTreatment || appointment?.treatmentType || '', toothNumber: '', surface: '', notes: '' }]);
+    setEvidenceFiles([]);
     setCompletionNotes(appointment?.completionNotes || '');
     setAfterConcludeAction('finish');
     setIsConcludeModalOpen(true);
@@ -149,6 +157,7 @@ export default function useAppointmentDetailForm({
     setDate(appointment?.date ? formatDateInput(appointment.date) : '');
     setTime(appointment?.time || '');
     setDuration(appointment?.duration ? String(appointment.duration) : '30');
+    setIsFollowUpReschedule(false);
     setIsRescheduleModalOpen(true);
   }
 
@@ -249,25 +258,31 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
-      const data = await apiRequest(`/api/appointments/${appointmentId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          patientId: Number(appointment.patientId),
-          doctorId: Number(appointment.doctorId),
-          date,
-          time: normalizedTime,
-          duration: Number(duration || 30),
-          treatmentType: appointment.treatmentType || '',
-          notes: appointment.notes || '',
-        }),
-      });
+      const data = await apiRequest(
+        isFollowUpReschedule ? '/api/appointments' : `/api/appointments/${appointmentId}`,
+        {
+          method: isFollowUpReschedule ? 'POST' : 'PUT',
+          body: JSON.stringify({
+            patientId: Number(appointment.patientId),
+            doctorId: Number(appointment.doctorId),
+            date,
+            time: normalizedTime,
+            duration: Number(duration || 30),
+            treatmentType: appointment.treatmentType || '',
+            notes: appointment.notes || '',
+          }),
+        }
+      );
 
-      setAppointment(data);
-      setDate(data?.date ? formatDateInput(data.date) : date);
-      setTime(data?.time || normalizedTime);
-      setDuration(data?.duration ? String(data.duration) : String(duration));
+      if (!isFollowUpReschedule) {
+        setAppointment(data);
+        setDate(data?.date ? formatDateInput(data.date) : date);
+        setTime(data?.time || normalizedTime);
+        setDuration(data?.duration ? String(data.duration) : String(duration));
+      }
       setIsRescheduleModalOpen(false);
-      setSaveSuccess(t('Appointment rescheduled successfully.'));
+      setIsFollowUpReschedule(false);
+      setSaveSuccess(t(isFollowUpReschedule ? 'Follow-up appointment created successfully.' : 'Appointment rescheduled successfully.'));
       navigate(`/agenda?date=${encodeURIComponent(date)}`);
     } catch (error) {
       setSubmitError(error.message || t('Failed to reschedule appointment'));
@@ -291,31 +306,48 @@ export default function useAppointmentDetailForm({
       setSubmitError('');
       setSaveSuccess('');
 
+      const completedTreatments = treatments.filter((item) => item.procedureName?.trim());
+      if (completedTreatments.length === 0) {
+        setSubmitError(t('At least one treatment is required'));
+        return;
+      }
+
       const data = await apiRequest(`/api/appointments/${appointmentId}/conclude`, {
         method: 'PATCH',
         body: JSON.stringify({
-          performedTreatment: performedTreatment.trim(),
+          performedTreatment: completedTreatments.map((item) => item.procedureName.trim()).join(', '),
+          treatments: completedTreatments.map((item) => ({
+            ...item,
+            procedureName: item.procedureName.trim(),
+            toothNumber: item.toothNumber?.trim() || '',
+            notes: item.notes?.trim() || '',
+          })),
           completionNotes: completionNotes.trim(),
         }),
       });
 
+      let evidenceUploadFailed = false;
+      if (evidenceFiles.length > 0) {
+        try {
+          const uploadedEvidence = await Promise.all(evidenceFiles.map((file) => uploadPatientDocument(data.patientId, file, data.id)));
+          data.documents = [...(data.documents || []), ...uploadedEvidence];
+        } catch {
+          evidenceUploadFailed = true;
+        }
+      }
+
       setAppointment(data);
       setIsConcludeModalOpen(false);
-      setSaveSuccess(t('Appointment concluded successfully.'));
+      setSaveSuccess(t(evidenceUploadFailed ? 'Appointment concluded, but some evidence could not be uploaded.' : 'Appointment concluded successfully.'));
 
       if (afterConcludeAction === 'follow_up') {
         const followUpDate = new Date(`${formatDateInput(data.date || appointment.date)}T00:00:00`);
         followUpDate.setDate(followUpDate.getDate() + 1);
-        const dateValue = formatDateInput(followUpDate);
-        navigate(`/agenda?date=${encodeURIComponent(dateValue)}`, {
-          state: {
-            openFollowUp: {
-              patientId: data.patientId || appointment.patientId,
-              doctorId: data.doctorId || appointment.doctorId,
-              treatmentType: data.treatmentType || appointment.treatmentType || '',
-            },
-          },
-        });
+        setDate(formatDateInput(followUpDate));
+        setTime('09:00');
+        setDuration(String(data.duration || appointment.duration || 30));
+        setIsFollowUpReschedule(true);
+        setIsRescheduleModalOpen(true);
       }
     } catch (error) {
       setSubmitError(error.message || t('Failed to conclude appointment'));
@@ -360,6 +392,7 @@ export default function useAppointmentDetailForm({
     isEditing,
     isConcludeModalOpen,
     isRescheduleModalOpen,
+    isFollowUpReschedule,
     isCancelModalOpen,
     saveSuccess,
     submitError,
@@ -372,6 +405,8 @@ export default function useAppointmentDetailForm({
     treatmentType,
     notes,
     performedTreatment,
+    treatments,
+    evidenceFiles,
     completionNotes,
     afterConcludeAction,
     setPatientId,
@@ -382,6 +417,8 @@ export default function useAppointmentDetailForm({
     setTreatmentType,
     setNotes,
     setPerformedTreatment,
+    setTreatments,
+    setEvidenceFiles,
     setCompletionNotes,
     setAfterConcludeAction,
     handleStartEdit,

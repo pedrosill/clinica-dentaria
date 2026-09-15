@@ -56,6 +56,7 @@ export default function AppointmentDetail() {
     isEditing,
     isConcludeModalOpen,
     isRescheduleModalOpen,
+    isFollowUpReschedule,
     isCancelModalOpen,
     saveSuccess,
     submitError,
@@ -67,7 +68,8 @@ export default function AppointmentDetail() {
     duration,
     treatmentType,
     notes,
-    performedTreatment,
+    treatments,
+    evidenceFiles,
     completionNotes,
     afterConcludeAction,
     setPatientId,
@@ -77,7 +79,8 @@ export default function AppointmentDetail() {
     setDuration,
     setTreatmentType,
     setNotes,
-    setPerformedTreatment,
+    setTreatments,
+    setEvidenceFiles,
     setCompletionNotes,
     setAfterConcludeAction,
     handleStartEdit,
@@ -178,10 +181,12 @@ export default function AppointmentDetail() {
         isOpen={isConcludeModalOpen}
         appointment={appointment}
         isSubmitting={isSubmitting}
-        performedTreatment={performedTreatment}
+        treatments={treatments}
+        evidenceFiles={evidenceFiles}
         completionNotes={completionNotes}
         afterConcludeAction={afterConcludeAction}
-        onPerformedTreatmentChange={setPerformedTreatment}
+        onTreatmentsChange={setTreatments}
+        onEvidenceFilesChange={setEvidenceFiles}
         onCompletionNotesChange={setCompletionNotes}
         onAfterConcludeActionChange={setAfterConcludeAction}
         onClose={handleCloseConcludeModal}
@@ -193,6 +198,7 @@ export default function AppointmentDetail() {
         key={`${appointment?.id || 'appointment'}-${isRescheduleModalOpen ? 'open' : 'closed'}`}
         isOpen={isRescheduleModalOpen}
         appointment={appointment}
+        isFollowUp={isFollowUpReschedule}
         isSubmitting={isSubmitting}
         submitError={submitError}
         date={date}

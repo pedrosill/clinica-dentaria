@@ -11,6 +11,7 @@ import {
 } from '../../utils/appointmentTypeUtils';
 import { getPatientDisplayName } from '../../utils/agendaUtils';
 import useLanguage from '../../context/useLanguage';
+import { downloadPatientDocument } from '../../services/patients';
 
 /* ================================
    Component
@@ -35,6 +36,16 @@ export default function AppointmentInfoSection({
   onSave,
 }) {
   const { t } = useLanguage();
+
+  async function handleDownloadEvidence(document) {
+    const blob = await downloadPatientDocument(appointment.patientId, document.id);
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = document.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   const patientOptions = useMemo(
     () =>
@@ -113,9 +124,7 @@ export default function AppointmentInfoSection({
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 {t('Performed treatment')}
               </p>
-              <p className="mt-2 text-sm font-medium text-slate-900">
-                {appointment.performedTreatment || t('Not recorded yet')}
-              </p>
+              {appointment.clinicalNote?.treatments?.length ? <ul className="mt-2 space-y-2">{appointment.clinicalNote.treatments.map((treatment) => <li key={treatment.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-900"><span className="font-medium">{treatment.procedureName}</span>{treatment.toothNumber ? <span className="ml-2 text-slate-600">· {t('Tooth')} {treatment.toothNumber}{treatment.surface ? ` · ${treatment.surface}` : ''}</span> : null}{treatment.notes ? <p className="mt-1 text-xs text-slate-600">{treatment.notes}</p> : null}</li>)}</ul> : <p className="mt-2 text-sm font-medium text-slate-900">{appointment.performedTreatment || t('Not recorded yet')}</p>}
             </div>
 
             <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
@@ -125,6 +134,11 @@ export default function AppointmentInfoSection({
               <p className="mt-2 text-sm font-medium text-slate-900">
                 {appointment.completionNotes || t('No completion note recorded.')}
               </p>
+            </div>
+
+            <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 lg:col-span-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t('Visit evidence')}</p>
+              {appointment.documents?.length ? <div className="mt-2 space-y-2">{appointment.documents.map((document) => <div key={document.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><span className="truncate text-sm text-slate-700">{document.fileName}</span><button type="button" onClick={() => handleDownloadEvidence(document)} className="text-xs font-semibold text-teal-800 hover:underline">{t('Download')}</button></div>)}</div> : <p className="mt-2 text-sm text-slate-500">{t('No evidence attached to this visit.')}</p>}
             </div>
           </div>
         ) : (

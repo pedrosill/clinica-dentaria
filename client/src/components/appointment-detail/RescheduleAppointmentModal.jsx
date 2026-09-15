@@ -20,12 +20,6 @@ function parseDateOnly(dateString) {
   return new Date(year, month - 1, day);
 }
 
-function addDays(dateValue, amount) {
-  const nextDate = new Date(dateValue);
-  nextDate.setDate(nextDate.getDate() + amount);
-  return nextDate;
-}
-
 function formatLongDate(dateValue, locale = 'en-GB') {
   return new Intl.DateTimeFormat(locale, {
     weekday: 'long',
@@ -95,6 +89,7 @@ export default function RescheduleAppointmentModal({
   time,
   duration,
   appointmentTypes,
+  isFollowUp = false,
   onDateChange,
   onTimeChange,
   onDurationChange,
@@ -107,6 +102,7 @@ export default function RescheduleAppointmentModal({
   const [daySlotOptions, setDaySlotOptions] = useState([]);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [scheduleError, setScheduleError] = useState('');
+  const [rangeMode, setRangeMode] = useState('day');
 
   const daySlots = useMemo(
     () => daySlotOptions.map((slot) => slot.time),
@@ -197,9 +193,9 @@ export default function RescheduleAppointmentModal({
         setScheduleError('');
 
         const appointmentsResponse = await fetch(
-          `${API_BASE_URL}/api/appointments/${appointment.id}/reschedule-options?date=${encodeURIComponent(
-            inspectedDate
-          )}&duration=${encodeURIComponent(selectedDuration)}`,
+          isFollowUp
+            ? `${API_BASE_URL}/api/appointments/availability?doctorId=${encodeURIComponent(appointment.doctorId)}&date=${encodeURIComponent(inspectedDate)}&duration=${encodeURIComponent(selectedDuration)}`
+            : `${API_BASE_URL}/api/appointments/${appointment.id}/reschedule-options?date=${encodeURIComponent(inspectedDate)}&duration=${encodeURIComponent(selectedDuration)}`,
           { credentials: 'include' }
         );
 
@@ -211,11 +207,12 @@ export default function RescheduleAppointmentModal({
 
         if (!isMounted) return;
 
-        const normalizedAppointments = Array.isArray(appointmentsData?.bookedIntervals)
-          ? appointmentsData.bookedIntervals.map((interval) => ({
-              id: interval.appointmentId,
+        const bookedIntervals = appointmentsData?.bookedIntervals || appointmentsData?.bookedAppointments || [];
+        const normalizedAppointments = Array.isArray(bookedIntervals)
+          ? bookedIntervals.map((interval) => ({
+              id: interval.appointmentId || interval.id,
               date: inspectedDate,
-              time: interval.start,
+              time: interval.start || interval.startTime,
               duration: interval.duration,
               status: interval.status,
               patient: interval.patient,
@@ -224,7 +221,7 @@ export default function RescheduleAppointmentModal({
           : [];
 
         setDayAppointments(normalizedAppointments);
-        setDaySlotOptions(Array.isArray(appointmentsData?.slotOptions) ? appointmentsData.slotOptions : []);
+        setDaySlotOptions(Array.isArray(appointmentsData?.slotOptions) ? appointmentsData.slotOptions : appointmentsData?.slots || []);
       } catch (error) {
         if (!isMounted) return;
         setScheduleError(error.message || t('Failed to load inspected day schedule'));
@@ -242,16 +239,17 @@ export default function RescheduleAppointmentModal({
     return () => {
       isMounted = false;
     };
-  }, [appointment?.doctorId, appointment?.id, inspectedDate, isOpen, selectedDuration, t]);
+  }, [appointment?.doctorId, appointment?.id, inspectedDate, isFollowUp, isOpen, selectedDuration, t]);
 
-  function handleInspectPreviousDay() {
+  function shiftInspectedRange(amount) {
     if (!inspectedDate) return;
-    setInspectedDate(formatDateInput(addDays(parseDateOnly(inspectedDate), -1)));
-  }
-
-  function handleInspectNextDay() {
-    if (!inspectedDate) return;
-    setInspectedDate(formatDateInput(addDays(parseDateOnly(inspectedDate), 1)));
+    const current = parseDateOnly(inspectedDate);
+    if (rangeMode === 'month') {
+      current.setMonth(current.getMonth() + amount);
+    } else {
+      current.setDate(current.getDate() + amount * (rangeMode === 'week' ? 7 : 1));
+    }
+    setInspectedDate(formatDateInput(current));
   }
 
   function handleSelectSlot(slotTime) {
@@ -280,7 +278,7 @@ export default function RescheduleAppointmentModal({
           <div className="space-y-2">
             <p className="text-sm font-semibold text-teal-800">{t('Scheduling workflow')}</p>
             <h2 id="reschedule-appointment-modal-title" className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
-              {t('Reschedule Appointment')}
+              {t(isFollowUp ? 'Schedule follow-up appointment' : 'Reschedule Appointment')}
             </h2>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
               {t("Inspect the doctor's day timeline, choose a valid free slot, and keep the booking flow safely aligned with backend conflict rules.")}
@@ -310,22 +308,30 @@ export default function RescheduleAppointmentModal({
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={handleInspectPreviousDay}
+                    onClick={() => shiftInspectedRange(-1)}
                     className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
                   >
                     <ChevronLeft className="mr-2 h-4 w-4" />
-                    {t('Previous day')}
+                    {t(rangeMode === 'month' ? 'Previous month' : rangeMode === 'week' ? 'Previous week' : 'Previous day')}
                   </button>
 
                   <button
                     type="button"
-                    onClick={handleInspectNextDay}
+                    onClick={() => shiftInspectedRange(1)}
                     className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
                   >
-                    {t('Next day')}
+                    {t(rangeMode === 'month' ? 'Next month' : rangeMode === 'week' ? 'Next week' : 'Next day')}
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </button>
                 </div>
+              </div>
+
+              <div className="mt-3 flex w-fit rounded-xl border border-slate-300 bg-slate-100 p-1" aria-label={t('Date navigation range')}>
+                {['month', 'week', 'day'].map((mode) => (
+                  <button key={mode} type="button" onClick={() => setRangeMode(mode)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${rangeMode === mode ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+                    {t(mode === 'month' ? 'Month' : mode === 'week' ? 'Week' : 'Day')}
+                  </button>
+                ))}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3 text-xs font-medium">
@@ -647,7 +653,7 @@ export default function RescheduleAppointmentModal({
                     disabled={isSubmitting || !date || !time || !availableStartTimes.has(time)}
                     className="inline-flex min-w-44 items-center justify-center rounded-2xl bg-teal-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                     {isSubmitting ? t('Saving...') : t('Save reschedule')}
+                     {isSubmitting ? t('Saving...') : t(isFollowUp ? 'Save follow-up appointment' : 'Save reschedule')}
                   </button>
                 </div>
               </form>

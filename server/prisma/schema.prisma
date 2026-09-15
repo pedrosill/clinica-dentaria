@@ -203,6 +203,7 @@ model Appointment {
   archivedAt         DateTime?
   createdAt          DateTime            @default(now())
   clinicalNote       ClinicalNote?
+  documents          PatientDocument[]
   treatmentPlanItems TreatmentPlanItem[]
   recalls            PatientRecall[]
   waitlistEntry      WaitlistEntry?
@@ -281,33 +282,47 @@ model ToothChartEntry {
 }
 
 model ClinicalNote {
-  id                  Int                    @id @default(autoincrement())
+  id                  Int                     @id @default(autoincrement())
   patientId           Int
-  appointmentId       Int?                   @unique
+  appointmentId       Int?                    @unique
   authorId            Int?
-  chiefComplaint      String                 @default("")
-  clinicalFindings    String                 @default("")
-  diagnosis           String                 @default("")
-  treatmentPerformed  String                 @default("")
-  recommendations     String                 @default("")
-  status              String                 @default("draft")
-  sourceType          String                 @default("clinical")
-  transcriptionStatus String                 @default("not_applicable")
+  chiefComplaint      String                  @default("")
+  clinicalFindings    String                  @default("")
+  diagnosis           String                  @default("")
+  treatmentPerformed  String                  @default("")
+  recommendations     String                  @default("")
+  status              String                  @default("draft")
+  sourceType          String                  @default("clinical")
+  transcriptionStatus String                  @default("not_applicable")
   transcribedById     Int?
   transcribedAt       DateTime?
   validatedById       Int?
   validatedAt         DateTime?
   signedAt            DateTime?
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
-  patient             Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  appointment         Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  author              User?                  @relation("ClinicalNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-  transcribedBy       User?                  @relation("ClinicalNoteTranscriber", fields: [transcribedById], references: [id], onDelete: SetNull)
-  validatedBy         User?                  @relation("ClinicalNoteValidator", fields: [validatedById], references: [id], onDelete: SetNull)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  patient             Patient                 @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment         Appointment?            @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  author              User?                   @relation("ClinicalNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  transcribedBy       User?                   @relation("ClinicalNoteTranscriber", fields: [transcribedById], references: [id], onDelete: SetNull)
+  validatedBy         User?                   @relation("ClinicalNoteValidator", fields: [validatedById], references: [id], onDelete: SetNull)
   addenda             ClinicalNoteAddendum[]
+  treatments          ClinicalNoteTreatment[]
 
   @@index([patientId, createdAt])
+}
+
+model ClinicalNoteTreatment {
+  id             Int          @id @default(autoincrement())
+  clinicalNoteId Int
+  procedureName  String
+  toothNumber    String?
+  surface        String?
+  notes          String       @default("")
+  createdAt      DateTime     @default(now())
+  clinicalNote   ClinicalNote @relation(fields: [clinicalNoteId], references: [id], onDelete: Cascade)
+
+  @@index([clinicalNoteId, createdAt])
 }
 
 model ClinicalNoteAddendum {
@@ -396,22 +411,25 @@ model ConsentRecord {
 }
 
 model PatientDocument {
-  id          Int       @id @default(autoincrement())
-  patientId   Int
-  fileName    String
-  mimeType    String
-  sizeBytes   Int
-  storageKey  String?
-  sha256      String?
-  version     Int       @default(1)
-  uploadedAt  DateTime?
-  expiresAt   DateTime?
-  createdById Int?
-  createdAt   DateTime  @default(now())
-  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  createdBy   User?     @relation("PatientDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  id            Int          @id @default(autoincrement())
+  patientId     Int
+  appointmentId Int?
+  fileName      String
+  mimeType      String
+  sizeBytes     Int
+  storageKey    String?
+  sha256        String?
+  version       Int          @default(1)
+  uploadedAt    DateTime?
+  expiresAt     DateTime?
+  createdById   Int?
+  createdAt     DateTime     @default(now())
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdBy     User?        @relation("PatientDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([patientId, createdAt])
+  @@index([appointmentId, createdAt])
 }
 
 model ComplianceItem {
