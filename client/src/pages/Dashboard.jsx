@@ -1,11 +1,9 @@
 /* ================================
    Imports
 ================================ */
-import { Users } from 'lucide-react';
 import DashboardErrorState from '../components/dashboard/DashboardErrorState';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import DashboardLoadingState from '../components/dashboard/DashboardLoadingState';
-import DashboardStatsCard from '../components/dashboard/DashboardStatsCard';
 import DashboardTodaySummary from '../components/dashboard/DashboardTodaySummary';
 import DashboardUpcomingAppointments from '../components/dashboard/DashboardUpcomingAppointments';
 import DashboardWorkQueue from '../components/dashboard/DashboardWorkQueue';
@@ -48,18 +46,9 @@ export default function Dashboard() {
       {!workQueueLoading && workQueueError ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{workQueueError}</div> : null}
       {!workQueueLoading && workQueue ? <DashboardWorkQueue data={workQueue} onRefresh={refreshWorkQueue} /> : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_380px]">
-        <div className="space-y-6">
-          <DashboardTodaySummary appointments={todayAppointments} />
-          <DashboardUpcomingAppointments appointments={upcomingAppointments} />
-        </div>
-
-        <DashboardStatsCard
-          icon={<Users className="h-5 w-5" />}
-          title={t('Patient count')}
-          description={t('Current registered patients')}
-          value={patients.length}
-        />
+      <div className="space-y-6">
+        <DashboardTodaySummary appointments={todayAppointments} />
+        <DashboardUpcomingAppointments appointments={upcomingAppointments} />
       </div>
     </div>
   );

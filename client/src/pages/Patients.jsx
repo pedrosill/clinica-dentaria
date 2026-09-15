@@ -2,7 +2,7 @@
    Imports
 ================================ */
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Plus, Search, UserRound } from 'lucide-react';
+import { CalendarDays, Plus, Search, UserRound, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPatient } from '../services/patients';
 import { getPatientDisplayName } from '../utils/agendaUtils';
@@ -269,7 +269,13 @@ export default function Patients() {
       <section className="rounded-3xl border border-slate-300 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Patients')}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{t('Patients')}</h1>
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-200" aria-label={`${t('Patient count')}: ${patients.length}`}>
+                <Users className="h-4 w-4 text-slate-500" />
+                {patients.length} {t('patients')}
+              </span>
+            </div>
           </div>
 
           {canManagePatients ? <button
