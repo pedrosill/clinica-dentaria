@@ -64,7 +64,8 @@ async function updateAppointment(req, res, next) {
     const appointment = await appointmentService.updateAppointment(
       req.params.appointmentId,
       req.body,
-      req.user
+      req.user,
+      req
     );
     res.json(appointment);
   } catch (error) {

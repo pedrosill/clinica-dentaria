@@ -99,13 +99,27 @@ function normalizeClinicalTreatments(payload = {}) {
     if (surface && !VALID_SURFACES.has(surface)) {
       throw new HttpError(400, 'Invalid tooth surface in treatment');
     }
+    const toothCondition = stringValue(item?.toothCondition);
+    if (toothCondition && !VALID_TOOTH_CONDITIONS.has(toothCondition)) {
+      throw new HttpError(400, 'Invalid tooth condition in treatment');
+    }
+    const toothStatus = stringValue(item?.toothStatus);
+    if (toothStatus && !VALID_TOOTH_STATUSES.has(toothStatus)) {
+      throw new HttpError(400, 'Invalid tooth status in treatment');
+    }
     return {
       procedureName,
       toothNumber: toothNumber || null,
       surface: surface || null,
       notes: optionalString(item?.notes, 1000),
+      toothCondition: toothCondition || null,
+      toothStatus: toothStatus || null,
     };
   });
+}
+
+function noteTreatmentData(payload) {
+  return normalizeClinicalTreatments(payload).map(({ toothCondition, toothStatus, ...treatment }) => treatment);
 }
 
 async function ensurePatient(patientId, user, action = 'read') {
@@ -279,7 +293,7 @@ async function createClinicalNote(patientId, payload = {}, user) {
     signedAt: status === 'final' ? new Date() : null,
     ...noteSourceData(payload, user, status),
     ...(status === 'final' ? { validatedById: user.id, validatedAt: new Date() } : {}),
-    ...(payload.treatments ? { treatments: { create: normalizeClinicalTreatments(payload) } } : {}),
+    ...(payload.treatments ? { treatments: { create: noteTreatmentData(payload) } } : {}),
   };
 
   try {
@@ -359,7 +373,7 @@ async function updateClinicalNote(patientId, noteId, payload = {}, user) {
       validatedById: status === 'final' ? user.id : null,
       validatedAt: status === 'final' ? new Date() : null,
       ...sourceData,
-      ...(payload.treatments ? { treatments: { deleteMany: {}, create: normalizeClinicalTreatments(payload) } } : {}),
+      ...(payload.treatments ? { treatments: { deleteMany: {}, create: noteTreatmentData(payload) } } : {}),
     },
   });
 }

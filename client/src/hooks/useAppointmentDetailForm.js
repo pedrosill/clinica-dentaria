@@ -128,8 +128,8 @@ export default function useAppointmentDetailForm({
     setSaveSuccess('');
     setPerformedTreatment(appointment?.performedTreatment || appointment?.treatmentType || '');
     setTreatments(appointment?.clinicalNote?.treatments?.length
-      ? appointment.clinicalNote.treatments.map((item) => ({ procedureName: item.procedureName, toothNumber: item.toothNumber || '', surface: item.surface || '', notes: item.notes || '' }))
-      : [{ procedureName: appointment?.performedTreatment || appointment?.treatmentType || '', toothNumber: '', surface: '', notes: '' }]);
+      ? appointment.clinicalNote.treatments.map((item) => ({ procedureName: item.procedureName, toothNumber: item.toothNumber || '', surface: item.surface || '', notes: item.notes || '', toothCondition: '', toothStatus: 'completed' }))
+      : [{ procedureName: appointment?.performedTreatment || appointment?.treatmentType || '', toothNumber: '', surface: '', notes: '', toothCondition: '', toothStatus: 'completed' }]);
     setEvidenceFiles([]);
     setCompletionNotes(appointment?.completionNotes || '');
     setAfterConcludeAction('finish');
@@ -320,6 +320,8 @@ export default function useAppointmentDetailForm({
             ...item,
             procedureName: item.procedureName.trim(),
             toothNumber: item.toothNumber?.trim() || '',
+            toothCondition: item.toothCondition || '',
+            toothStatus: item.toothStatus || 'completed',
             notes: item.notes?.trim() || '',
           })),
           completionNotes: completionNotes.trim(),

@@ -11,6 +11,26 @@ import {
 import useLanguage from '../../context/useLanguage';
 import ToothPickerDialog from './ToothPickerDialog';
 
+const TOOTH_CONDITION_OPTIONS = [
+  ['healthy', 'Healthy'],
+  ['caries', 'Caries'],
+  ['restoration', 'Restoration'],
+  ['missing', 'Missing'],
+  ['fracture', 'Fracture'],
+  ['crown', 'Crown'],
+  ['implant', 'Implant'],
+  ['root_canal', 'Root canal'],
+  ['extraction_needed', 'Extraction needed'],
+  ['other', 'Other'],
+];
+
+const TOOTH_STATUS_OPTIONS = [
+  ['active', 'Active finding'],
+  ['planned', 'Treatment planned'],
+  ['completed', 'Completed'],
+  ['historical', 'Historical'],
+];
+
 /* ================================
    Component
 ================================ */
@@ -115,6 +135,23 @@ export default function ConcludeAppointmentModal({
                   <label className="space-y-1 text-xs font-semibold text-slate-600">{t('Surface')}<select value={treatment.surface || ''} onChange={(event) => updateTreatment(index, 'surface', event.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none"><option value="">{t('Whole tooth / not specified')}</option><option value="mesial">{t('Mesial')}</option><option value="distal">{t('Distal')}</option><option value="occlusal">{t('Occlusal')}</option><option value="incisal">{t('Incisal')}</option><option value="buccal">{t('Buccal')}</option><option value="lingual">{t('Lingual')}</option><option value="palatal">{t('Palatal')}</option></select></label>
                   <button type="button" onClick={() => onTreatmentsChange(treatments.filter((_, itemIndex) => itemIndex !== index))} disabled={isSubmitting || treatments.length <= 1} aria-label={t('Remove treatment')} className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 px-3 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 className="h-4 w-4" /></button>
                 </div>
+                {treatment.toothNumber ? (
+                  <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3 md:grid-cols-2">
+                    <label className="space-y-1 text-xs font-semibold text-slate-600">
+                      {t('Tooth state')}
+                      <select value={treatment.toothCondition || ''} onChange={(event) => updateTreatment(index, 'toothCondition', event.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none">
+                        <option value="">{t('Do not change tooth state')}</option>
+                        {TOOTH_CONDITION_OPTIONS.map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-xs font-semibold text-slate-600">
+                      {t('Tooth status')}
+                      <select value={treatment.toothStatus || 'completed'} onChange={(event) => updateTreatment(index, 'toothStatus', event.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none">
+                        {TOOTH_STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                ) : null}
                 <textarea value={treatment.notes || ''} onChange={(event) => updateTreatment(index, 'notes', event.target.value)} rows="2" maxLength={1000} placeholder={t('Notes for this treatment (optional)')} className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-none" />
               </div>
             ))}
@@ -206,8 +243,12 @@ export default function ConcludeAppointmentModal({
         isOpen={toothPickerIndex !== null}
         patientId={appointment?.patientId}
         selectedTooth={toothPickerIndex === null ? '' : treatments[toothPickerIndex]?.toothNumber}
-        onSelect={(toothNumber) => {
-          if (toothPickerIndex !== null) updateTreatment(toothPickerIndex, 'toothNumber', toothNumber);
+        onSelect={({ toothNumber, condition, status }) => {
+          if (toothPickerIndex !== null) {
+            onTreatmentsChange(treatments.map((item, itemIndex) => itemIndex === toothPickerIndex
+              ? { ...item, toothNumber, toothCondition: condition, toothStatus: status }
+              : item));
+          }
         }}
         onClose={() => setToothPickerIndex(null)}
       />

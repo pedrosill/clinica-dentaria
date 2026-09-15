@@ -857,13 +857,14 @@ async function updateAppointment(appointmentId, payload, user) {
   });
 }
 
-async function concludeAppointment(appointmentId, payload, user) {
+async function concludeAppointment(appointmentId, payload, user, req) {
   assertPermission(user, 'appointment', 'clinicalWrite');
   const id = parseNumericId(appointmentId, 'appointment id');
   const performedTreatment = String(payload.performedTreatment || '').trim();
   const completionNotes = payload.completionNotes?.trim() || null;
   const treatments = Array.isArray(payload.treatments) ? payload.treatments : [];
   const normalizedTreatments = normalizeClinicalTreatments({ performedTreatment, treatments });
+  const noteTreatments = normalizedTreatments.map(({ toothCondition, toothStatus, ...treatment }) => treatment);
 
   if (!performedTreatment) {
     throw new HttpError(400, 'Performed treatment is required');
@@ -909,7 +910,7 @@ async function concludeAppointment(appointmentId, payload, user) {
         where: { id: existingAppointment.clinicalNote.id },
         data: {
           treatmentPerformed: existingAppointment.clinicalNote.treatmentPerformed || performedTreatment,
-          treatments: { deleteMany: {}, create: normalizedTreatments },
+          treatments: { deleteMany: {}, create: noteTreatments },
         },
       });
     } else {
@@ -922,7 +923,35 @@ async function concludeAppointment(appointmentId, payload, user) {
           status: 'draft',
           sourceType: 'clinical',
           transcriptionStatus: 'not_applicable',
-          treatments: { create: normalizedTreatments },
+          treatments: { create: noteTreatments },
+        },
+      });
+    }
+
+    for (const treatment of normalizedTreatments) {
+      if (!treatment.toothNumber || !treatment.toothCondition) continue;
+
+      await transaction.toothChartEntry.upsert({
+        where: {
+          patientId_toothNumber_surface: {
+            patientId: existingAppointment.patientId,
+            toothNumber: treatment.toothNumber,
+            surface: treatment.surface || 'whole',
+          },
+        },
+        create: {
+          patientId: existingAppointment.patientId,
+          toothNumber: treatment.toothNumber,
+          surface: treatment.surface || 'whole',
+          condition: treatment.toothCondition,
+          status: treatment.toothStatus || 'completed',
+          notes: treatment.notes || null,
+        },
+        update: {
+          condition: treatment.toothCondition,
+          status: treatment.toothStatus || 'completed',
+          notes: treatment.notes || null,
+          observedAt: new Date(),
         },
       });
     }

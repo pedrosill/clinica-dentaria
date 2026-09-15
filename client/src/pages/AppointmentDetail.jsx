@@ -137,7 +137,7 @@ export default function AppointmentDetail() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid max-w-7xl gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <AppointmentInfoSection
           appointment={appointment}
           patients={patients}

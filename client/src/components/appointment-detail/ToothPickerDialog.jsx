@@ -86,7 +86,12 @@ export default function ToothPickerDialog({ isOpen, patientId, selectedTooth, on
   if (!isOpen) return null;
 
   function chooseTooth(toothNumber) {
-    onSelect(toothNumber);
+    const currentEntry = getToothEntries(toothChart, toothNumber)[0];
+    onSelect({
+      toothNumber,
+      condition: currentEntry?.condition || '',
+      status: currentEntry?.status || 'completed',
+    });
     onClose();
   }
 

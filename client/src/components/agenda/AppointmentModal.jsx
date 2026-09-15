@@ -111,7 +111,7 @@ export default function AppointmentModal({
         onClose={onClose}
         isCloseDisabled={isSubmitting}
         labelledBy="appointment-modal-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
+        className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
