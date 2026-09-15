@@ -19,7 +19,6 @@ import useLanguage from '../context/useLanguage';
 export default function Dashboard() {
   const { t } = useLanguage();
   const {
-    patients,
     isLoading,
     pageError,
     upcomingAppointments,
