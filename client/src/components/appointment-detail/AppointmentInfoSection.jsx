@@ -77,7 +77,7 @@ export default function AppointmentInfoSection({
   );
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+    <section className="w-full max-w-6xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
           <CalendarDays className="h-5 w-5" />
