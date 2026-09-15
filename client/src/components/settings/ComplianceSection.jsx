@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, CircleAlert, ClipboardCheck, ListChecks, RefreshCw, Save, ShieldCheck } from 'lucide-react';
 import useAuth from '../../context/useAuth';
 import useLanguage from '../../context/useLanguage';
-import { getCompliance, updateComplianceItem } from '../../services/compliance';
+import { getCompliance, getComplianceOwners, updateComplianceItem } from '../../services/compliance';
 import AnimatedDisclosure from '../ui/AnimatedDisclosure';
 
 const stateLabels = {
@@ -187,6 +187,16 @@ const guidanceByCode = {
     evidence: 'Deployment checklist, open-risk register, approval record, approver, and date.',
     responsible: 'Clinic administrator and clinical lead, with technical administrator input.',
   },
+  processors_and_transfers: {
+    objective: 'Registar quem trata dados pela clínica e onde esses dados são guardados.',
+    steps: [
+      'Liste cada fornecedor que acede a dados da clínica e a finalidade do acesso.',
+      'Confirme a localização dos dados e as transferências para fora do Espaço Económico Europeu.',
+      'Guarde o contrato ou decisão aplicável e reveja-o quando o fornecedor mudar.',
+    ],
+    evidence: 'Lista de fornecedores, contratos aplicáveis, localização dos dados e data de revisão.',
+    responsible: 'Responsável pelo tratamento, com apoio técnico.',
+  },
 };
 
 function stateClass(state) {
@@ -199,9 +209,10 @@ export default function ComplianceSection() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [items, setItems] = useState([]);
+  const [owners, setOwners] = useState([]);
   const [editing, setEditing] = useState(null);
   const [expanded, setExpanded] = useState(null);
-  const [draft, setDraft] = useState({ manualState: 'pending', evidence: '', notes: '' });
+  const [draft, setDraft] = useState({ manualState: 'pending', evidence: '', notes: '', ownerId: '', reviewDueAt: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -211,7 +222,9 @@ export default function ComplianceSection() {
     setLoading(true);
     setError('');
     try {
-      setItems(await getCompliance());
+      const [complianceItems, complianceOwners] = await Promise.all([getCompliance(), getComplianceOwners()]);
+      setItems(complianceItems);
+      setOwners(complianceOwners);
     } catch (requestError) {
       setError(requestError.message || t('Unable to load compliance checklist'));
     } finally {
@@ -245,6 +258,8 @@ export default function ComplianceSection() {
       manualState: item.manualState,
       evidence: item.evidence || '',
       notes: item.notes || '',
+      ownerId: item.ownerId ? String(item.ownerId) : '',
+      reviewDueAt: item.reviewDueAt ? String(item.reviewDueAt).slice(0, 10) : '',
     });
     setMessage('');
   }
@@ -258,7 +273,7 @@ export default function ComplianceSection() {
     setSaving(true);
     setError('');
     try {
-      const updated = await updateComplianceItem(item.id, draft);
+      const updated = await updateComplianceItem(item.id, { ...draft, ownerId: draft.ownerId || null, reviewDueAt: draft.reviewDueAt || null });
       setItems((current) => current.map((entry) => (entry.id === item.id ? updated : entry)));
       setEditing(null);
       setMessage(t('Compliance record saved.'));
@@ -282,10 +297,7 @@ export default function ComplianceSection() {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-slate-900">{t('Compliance checklist')}</h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-              {t('The app separates automatic technical signals from evidence and approval that must be completed by the clinic. This is an operational control, not legal certification.')}
-            </p>
-            <p className="mt-2 text-xs font-medium text-teal-700">{t('Select a checklist item to see the suggested procedure and evidence.')}</p>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">{t('Record the status, evidence, responsible person, and approval for each control.')}</p>
           </div>
         </div>
         <button type="button" onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
@@ -323,7 +335,9 @@ export default function ComplianceSection() {
                           <p className="mt-1 text-sm leading-6 text-slate-600">{item.description}</p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${stateClass(state)}`}>{getStateLabel(state)}</span>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{t('Automatic')}: {getStateLabel(item.automaticState)}</span>
+                            {item.validationMode !== 'manual' ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{t('Automatic')}: {getStateLabel(item.automaticState)}</span> : null}
+                            {item.owner ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{t('Responsible')}: {item.owner.displayName}</span> : null}
+                            {item.reviewDueAt ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{t('Review')}: {String(item.reviewDueAt).slice(0, 10)}</span> : null}
                             {item.approvedBy ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{t('Approved by')} {item.approvedBy.displayName}</span> : null}
                           </div>
                         </div>
@@ -342,7 +356,6 @@ export default function ComplianceSection() {
                               <ListChecks className="mt-0.5 h-5 w-5 shrink-0 text-teal-700" />
                               <div>
                                 <h5 className="font-semibold text-slate-900">{t('Suggested procedure')}</h5>
-                                <p className="mt-1 text-sm leading-6 text-slate-700">{t(guidance.objective)}</p>
                               </div>
                             </div>
                             <ol className="mt-4 grid gap-2 pl-5 text-sm leading-6 text-slate-700">
@@ -374,6 +387,17 @@ export default function ComplianceSection() {
                               <option value="not_applicable">{t('Not applicable')}</option>
                               {canApprove ? <option value="approved">{t('Approved by me')}</option> : null}
                             </select>
+                          </label>
+                          <label className="text-sm font-medium text-slate-700">
+                            {t('Responsible person')}
+                            <select className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" value={draft.ownerId} onChange={(event) => setDraft({ ...draft, ownerId: event.target.value })}>
+                              <option value="">{t('Not assigned')}</option>
+                              {owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.displayName}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-sm font-medium text-slate-700">
+                            {t('Next review date')}
+                            <input type="date" className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5" value={draft.reviewDueAt} onChange={(event) => setDraft({ ...draft, reviewDueAt: event.target.value })} />
                           </label>
                           <label className="text-sm font-medium text-slate-700">
                             {t('Evidence reference')}

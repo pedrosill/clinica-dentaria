@@ -5,6 +5,7 @@ const controller = require('../controllers/complianceController');
 
 const router = express.Router();
 router.get('/', requirePermission('compliance', 'read'), asyncHandler(controller.list));
+router.get('/owners', requirePermission('compliance', 'read'), asyncHandler(controller.owners));
 router.patch('/:itemId', requirePermission('compliance', 'write'), asyncHandler(controller.update));
 
 module.exports = router;

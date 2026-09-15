@@ -12,8 +12,9 @@ const DEFAULT_ITEMS = [
   ['processing_register', 'Registo de atividades de tratamento', 'privacy', 'Manter finalidades, categorias, prazos, destinatários e transferências documentados.', 'manual'],
   ['retention_schedule', 'Prazos de conservação aprovados', 'privacy', 'Aprovar prazos com base na orientação jurídica e clínica aplicável.', 'manual'],
   ['access_matrix', 'Perfis e princípio da necessidade', 'security', 'Rever os acessos da secretária, doutora e administrador técnico.', 'manual'],
+  ['processors_and_transfers', 'Fornecedores e localização dos dados', 'privacy', 'Registar fornecedores, subcontratantes, localização dos dados e transferências aplicáveis.', 'manual'],
   ['mfa', 'MFA ativo nas contas privilegiadas', 'security', 'O ambiente de producao deve exigir MFA nas contas com acesso a dados clinicos.', 'mixed'],
-  ['https', 'Acesso local e não exposição à rede', 'security', 'Confirmar que a aplicação está limitada ao computador da clínica e não está exposta à rede. Se for necessário acesso por outros dispositivos, configurar HTTPS e um proxy controlado.', 'mixed'],
+  ['https', 'Acesso local e firewall', 'security', 'Confirmar que a aplicação está limitada ao computador da clínica e que as portas não estão expostas à rede.', 'mixed'],
   ['volume_encryption', 'Cifragem do volume de produção', 'security', 'Ativar BitLocker ou cifragem equivalente no host que guarda a base e os documentos.', 'manual'],
   ['private_documents', 'Documentos em armazenamento privado', 'security', 'Confirmar diretoria fora do web root, permissoes restritas e backups incluidos.', 'mixed'],
   ['backup_schedule', 'Backup cifrado automático e cópia externa', 'continuity', 'Agendar o comando de backup, configurar segunda cópia e verificar o estado.', 'mixed'],
@@ -85,6 +86,15 @@ async function listCompliance(user) {
   });
 }
 
+async function listComplianceOwners(user) {
+  assertManager(user);
+  return prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, displayName: true, role: true },
+    orderBy: { displayName: 'asc' },
+  });
+}
+
 async function updateCompliance(itemId, payload = {}, user, req) {
   assertManager(user);
   const id = parseNumericId(itemId, 'compliance item id');
@@ -110,4 +120,4 @@ async function updateCompliance(itemId, payload = {}, user, req) {
   return { ...updated, automaticState: automaticCheck(updated), effectiveState: effectiveState(updated, automaticCheck(updated)) };
 }
 
-module.exports = { listCompliance, updateCompliance, DEFAULT_ITEMS };
+module.exports = { listCompliance, listComplianceOwners, updateCompliance, DEFAULT_ITEMS };
