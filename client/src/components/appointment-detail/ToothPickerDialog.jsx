@@ -134,7 +134,7 @@ export default function ToothPickerDialog({ isOpen, patientId, selectedTooth, on
                       >
                         <ToothGlyph condition={condition} isLower={group.label.startsWith('Lower')} />
                         <span>{tooth}</span>
-                        <span className="mt-1 text-[10px] font-medium uppercase tracking-wide">{conditionLabel ? t(conditionLabel) : t('No finding')}</span>
+                        {conditionLabel ? <span className="mt-1 text-[10px] font-medium uppercase tracking-wide">{t(conditionLabel)}</span> : null}
                         {isSelected ? <Check className="absolute right-1.5 top-1.5 h-3.5 w-3.5 text-teal-700" /> : null}
                       </button>
                     );
