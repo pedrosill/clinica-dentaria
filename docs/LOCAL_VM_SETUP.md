@@ -66,6 +66,8 @@ sudo journalctl -u dentalpro-backup.service
 
 Para atualizar uma instalação existente, usa `scripts/update-dentalpro-ubuntu.sh`. Para diagnóstico sem alterações, usa `scripts/check-dentalpro-ubuntu.sh`.
 
+O perfil clínico HTTPS está em `docker-compose.clinic.yml`. Usa o hostname `dentalpro.clinic`, publica apenas a porta 443 e requer que esse nome seja associado ao IP da VM nos ficheiros `hosts` dos computadores clientes. Depois de o Caddy arrancar, exporta a CA com `scripts/export-dentalpro-caddy-ca.sh` e instala o certificado nos dois computadores.
+
 ## 3. Testar os dois computadores
 
 Descobre o IP da VM:

@@ -14,6 +14,38 @@ Este documento e uma checklist de operacao e aprovacao. Nao e certificacao jurid
 - Executar health/readiness checks e confirmar que o serviço responde apenas no endereço privado da VM; confirmar também que não existe acesso pelo router, que o proxy termina TLS e que os cookies Secure/SameSite estão ativos em produção.
 - Criar contas individuais: administradora tecnica, doutora e secretaria; ativar MFA nas contas privilegiadas.
 
+## Arranque do perfil clínico HTTPS
+
+O perfil `docker-compose.clinic.yml` publica o Caddy na porta 443 e mantém o DentalPro apenas na rede Docker. O caminho recomendado para o primeiro arranque é executar na VM:
+
+```bash
+cd ~/dentalpro
+sudo bash scripts/bootstrap-dentalpro-clinic.sh
+```
+
+O script instala o Docker se necessário, configura a chave de backup, cria a pasta da segunda cópia, aplica migrations e pede interativamente os dados do primeiro administrador. Se for necessário preparar manualmente, criar no `.env` da raiz pelo menos:
+
+```env
+BACKUP_ENCRYPTION_KEY=uma-chave-aleatoria-forte
+DENTALPRO_SECONDARY_BACKUP_HOST_DIR=/mnt/dentalpro-backups
+```
+
+Aplicar migrations e criar o primeiro administrador de forma interativa:
+
+```bash
+sudo docker compose -f docker-compose.clinic.yml run --rm --no-deps dentalpro npx prisma migrate deploy
+sudo docker compose -f docker-compose.clinic.yml run --rm --no-deps dentalpro npm run admin:create
+sudo docker compose -f docker-compose.clinic.yml up -d
+```
+
+Depois exportar a CA interna:
+
+```bash
+scripts/export-dentalpro-caddy-ca.sh
+```
+
+Instalar o certificado exportado nos dois computadores clientes e associar `dentalpro.clinic` ao IP privado da VM nos respetivos ficheiros `hosts`. O acesso deve ser feito por `https://dentalpro.clinic`; não usar diretamente a porta 5000.
+
 ## Testes de aceite
 
 1. Login com password e MFA; revogar uma sessao e confirmar que deixa de funcionar.

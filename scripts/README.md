@@ -29,6 +29,12 @@ Nunca usar `docker compose down -v` numa instalação com dados.
 
 `check-dentalpro-ubuntu.sh` é apenas de leitura. Mostra IPs, contentores, health check, timer de backups, últimas cópias e espaço em disco.
 
+## Perfil clínico com HTTPS interno
+
+`bootstrap-dentalpro-clinic.sh` prepara uma instalação clínica limpa: instala Docker se necessário, atualiza o `master`, configura backups cifrados, constrói a imagem de produção, aplica migrations, pede o administrador inicial e inicia o perfil HTTPS.
+
+`docker-compose.clinic.yml` usa o Caddy como proxy HTTPS interno. O Caddy é o único serviço publicado na rede da clínica; o DentalPro fica acessível apenas dentro da rede Docker. Depois de iniciar o perfil clínico, `export-dentalpro-caddy-ca.sh` exporta o certificado raiz que deve ser instalado nos dois computadores clientes.
+
 ## PDF de conformidade
 
 `build_clinic_compliance_pdf.py` gera o documento de conformidade e não faz parte do arranque ou manutenção da aplicação.

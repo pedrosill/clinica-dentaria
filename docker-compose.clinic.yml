@@ -1,0 +1,64 @@
+services:
+  dentalpro:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: ""
+    restart: unless-stopped
+    expose:
+      - "5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      HOST: 0.0.0.0
+      LOCAL_ONLY: "false"
+      CLIENT_ORIGIN: https://dentalpro.clinic
+      TRUST_PROXY: 172.30.0.2
+      SEED_DEVELOPMENT_DATA: "false"
+      DATABASE_URL: file:/app/data/dentalpro.db
+      CLIENT_DIST_DIR: /app/client-dist
+      PRIVATE_DOCUMENTS_DIR: /app/data/private-documents
+      BACKUP_DIR: /app/data/backups
+      BACKUP_SECONDARY_DIR: /app/data/backups-secondary
+      BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:?Configure BACKUP_ENCRYPTION_KEY in .env}"
+      BACKUP_ENCRYPTION_REQUIRED: "true"
+      BACKUP_RETENTION_COUNT: "${BACKUP_RETENTION_COUNT:-14}"
+    volumes:
+      - dentalpro-clinic-data:/app/data
+      - "${DENTALPRO_SECONDARY_BACKUP_HOST_DIR:?Configure DENTALPRO_SECONDARY_BACKUP_HOST_DIR in .env}:/app/data/backups-secondary"
+    networks:
+      clinic:
+        ipv4_address: 172.30.0.3
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      dentalpro:
+        condition: service_healthy
+    ports:
+      - "${DENTALPRO_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - dentalpro-caddy-data:/data
+      - dentalpro-caddy-config:/config
+    networks:
+      clinic:
+        ipv4_address: 172.30.0.2
+
+networks:
+  clinic:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  dentalpro-clinic-data:
+  dentalpro-caddy-data:
+  dentalpro-caddy-config:

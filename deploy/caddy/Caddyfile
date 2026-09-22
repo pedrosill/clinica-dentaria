@@ -1,0 +1,5 @@
+dentalpro.clinic {
+    tls internal
+    encode zstd gzip
+    reverse_proxy dentalpro:5000
+}
