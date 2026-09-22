@@ -125,7 +125,7 @@ $SUDO tee /etc/systemd/system/dentalpro-backup.timer >/dev/null <<'EOF'
 Description=Run DentalPro backup every day
 
 [Timer]
-OnCalendar=*-*-* 23:00:00
+OnCalendar=*-*-* 23:00:00 Europe/Lisbon
 Persistent=true
 RandomizedDelaySec=5m
 Unit=dentalpro-backup.service
