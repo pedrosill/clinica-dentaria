@@ -6,7 +6,6 @@ set -Eeuo pipefail
 
 REPO_URL="${DENTALPRO_REPO_URL:-https://github.com/pedrosill/clinica-dentaria.git}"
 BRANCH="${DENTALPRO_BRANCH:-master}"
-PROJECT_DIR="${DENTALPRO_PROJECT_DIR:-$HOME/dentalpro}"
 COMPOSE_FILE="docker-compose.clinic.yml"
 COMPOSE_PROJECT_NAME="${DENTALPRO_COMPOSE_PROJECT_NAME:-dentalpro-clinic}"
 HOSTNAME_VALUE="dentalpro.clinic"
@@ -16,6 +15,11 @@ if [[ "$(id -u)" -eq 0 ]]; then
 else
   SUDO='sudo'
 fi
+
+TARGET_USER="${SUDO_USER:-$(id -un)}"
+TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+TARGET_HOME="${TARGET_HOME:-$HOME}"
+PROJECT_DIR="${DENTALPRO_PROJECT_DIR:-$TARGET_HOME/dentalpro}"
 
 if [[ ! -f /etc/os-release ]] || ! grep -qi 'ubuntu' /etc/os-release; then
   echo 'Este script requer Ubuntu Server.' >&2
@@ -77,6 +81,8 @@ compose() {
   $SUDO docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" "$@"
 }
 
+TARGET_GROUP="$(id -gn "$TARGET_USER")"
+
 if ! grep -q '^BACKUP_ENCRYPTION_KEY=.' "$ENV_FILE"; then
   append_if_missing BACKUP_ENCRYPTION_KEY "$(openssl rand -hex 32)"
 fi
@@ -114,6 +120,44 @@ esac
 
 compose up -d
 
+DOCKER_BIN="$(command -v docker)"
+BACKUP_RUNNER='/usr/local/sbin/dentalpro-clinic-backup'
+$SUDO tee "$BACKUP_RUNNER" >/dev/null <<EOF
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd "$PROJECT_DIR"
+exec "$DOCKER_BIN" compose -p "$COMPOSE_PROJECT_NAME" -f "$PROJECT_DIR/$COMPOSE_FILE" run --rm --no-deps dentalpro sh -lc 'npm run db:backup && npm run db:backup:verify'
+EOF
+$SUDO chmod 755 "$BACKUP_RUNNER"
+
+$SUDO tee /etc/systemd/system/dentalpro-clinic-backup.service >/dev/null <<EOF
+[Unit]
+Description=DentalPro clinic encrypted backup and verification
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=$BACKUP_RUNNER
+EOF
+
+$SUDO tee /etc/systemd/system/dentalpro-clinic-backup.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run DentalPro clinic backup every day
+
+[Timer]
+OnCalendar=*-*-* 23:00:00 Europe/Lisbon
+Persistent=true
+RandomizedDelaySec=5m
+Unit=dentalpro-clinic-backup.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+$SUDO systemctl daemon-reload
+$SUDO systemctl enable --now dentalpro-clinic-backup.timer
+
 echo 'A aguardar o Caddy iniciar e gerar a autoridade certificadora interna...'
 for _ in {1..30}; do
   if compose ps -q caddy | grep -q .; then
@@ -122,7 +166,12 @@ for _ in {1..30}; do
   sleep 2
 done
 
-DENTALPRO_COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" "$PROJECT_DIR/scripts/export-dentalpro-caddy-ca.sh" "$PROJECT_DIR/dentalpro-caddy-root.crt"
+DENTALPRO_PROJECT_DIR="$PROJECT_DIR" DENTALPRO_COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" "$PROJECT_DIR/scripts/export-dentalpro-caddy-ca.sh" "$PROJECT_DIR/dentalpro-caddy-root.crt"
+
+if [[ "$TARGET_USER" != 'root' ]]; then
+  $SUDO chown -R "$TARGET_USER:$TARGET_GROUP" "$PROJECT_DIR"
+fi
+
 compose ps
 
 VM_IP="$(hostname -I | awk '{print $1}')"
