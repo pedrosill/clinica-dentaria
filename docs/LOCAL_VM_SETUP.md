@@ -18,7 +18,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 O script:
 
 - descarrega e valida o Ubuntu Server 24.04.5;
-- deteta os adaptadores de rede ativos;
+- deteta as interfaces bridge reconhecidas pelo VirtualBox;
 - cria uma VM VirtualBox com rede bridge;
 - cria um disco virtual de 60 GB;
 - inicia a instalação do Ubuntu.

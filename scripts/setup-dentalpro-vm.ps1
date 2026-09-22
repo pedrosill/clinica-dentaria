@@ -40,28 +40,37 @@ function Resolve-VBoxManage {
 }
 
 function Select-NetworkAdapter {
+  $bridgedInterfaces = @(& $script:VBoxManage list bridgedifs)
+  $availableNames = @(
+    $bridgedInterfaces |
+      Where-Object { $_ -match '^Name:\s+(.+)$' } |
+      ForEach-Object { $Matches[1].Trim() }
+  )
+
+  if ($availableNames.Count -eq 0) {
+    throw 'O VirtualBox não encontrou interfaces bridge. Reinstala ou repara o VirtualBox com o VirtualBox NDIS6 Bridged Networking Driver ativo no adaptador de rede.'
+  }
+
   if ($NetworkAdapterName) {
-    $adapter = Get-NetAdapter -Name $NetworkAdapterName -ErrorAction SilentlyContinue
-    if (-not $adapter) { throw "O adaptador '$NetworkAdapterName' não foi encontrado." }
-    if ($adapter.Status -ne 'Up') { throw "O adaptador '$NetworkAdapterName' não está ativo." }
-    return $adapter.Name
+    if ($availableNames -notcontains $NetworkAdapterName) {
+      throw "O VirtualBox não reconhece a interface bridge '$NetworkAdapterName'. Interfaces disponíveis: $($availableNames -join ', ')"
+    }
+    return $NetworkAdapterName
   }
 
-  $adapters = @(Get-NetAdapter | Where-Object Status -eq 'Up' | Sort-Object ifIndex)
-  if ($adapters.Count -eq 0) { throw 'Não encontrei nenhum adaptador de rede ativo.' }
-  if ($adapters.Count -eq 1) { return $adapters[0].Name }
+  if ($availableNames.Count -eq 1) { return $availableNames[0] }
 
-  Write-Host 'Adaptadores de rede ativos:'
-  for ($index = 0; $index -lt $adapters.Count; $index++) {
-    Write-Host "[$($index + 1)] $($adapters[$index].Name) ($($adapters[$index].InterfaceDescription))"
+  Write-Host 'Interfaces bridge reconhecidas pelo VirtualBox:'
+  for ($index = 0; $index -lt $availableNames.Count; $index++) {
+    Write-Host "[$($index + 1)] $($availableNames[$index])"
   }
 
-  $selection = [int](Read-Host 'Escolhe o número do adaptador ligado à rede da clínica')
-  if ($selection -lt 1 -or $selection -gt $adapters.Count) {
+  $selection = [int](Read-Host 'Escolhe o número da interface ligada à rede da clínica')
+  if ($selection -lt 1 -or $selection -gt $availableNames.Count) {
     throw 'Seleção de adaptador inválida.'
   }
 
-  return $adapters[$selection - 1].Name
+  return $availableNames[$selection - 1]
 }
 
 function Get-VerifiedIso {
