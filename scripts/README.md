@@ -10,6 +10,8 @@ Os scripts devem ser executados no ambiente indicado. Não se deve executar um s
 
 `bootstrap-dentalpro-ubuntu.sh` corre dentro do Ubuntu. Instala Docker, clona o branch configurado, prepara backups cifrados e inicia o perfil `docker-compose.local.yml`. Esse perfil é para testes/pilotos controlados; não é ainda a configuração final de produção.
 
+Numa instalação nova, o bootstrap pergunta pela palavra-passe inicial do administrador. A palavra-passe não aparece no ecrã, não deve ser colocada no Git e deve ser alterada novamente depois do primeiro acesso. Também pergunta se devem ser criados dados fictícios; numa clínica responde-se `N`.
+
 ## Atualização segura
 
 `update-dentalpro-ubuntu.sh` corre dentro do Ubuntu e:

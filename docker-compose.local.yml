@@ -10,6 +10,9 @@ services:
     environment:
       NODE_ENV: development
       SEED_DEVELOPMENT_DATA: "${SEED_DEVELOPMENT_DATA:-true}"
+      DEFAULT_ADMIN_EMAIL: "${DEFAULT_ADMIN_EMAIL:-admin@dentalpro.local}"
+      DEFAULT_ADMIN_NAME: "${DEFAULT_ADMIN_NAME:-DentalPro Administrator}"
+      DEFAULT_ADMIN_PASSWORD: "${DEFAULT_ADMIN_PASSWORD:-}"
       PORT: 5000
       HOST: 0.0.0.0
       LOCAL_ONLY: "false"

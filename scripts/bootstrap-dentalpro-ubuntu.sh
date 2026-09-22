@@ -88,6 +88,19 @@ if ! grep -q '^SEED_DEVELOPMENT_DATA=' "$ENV_FILE"; then
   printf 'SEED_DEVELOPMENT_DATA=%s\n' "$SEED_VALUE" >> "$ENV_FILE"
 fi
 
+if ! grep -q '^DEFAULT_ADMIN_PASSWORD=.' "$ENV_FILE"; then
+  while true; do
+    read -r -s -p 'Palavra-passe inicial do administrador (mínimo 12 caracteres): ' ADMIN_PASSWORD_INPUT
+    echo
+    if [[ "${#ADMIN_PASSWORD_INPUT}" -ge 12 ]]; then
+      break
+    fi
+    echo 'A palavra-passe deve ter pelo menos 12 caracteres.' >&2
+  done
+  printf 'DEFAULT_ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD_INPUT" >> "$ENV_FILE"
+  unset ADMIN_PASSWORD_INPUT
+fi
+
 if ! grep -q '^DENTALPRO_SECONDARY_BACKUP_HOST_DIR=' "$ENV_FILE"; then
   DEFAULT_SECONDARY_DIR="$PROJECT_DIR/backups-secondary"
   read -r -p "Pasta para a segunda cópia dos backups [$DEFAULT_SECONDARY_DIR]: " SECONDARY_DIR_INPUT
