@@ -39,6 +39,19 @@ function Resolve-VBoxManage {
   throw 'Não encontrei VBoxManage. Instala primeiro o VirtualBox através de Windows hosts e volta a executar este script.'
 }
 
+function Assert-HardwareVirtualization {
+  $processors = @(Get-CimInstance Win32_Processor)
+  $reportedValues = @(
+    $processors |
+      Where-Object { $null -ne $_.VirtualizationFirmwareEnabled } |
+      ForEach-Object { [bool]$_.VirtualizationFirmwareEnabled }
+  )
+
+  if ($reportedValues.Count -gt 0 -and ($reportedValues -contains $false)) {
+    throw 'A virtualização de hardware está desativada na BIOS/UEFI. Ativa AMD SVM/AMD-V (ou Intel VT-x) e executa novamente o script.'
+  }
+}
+
 function Select-NetworkAdapter {
   $bridgedInterfaces = @(& $script:VBoxManage list bridgedifs)
   $availableNames = @(
@@ -110,6 +123,7 @@ function Test-VmExists {
 }
 
 $VBoxManage = Resolve-VBoxManage
+Assert-HardwareVirtualization
 $networkAdapter = Select-NetworkAdapter
 $isoPath = Get-VerifiedIso
 
