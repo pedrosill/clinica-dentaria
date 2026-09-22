@@ -13,6 +13,9 @@ FROM node:22-bookworm-slim AS server-runtime
 
 WORKDIR /app/server
 COPY server/package*.json ./
+# Prisma's install hook runs `prisma generate`, so the schema must already
+# exist before installing server dependencies.
+COPY server/prisma ./prisma
 RUN npm ci
 COPY server/ ./
 COPY --from=client-build /build/client/dist /app/client-dist
