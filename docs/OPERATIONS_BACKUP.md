@@ -9,7 +9,7 @@ No ambiente do servidor, definir:
 ```env
 DATABASE_URL="file:./dev.db"
 BACKUP_DIR="./backups"
-BACKUP_RETENTION_COUNT=7
+BACKUP_RETENTION_COUNT=14
 BACKUP_ENCRYPTION_KEY_FILE="C:/segredos/dentalpro-backup.key"
 BACKUP_SECONDARY_DIR="D:/dentalpro-backups"
 BACKUP_STATUS_FILE="D:/dentalpro-backups/backup-status.json"
@@ -26,6 +26,8 @@ DENTALPRO_SECONDARY_BACKUP_HOST_DIR=/caminho/para/um/disco-ou-pasta-separada
 ```
 
 `DENTALPRO_SECONDARY_BACKUP_HOST_DIR` deve apontar para uma pasta persistente fora do volume principal e, na clínica, idealmente para outro disco ou suporte aprovado. Não uses uma pasta sincronizada para a qual a clínica não tenha definido fornecedor, acesso e retenção.
+
+O bootstrap Ubuntu configura por defeito o `BACKUP_RETENTION_COUNT` para 14 e um `systemd timer` diário às 23:00. O timer executa o backup e a verificação consecutivamente; uma falha fica registada no journal do sistema.
 
 ## Execução e retenção
 

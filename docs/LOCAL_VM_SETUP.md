@@ -53,9 +53,16 @@ chmod +x bootstrap-dentalpro-ubuntu.sh
 ./bootstrap-dentalpro-ubuntu.sh
 ```
 
-O script instala Docker, clona o branch `master`, cria o `.env` local, gera uma chave de cifragem para os backups, pede a pasta da segunda cópia e inicia os containers. Se o `.env` já tiver estas definições, preserva-as.
+O script instala Docker, clona o branch `master`, cria o `.env` local, gera uma chave de cifragem para os backups, pede a pasta da segunda cópia, configura um backup diário às 23:00 e inicia os containers. Se o `.env` já tiver estas definições, preserva-as.
 
 Para um teste simples, pode aceitar-se a pasta predefinida. Na clínica, indique uma pasta num disco ou suporte separado e aprovado; o script não consegue escolher esse suporte automaticamente.
+
+O timer `dentalpro-backup.timer` executa o backup cifrado e a verificação todos os dias. Para consultar o estado:
+
+```bash
+systemctl list-timers dentalpro-backup.timer
+sudo journalctl -u dentalpro-backup.service
+```
 
 ## 3. Testar os dois computadores
 

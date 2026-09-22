@@ -99,6 +99,44 @@ $SUDO mkdir -p "$SECONDARY_DIR"
 $SUDO chmod 700 "$SECONDARY_DIR"
 chmod 600 "$ENV_FILE"
 
+DOCKER_BIN="$(command -v docker)"
+BACKUP_RUNNER='/usr/local/sbin/dentalpro-backup'
+$SUDO tee "$BACKUP_RUNNER" >/dev/null <<EOF
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd "$PROJECT_DIR"
+exec "$DOCKER_BIN" compose -f "$PROJECT_DIR/$COMPOSE_FILE" run --rm --no-deps dentalpro sh -lc 'npm run db:backup && npm run db:backup:verify'
+EOF
+$SUDO chmod 755 "$BACKUP_RUNNER"
+
+$SUDO tee /etc/systemd/system/dentalpro-backup.service >/dev/null <<EOF
+[Unit]
+Description=DentalPro encrypted backup and verification
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=$BACKUP_RUNNER
+EOF
+
+$SUDO tee /etc/systemd/system/dentalpro-backup.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run DentalPro backup every day
+
+[Timer]
+OnCalendar=*-*-* 23:00:00
+Persistent=true
+RandomizedDelaySec=5m
+Unit=dentalpro-backup.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+$SUDO systemctl daemon-reload
+$SUDO systemctl enable --now dentalpro-backup.timer
+
 echo 'A construir e iniciar a DentalPro com dados fictícios...'
 cd "$PROJECT_DIR"
 $SUDO docker compose -f "$COMPOSE_FILE" up --build -d

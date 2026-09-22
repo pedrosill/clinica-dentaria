@@ -20,7 +20,7 @@ services:
       BACKUP_SECONDARY_DIR: /app/data/backups-secondary
       BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
       BACKUP_ENCRYPTION_REQUIRED: "${BACKUP_ENCRYPTION_REQUIRED:-false}"
-      BACKUP_RETENTION_COUNT: 7
+      BACKUP_RETENTION_COUNT: "${BACKUP_RETENTION_COUNT:-14}"
     volumes:
       - dentalpro-data:/app/data
       - "${DENTALPRO_SECONDARY_BACKUP_HOST_DIR:-./backups-secondary}:/app/data/backups-secondary"
