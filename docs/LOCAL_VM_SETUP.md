@@ -53,7 +53,9 @@ chmod +x bootstrap-dentalpro-ubuntu.sh
 ./bootstrap-dentalpro-ubuntu.sh
 ```
 
-O script instala Docker, clona o branch `master`, cria o `.env` local e inicia os containers.
+O script instala Docker, clona o branch `master`, cria o `.env` local, gera uma chave de cifragem para os backups, pede a pasta da segunda cópia e inicia os containers. Se o `.env` já tiver estas definições, preserva-as.
+
+Para um teste simples, pode aceitar-se a pasta predefinida. Na clínica, indique uma pasta num disco ou suporte separado e aprovado; o script não consegue escolher esse suporte automaticamente.
 
 ## 3. Testar os dois computadores
 

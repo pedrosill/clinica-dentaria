@@ -22,6 +22,11 @@ if ! command -v git >/dev/null 2>&1; then
   $SUDO apt-get install -y git ca-certificates curl
 fi
 
+if ! command -v openssl >/dev/null 2>&1; then
+  $SUDO apt-get update
+  $SUDO apt-get install -y openssl
+fi
+
 if ! command -v docker >/dev/null 2>&1 || ! $SUDO docker compose version >/dev/null 2>&1; then
   echo 'A instalar Docker Engine e o plugin Compose...'
   $SUDO apt-get update
@@ -65,6 +70,34 @@ else
   printf 'DENTALPRO_ORIGIN=%s\nDENTALPRO_PORT=5000\n' "$DENTALPRO_ORIGIN_INPUT" > "$PROJECT_DIR/.env"
   chmod 600 "$PROJECT_DIR/.env"
 fi
+
+ENV_FILE="$PROJECT_DIR/.env"
+if ! grep -q '^BACKUP_ENCRYPTION_KEY=.' "$ENV_FILE"; then
+  printf '\nBACKUP_ENCRYPTION_KEY=%s\n' "$(openssl rand -hex 32)" >> "$ENV_FILE"
+fi
+if ! grep -q '^BACKUP_ENCRYPTION_REQUIRED=' "$ENV_FILE"; then
+  printf 'BACKUP_ENCRYPTION_REQUIRED=true\n' >> "$ENV_FILE"
+fi
+
+if ! grep -q '^DENTALPRO_SECONDARY_BACKUP_HOST_DIR=' "$ENV_FILE"; then
+  DEFAULT_SECONDARY_DIR="$PROJECT_DIR/backups-secondary"
+  read -r -p "Pasta para a segunda cópia dos backups [$DEFAULT_SECONDARY_DIR]: " SECONDARY_DIR_INPUT
+  SECONDARY_DIR_INPUT="${SECONDARY_DIR_INPUT:-$DEFAULT_SECONDARY_DIR}"
+  if [[ "$SECONDARY_DIR_INPUT" != /* ]]; then
+    echo 'A pasta da segunda cópia deve ser um caminho absoluto, por exemplo /mnt/dentalpro-backups.' >&2
+    exit 1
+  fi
+  printf 'DENTALPRO_SECONDARY_BACKUP_HOST_DIR="%s"\n' "$SECONDARY_DIR_INPUT" >> "$ENV_FILE"
+fi
+
+SECONDARY_DIR="$(awk -F= '/^DENTALPRO_SECONDARY_BACKUP_HOST_DIR=/{value=$2; sub(/^"/, "", value); sub(/"$/, "", value); print value}' "$ENV_FILE" | tail -n 1)"
+if [[ -z "$SECONDARY_DIR" || "$SECONDARY_DIR" != /* ]]; then
+  echo 'DENTALPRO_SECONDARY_BACKUP_HOST_DIR não contém um caminho absoluto válido.' >&2
+  exit 1
+fi
+$SUDO mkdir -p "$SECONDARY_DIR"
+$SUDO chmod 700 "$SECONDARY_DIR"
+chmod 600 "$ENV_FILE"
 
 echo 'A construir e iniciar a DentalPro com dados fictícios...'
 cd "$PROJECT_DIR"
