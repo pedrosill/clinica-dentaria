@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+export { API_BASE_URL } from './apiBaseUrl';
 
 export const TIME_OPTIONS = Array.from({ length: 24 * 2 }, (_, index) => {
   const hours = String(Math.floor(index / 2)).padStart(2, '0');

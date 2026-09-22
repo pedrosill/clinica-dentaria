@@ -12,6 +12,12 @@ O backend usa SQLite. Os backups podem ser cifrados pelo script existente, mas a
 
 As comunicações com pacientes estão preparadas apenas ao nível dos contactos e da validação; o envio automático permanece deliberadamente desligado. Ver `docs/COMMUNICATIONS_PLAN.md` antes de contratar ou configurar um fornecedor.
 
+## Arquitetura local de primeira implementação
+
+O teste inicial deve usar um computador de desenvolvimento ou o computador do consultório como host de uma VM Linux com Docker. A receção e o consultório devem abrir a mesma instância através da rede local; não devem existir bases de dados independentes para cada computador.
+
+O perfil `docker-compose.local.yml` serve apenas para testar esta arquitetura com dados fictícios. A passagem a dados reais exige um perfil de produção separado, com HTTPS interno, firewall, cifragem do host/VM, volumes persistentes, backups da base e documentos, cópia externa e teste de restauro.
+
 ## P0 — bloqueadores antes de dados reais
 
 - [x] Autorização server-side por papel e por recurso, com uma matriz explícita para administrador, receção e médico dentista.
@@ -19,7 +25,7 @@ As comunicações com pacientes estão preparadas apenas ao nível dos contactos
 - [x] Registo de auditoria append-only para acessos e alterações clínicas, consultas, pacientes, utilizadores e definições; exportação, documentos, validação clínica, anonimização e aprovações têm auditoria fail-closed. A auditoria transversal de telemetria HTTP continua best-effort.
 - [x] Processo de alteração de notas clínicas finalizadas sem sobrescrever o original (adendas versionadas).
 - [partial] Backup cifrado com retenção, estado verificável e segunda cópia configurável; o scheduler, alerta, backup da pasta privada e ensaio formal de restauro têm de ser executados/documentados no host.
-- [ ] Configuração de produção segura: HTTPS atrás de proxy, cookies seguros, proteção CSRF, headers, secrets fora do repositório e arranque fail-closed.
+- [partial] Configuração de produção segura: headers, CSRF, secrets fora do repositório e arranque fail-closed existem; o perfil de rede local com HTTPS atrás de proxy, cookies seguros, firewall e configuração da VM ainda tem de ser instalado e testado.
 - [ ] Remoção de credenciais administrativas previsíveis. O fluxo seguro de alteração da password do utilizador autenticado está implementado e testado; a alteração inicial das credenciais de bootstrap continua pendente.
 - [partial] Procedimento operacional de incidente parcialmente documentado em `docs/INCIDENT_RESPONSE.md`; owners, contactos, validação da clínica/jurídica, testes e aprovação continuam pendentes.
 

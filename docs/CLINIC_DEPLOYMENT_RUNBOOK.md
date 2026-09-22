@@ -5,13 +5,13 @@ Este documento e uma checklist de operacao e aprovacao. Nao e certificacao jurid
 ## Antes do primeiro dado real
 
 - Escolher um host dedicado e preencher owner tecnico, responsavel pelo tratamento, secretaria/coordenacao de privacidade e direcao clinica.
-- Para a instalação local da clínica, confirmar `NODE_ENV=production`, `LOCAL_ONLY=true`, `HOST=127.0.0.1`, `CLIENT_ORIGIN` em `http://localhost`/`http://127.0.0.1` e `TRUST_PROXY` vazio. Se a app for aberta a outros dispositivos, usar o perfil HTTPS atrás de proxy e preencher `TRUST_PROXY`.
+- Para o teste com dois computadores, usar apenas dados fictícios e o perfil `docker-compose.local.yml`, com a VM em rede privada e sem port forwarding no router. Para produção, a VM deve servir a aplicação através de HTTPS atrás de um proxy controlado, com `HOST=0.0.0.0` apenas dentro da rede Docker, `CLIENT_ORIGIN` explícita, `TRUST_PROXY` limitado ao proxy e firewall a restringir a rede da clínica.
 - Ativar cifragem do volume pelo sistema operativo (por exemplo BitLocker) e restringir a conta de servico.
 - Definir `PRIVATE_DOCUMENTS_DIR` fora do web root, criar a diretoria com ACL restrita e confirmar que o servidor nao a publica como estatico.
 - Configurar `BACKUP_ENCRYPTION_KEY_FILE`, `BACKUP_SECONDARY_DIR`, `BACKUP_STATUS_FILE` e um scheduler do sistema operativo.
 - Agendar `npm run db:backup --prefix server` e `npm run db:backup:verify --prefix server`; definir alerta ao owner quando falhar.
 - Aplicar migrations com o servidor parado ou em janela controlada: `npm run db:migrate --prefix server`.
-- Executar health/readiness checks e confirmar que o serviço só responde em `127.0.0.1`; no perfil HTTPS, confirmar também cookies Secure/SameSite e a terminação TLS.
+- Executar health/readiness checks e confirmar que o serviço responde apenas no endereço privado da VM; confirmar também que não existe acesso pelo router, que o proxy termina TLS e que os cookies Secure/SameSite estão ativos em produção.
 - Criar contas individuais: administradora tecnica, doutora e secretaria; ativar MFA nas contas privilegiadas.
 
 ## Testes de aceite

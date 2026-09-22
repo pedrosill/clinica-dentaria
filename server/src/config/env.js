@@ -5,6 +5,7 @@ dotenv.config();
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const DATABASE_URL = process.env.DATABASE_URL;
+const CLIENT_DIST_DIR = String(process.env.CLIENT_DIST_DIR || '').trim();
 const LOCAL_ONLY = ['1', 'true', 'yes'].includes(String(process.env.LOCAL_ONLY || '').trim().toLowerCase());
 
 function isLoopbackHost(value) {
@@ -142,6 +143,7 @@ const HOST = validateHost(process.env.HOST, { localOnly: LOCAL_ONLY });
 module.exports = {
   CLIENT_ORIGIN: CLIENT_ORIGINS[0],
   CLIENT_ORIGINS,
+  CLIENT_DIST_DIR,
   DATABASE_URL,
   HOST,
   LOCAL_ONLY,

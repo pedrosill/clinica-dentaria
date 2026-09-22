@@ -14,7 +14,7 @@ const DEFAULT_ITEMS = [
   ['access_matrix', 'Perfis e princípio da necessidade', 'security', 'Rever os acessos da secretária, doutora e administrador técnico.', 'manual'],
   ['processors_and_transfers', 'Fornecedores e localização dos dados', 'privacy', 'Registar fornecedores, subcontratantes, localização dos dados e transferências aplicáveis.', 'manual'],
   ['mfa', 'MFA ativo nas contas privilegiadas', 'security', 'O ambiente de producao deve exigir MFA nas contas com acesso a dados clinicos.', 'mixed'],
-  ['https', 'Acesso local e firewall', 'security', 'Confirmar que a aplicação está limitada ao computador da clínica e que as portas não estão expostas à rede.', 'mixed'],
+  ['https', 'Rede local protegida e firewall', 'security', 'Confirmar que os computadores autorizados acedem à aplicação por uma rede local controlada, com firewall e HTTPS.', 'mixed'],
   ['volume_encryption', 'Cifragem do volume de produção', 'security', 'Ativar BitLocker ou cifragem equivalente no host que guarda a base e os documentos.', 'manual'],
   ['private_documents', 'Documentos em armazenamento privado', 'security', 'Confirmar diretoria fora do web root, permissoes restritas e backups incluidos.', 'mixed'],
   ['backup_schedule', 'Backup cifrado automático e cópia externa', 'continuity', 'Agendar o comando de backup, configurar segunda cópia e verificar o estado.', 'mixed'],

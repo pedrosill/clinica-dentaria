@@ -1,8 +1,9 @@
 /* ================================
    Base URL
 ================================ */
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:5000';
+import { API_BASE_URL as configuredApiBaseUrl } from '../constants/apiBaseUrl';
+
+const API_BASE_URL = configuredApiBaseUrl.replace(/\/$/, '');
 const CSRF_ENDPOINT = '/api/auth/csrf';
 
 let csrfToken;

@@ -1,0 +1,15 @@
+.git
+.github
+node_modules
+client/node_modules
+server/node_modules
+client/dist
+server/backups
+server/*.db
+server/prisma/*.db
+server/.env
+client/.env
+test-results
+playwright-report
+output
+tmp

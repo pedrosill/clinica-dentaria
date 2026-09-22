@@ -139,6 +139,27 @@ Set `BACKUP_SECONDARY_DIR` for a second approved copy and run `npm run db:backup
 
 The operational checklist, scheduling recommendation, and restore drill are documented in [`docs/OPERATIONS_BACKUP.md`](docs/OPERATIONS_BACKUP.md). The full deployment and clinic acceptance runbook is in [`docs/CLINIC_DEPLOYMENT_RUNBOOK.md`](docs/CLINIC_DEPLOYMENT_RUNBOOK.md), and the compliance checklist is available under Settings > Compliance after login.
 
+### Local Docker test with two computers
+
+This repository includes a Docker profile for testing the shared local-network architecture with fictional data. It is not the production security profile and must not be used with real clinical data.
+
+1. Install Docker Desktop on the development computer and enable its Linux/WSL2 backend.
+2. Create a local `.env` from `.env.example` and set `DENTALPRO_ORIGIN` to the VM address and published port, for example `http://192.168.1.50:5000`.
+3. Build and start the application:
+
+   ```bash
+   docker compose -f docker-compose.local.yml up --build -d
+   ```
+
+4. Open the configured origin on the VM computer and on a second computer in the same private network.
+5. Confirm that both sessions see the same fictional patients and appointments, then check the container health:
+
+   ```bash
+   docker compose -f docker-compose.local.yml ps
+   ```
+
+The profile stores the SQLite database, private documents, and local backups in a persistent Docker volume. Do not publish port 5000 through the router. Production still requires HTTPS, encrypted host/VM storage, approved backups, and a documented restore test.
+
 ## Build the frontend
 
 ```bash

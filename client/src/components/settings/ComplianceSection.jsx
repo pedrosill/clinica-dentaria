@@ -98,13 +98,13 @@ const guidanceByCode = {
     responsible: 'Technical administrator, verified by the clinic administrator.',
   },
   https: {
-    objective: 'Confirm that a local deployment is bound to the clinic computer only and is not exposed to the network.',
+    objective: 'Confirm that the clinic computers use a controlled local network and that the application is not exposed to the internet.',
     steps: [
-      'Set the backend and frontend to listen on 127.0.0.1 or localhost, not on all network interfaces.',
-      'Check the operating-system firewall and router so the application ports are not reachable by other devices.',
-      'If another device ever needs access, switch to a controlled HTTPS deployment and document its proxy and certificate owner.',
+      'Record the VM/server address and restrict access to the clinic computers and approved administrator channels.',
+      'Check the VM, host firewall, router, and Docker port mapping so the application is not reachable from the internet.',
+      'Use HTTPS for production traffic and record the certificate, renewal owner, and last network review.',
     ],
-    evidence: 'HOST/LOCAL_ONLY configuration, firewall review, local access test, and review date.',
+    evidence: 'VM/server address, firewall and router review, HTTPS configuration, local access test, and review date.',
     responsible: 'Technical administrator, verified by the clinic administrator.',
   },
   volume_encryption: {

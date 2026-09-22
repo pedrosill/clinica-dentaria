@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('node:path');
 const routes = require('./routes');
 const {
+  CLIENT_DIST_DIR,
   CLIENT_ORIGINS,
   LOCAL_ONLY,
   NODE_ENV,
@@ -19,6 +21,9 @@ const {
 
 const app = express();
 
+const clientRootPath = CLIENT_DIST_DIR ? path.resolve(CLIENT_DIST_DIR) : null;
+const clientIndexPath = clientRootPath ? path.join(clientRootPath, 'index.html') : null;
+
 app.disable('x-powered-by');
 app.set('trust proxy', TRUST_PROXY);
 
@@ -27,7 +32,12 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
-  res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+  res.setHeader(
+    'Content-Security-Policy',
+    CLIENT_DIST_DIR
+      ? "default-src 'self'; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'"
+      : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+  );
 
   if (NODE_ENV === 'production' && !LOCAL_ONLY) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -122,13 +132,23 @@ app.get('/health/ready', async (req, res, next) => {
   }
 });
 
+if (clientRootPath) {
+  app.use(express.static(clientRootPath, { index: false }));
+}
+
 app.get('/', (req, res) => {
+  if (clientIndexPath) return res.sendFile(clientIndexPath);
+
   res.json({
     message: 'DentalPro API is running',
   });
 });
 
 app.use('/api', routes);
+
+if (clientIndexPath) {
+  app.get(/^(?!\/api(?:\/|$)|\/health(?:\/|$)).*/, (req, res) => res.sendFile(clientIndexPath));
+}
 
 app.use(notFoundHandler);
 app.use(errorHandler);
