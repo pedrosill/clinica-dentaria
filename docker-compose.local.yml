@@ -17,9 +17,13 @@ services:
       CLIENT_DIST_DIR: /app/client-dist
       PRIVATE_DOCUMENTS_DIR: /app/data/private-documents
       BACKUP_DIR: /app/data/backups
+      BACKUP_SECONDARY_DIR: /app/data/backups-secondary
+      BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
+      BACKUP_ENCRYPTION_REQUIRED: "${BACKUP_ENCRYPTION_REQUIRED:-false}"
       BACKUP_RETENTION_COUNT: 7
     volumes:
       - dentalpro-data:/app/data
+      - "${DENTALPRO_SECONDARY_BACKUP_HOST_DIR:-./backups-secondary}:/app/data/backups-secondary"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s

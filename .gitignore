@@ -17,3 +17,4 @@ playwright-report/
 server/prisma/dentalpro-browser-*.db
 server/backups/
 tmp/
+backups-secondary/

@@ -17,6 +17,16 @@ BACKUP_STATUS_FILE="D:/dentalpro-backups/backup-status.json"
 
 Em produção, `BACKUP_ENCRYPTION_KEY` ou `BACKUP_ENCRYPTION_KEY_FILE` é obrigatório. A chave deve ser gerida fora do repositório, com permissões restritas, e não deve ser colocada em `server/.env` se existir um gestor de segredos local disponível. Os ficheiros de backup não devem ser sincronizados ou enviados para um serviço externo sem uma decisão da clínica sobre fornecedor, localização, acesso e retenção.
 
+No perfil Docker local, estas variáveis são lidas do `.env` na raiz do projeto:
+
+```env
+BACKUP_ENCRYPTION_KEY=uma-chave-aleatoria-forte
+BACKUP_ENCRYPTION_REQUIRED=true
+DENTALPRO_SECONDARY_BACKUP_HOST_DIR=/caminho/para/um/disco-ou-pasta-separada
+```
+
+`DENTALPRO_SECONDARY_BACKUP_HOST_DIR` deve apontar para uma pasta persistente fora do volume principal e, na clínica, idealmente para outro disco ou suporte aprovado. Não uses uma pasta sincronizada para a qual a clínica não tenha definido fornecedor, acesso e retenção.
+
 ## Execução e retenção
 
 Agendar `npm run db:backup --prefix server` numa conta com acesso apenas à base e às pastas de backup. O script usa o online backup API do SQLite, verifica `integrity_check` e `foreign_key_check`, escreve com permissões restritas, pode copiar o ficheiro cifrado para `BACKUP_SECONDARY_DIR`, e grava um estado em `BACKUP_STATUS_FILE`. Elimina apenas ficheiros que correspondam ao seu próprio padrão, mantendo os `BACKUP_RETENTION_COUNT` mais recentes. Agendar também `npm run db:backup:verify --prefix server` para falhar quando o ultimo backup cifrado está ausente, demasiado antigo, não pode ser desencriptado/verificado ou a cópia secundária não corresponde ao conteúdo primário. A verificação usa a chave configurada e valida cada cópia com `integrity_check` e `foreign_key_check` antes de as comparar.
