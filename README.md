@@ -160,6 +160,8 @@ This repository includes a Docker profile for testing the shared local-network a
 
 The profile stores the SQLite database, private documents, and local backups in a persistent Docker volume. Do not publish port 5000 through the router. Production still requires HTTPS, encrypted host/VM storage, approved backups, and a documented restore test.
 
+The full VirtualBox/Ubuntu preparation procedure is in [`docs/LOCAL_VM_SETUP.md`](docs/LOCAL_VM_SETUP.md). The host and guest helper scripts are [`scripts/setup-dentalpro-vm.ps1`](scripts/setup-dentalpro-vm.ps1) and [`scripts/bootstrap-dentalpro-ubuntu.sh`](scripts/bootstrap-dentalpro-ubuntu.sh).
+
 ## Build the frontend
 
 ```bash
