@@ -8,6 +8,7 @@ REPO_URL="${DENTALPRO_REPO_URL:-https://github.com/pedrosill/clinica-dentaria.gi
 BRANCH="${DENTALPRO_BRANCH:-master}"
 PROJECT_DIR="${DENTALPRO_PROJECT_DIR:-$HOME/dentalpro}"
 COMPOSE_FILE="docker-compose.clinic.yml"
+COMPOSE_PROJECT_NAME="${DENTALPRO_COMPOSE_PROJECT_NAME:-dentalpro-clinic}"
 HOSTNAME_VALUE="dentalpro.clinic"
 
 if [[ "$(id -u)" -eq 0 ]]; then
@@ -72,6 +73,10 @@ append_if_missing() {
   fi
 }
 
+compose() {
+  $SUDO docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" "$@"
+}
+
 if ! grep -q '^BACKUP_ENCRYPTION_KEY=.' "$ENV_FILE"; then
   append_if_missing BACKUP_ENCRYPTION_KEY "$(openssl rand -hex 32)"
 fi
@@ -97,28 +102,28 @@ $SUDO chmod 700 "$SECONDARY_DIR"
 chmod 600 "$ENV_FILE"
 
 cd "$PROJECT_DIR"
-$SUDO docker compose -f "$COMPOSE_FILE" config >/dev/null
-$SUDO docker compose -f "$COMPOSE_FILE" build
-$SUDO docker compose -f "$COMPOSE_FILE" run --rm --no-deps dentalpro npx prisma migrate deploy
+compose config >/dev/null
+compose build
+compose run --rm --no-deps dentalpro npx prisma migrate deploy
 
 read -r -p 'Criar o administrador inicial agora? [S/n]: ' CREATE_ADMIN
 case "$CREATE_ADMIN" in
   [nN]|[nN][aA][oO]) ;;
-  *) $SUDO docker compose -f "$COMPOSE_FILE" run --rm --no-deps dentalpro npm run admin:create ;;
+  *) compose run --rm --no-deps dentalpro npm run admin:create ;;
 esac
 
-$SUDO docker compose -f "$COMPOSE_FILE" up -d
+compose up -d
 
 echo 'A aguardar o Caddy iniciar e gerar a autoridade certificadora interna...'
 for _ in {1..30}; do
-  if $SUDO docker compose -f "$COMPOSE_FILE" ps -q caddy | grep -q .; then
+  if compose ps -q caddy | grep -q .; then
     break
   fi
   sleep 2
 done
 
-"$PROJECT_DIR/scripts/export-dentalpro-caddy-ca.sh" "$PROJECT_DIR/dentalpro-caddy-root.crt"
-$SUDO docker compose -f "$COMPOSE_FILE" ps
+DENTALPRO_COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" "$PROJECT_DIR/scripts/export-dentalpro-caddy-ca.sh" "$PROJECT_DIR/dentalpro-caddy-root.crt"
+compose ps
 
 VM_IP="$(hostname -I | awk '{print $1}')"
 echo ''

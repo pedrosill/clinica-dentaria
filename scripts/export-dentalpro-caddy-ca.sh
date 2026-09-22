@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 PROJECT_DIR="${DENTALPRO_PROJECT_DIR:-$HOME/dentalpro}"
 COMPOSE_FILE="${DENTALPRO_COMPOSE_FILE:-docker-compose.clinic.yml}"
+COMPOSE_PROJECT_NAME="${DENTALPRO_COMPOSE_PROJECT_NAME:-dentalpro-clinic}"
 OUTPUT_FILE="${1:-$HOME/dentalpro-caddy-root.crt}"
 
 if [[ "$(id -u)" -eq 0 ]]; then
@@ -12,7 +13,7 @@ else
 fi
 
 cd "$PROJECT_DIR"
-CONTAINER_ID="$($SUDO docker compose -f "$COMPOSE_FILE" ps -q caddy)"
+CONTAINER_ID="$($SUDO docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" ps -q caddy)"
 if [[ -z "$CONTAINER_ID" ]]; then
   echo 'O contentor Caddy não está a correr. Inicia primeiro o perfil da clínica.' >&2
   exit 1
