@@ -1,5 +1,5 @@
 const app = require('./app');
-const { HOST, LOCAL_ONLY, NODE_ENV, PORT } = require('./config/env');
+const { HOST, LOCAL_ONLY, NODE_ENV, PORT, SEED_DEVELOPMENT_DATA } = require('./config/env');
 const { runSeed } = require('./startup/seed');
 const { backfillPatientIdentityFields } = require('./startup/backfill');
 const { ensureDefaultAdmin } = require('./startup/defaultAdmin');
@@ -7,7 +7,7 @@ const { ensureClinicSettings } = require('./services/clinicSettingsService');
 
 async function startServer() {
   try {
-    if (NODE_ENV !== 'production') {
+    if (NODE_ENV !== 'production' && SEED_DEVELOPMENT_DATA) {
       await runSeed();
       await backfillPatientIdentityFields();
     }

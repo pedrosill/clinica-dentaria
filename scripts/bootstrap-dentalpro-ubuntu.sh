@@ -79,6 +79,15 @@ if ! grep -q '^BACKUP_ENCRYPTION_REQUIRED=' "$ENV_FILE"; then
   printf 'BACKUP_ENCRYPTION_REQUIRED=true\n' >> "$ENV_FILE"
 fi
 
+if ! grep -q '^SEED_DEVELOPMENT_DATA=' "$ENV_FILE"; then
+  read -r -p 'Criar dados fictícios para teste? [s/N]: ' SEED_INPUT
+  case "$SEED_INPUT" in
+    [sS]|[sS][iI][mM]) SEED_VALUE='true' ;;
+    *) SEED_VALUE='false' ;;
+  esac
+  printf 'SEED_DEVELOPMENT_DATA=%s\n' "$SEED_VALUE" >> "$ENV_FILE"
+fi
+
 if ! grep -q '^DENTALPRO_SECONDARY_BACKUP_HOST_DIR=' "$ENV_FILE"; then
   DEFAULT_SECONDARY_DIR="$PROJECT_DIR/backups-secondary"
   read -r -p "Pasta para a segunda cópia dos backups [$DEFAULT_SECONDARY_DIR]: " SECONDARY_DIR_INPUT
