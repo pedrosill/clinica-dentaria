@@ -64,6 +64,8 @@ systemctl list-timers dentalpro-backup.timer
 sudo journalctl -u dentalpro-backup.service
 ```
 
+Para atualizar uma instalação existente, usa `scripts/update-dentalpro-ubuntu.sh`. Para diagnóstico sem alterações, usa `scripts/check-dentalpro-ubuntu.sh`.
+
 ## 3. Testar os dois computadores
 
 Descobre o IP da VM:
