@@ -64,7 +64,7 @@ async function main() {
   const email = await prompt.question('Admin email: ');
   const displayName = await prompt.question('Display name: ');
   prompt.close();
-  const password = await readSecret('Password (minimum 12 characters): ');
+  const password = await readSecret('Password: ');
 
   const user = await createUser({
     email,

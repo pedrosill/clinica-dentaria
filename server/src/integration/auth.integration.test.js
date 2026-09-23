@@ -187,26 +187,26 @@ test('administrator can reset another user password and their own password', asy
 
   const resetTarget = await request(`/api/users/${target.id}/password`, {
     method: 'PATCH',
-    body: JSON.stringify({ newPassword: 'reset-target-new-password-123' }),
+    body: JSON.stringify({ newPassword: 'new' }),
   }, adminSession);
 
   assert.equal(resetTarget.response.status, 200);
   assert.equal(resetTarget.body.id, target.id);
   assert.equal(Object.prototype.hasOwnProperty.call(resetTarget.body, 'passwordHash'), false);
   assert.equal((await request('/api/auth/me', {}, targetSession)).response.status, 401);
-  assert.equal((await login('reset-target-new-password-123', target)).length > 0, true);
+  assert.equal((await login('new', target)).length > 0, true);
 
   const resetAdmin = await request(`/api/users/${admin.id}/password`, {
     method: 'PATCH',
-    body: JSON.stringify({ newPassword: 'reset-admin-new-password-123' }),
+    body: JSON.stringify({ newPassword: 'admin' }),
   }, adminSession);
 
   assert.equal(resetAdmin.response.status, 200);
   assert.equal((await request('/api/auth/me', {}, adminSession)).response.status, 200);
-  assert.equal((await login('reset-admin-new-password-123', admin)).length > 0, true);
+  assert.equal((await login('admin', admin)).length > 0, true);
 });
 
-test('password change enforces a strong password and revokes other sessions', async () => {
+test('password change rejects empty or unchanged passwords and revokes other sessions', async () => {
   const firstSession = await login('current-password-123');
   const secondSession = await login('current-password-123');
 
@@ -232,17 +232,11 @@ test('password change enforces a strong password and revokes other sessions', as
     method: 'POST',
     body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: 'short' }),
   }, firstSession);
-  assert.equal(changed.response.status, 400);
-
-  const accepted = await request('/api/auth/password', {
-    method: 'POST',
-    body: JSON.stringify({ currentPassword: 'current-password-123', newPassword: 'new-strong-password-123' }),
-  }, firstSession);
-  assert.equal(accepted.response.status, 200);
+  assert.equal(changed.response.status, 200);
 
   assert.equal((await request('/api/auth/me', {}, firstSession)).response.status, 200);
   assert.equal((await request('/api/auth/me', {}, secondSession)).response.status, 401);
-  assert.equal((await login('new-strong-password-123')).length > 0, true);
+  assert.equal((await login('short')).length > 0, true);
 });
 
 test('password change requires authentication and CSRF', async () => {

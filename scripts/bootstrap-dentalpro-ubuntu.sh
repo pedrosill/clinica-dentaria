@@ -89,14 +89,8 @@ if ! grep -q '^SEED_DEVELOPMENT_DATA=' "$ENV_FILE"; then
 fi
 
 if ! grep -q '^DEFAULT_ADMIN_PASSWORD=.' "$ENV_FILE"; then
-  while true; do
-    read -r -s -p 'Palavra-passe inicial do administrador (mínimo 12 caracteres): ' ADMIN_PASSWORD_INPUT
-    echo
-    if [[ "${#ADMIN_PASSWORD_INPUT}" -ge 12 ]]; then
-      break
-    fi
-    echo 'A palavra-passe deve ter pelo menos 12 caracteres.' >&2
-  done
+  read -r -s -p 'Palavra-passe inicial do administrador: ' ADMIN_PASSWORD_INPUT
+  echo
   printf 'DEFAULT_ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD_INPUT" >> "$ENV_FILE"
   unset ADMIN_PASSWORD_INPUT
 fi

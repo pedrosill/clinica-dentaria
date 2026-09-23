@@ -116,10 +116,6 @@ export default function UserManagementSection({ currentUserId }) {
 
   async function handlePasswordReset(event) {
     event.preventDefault();
-    if (passwordForm.newPassword.length < 12) {
-      setPasswordResetError(t('New password must be at least 12 characters'));
-      return;
-    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setPasswordResetError(t('New password and confirmation do not match.'));
       return;
@@ -213,8 +209,8 @@ export default function UserManagementSection({ currentUserId }) {
           {passwordResetError ? <div role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-800">{passwordResetError}</div> : null}
           <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-600">{t('The current password cannot be viewed. Set a new password instead.')}</p>
           <div className="mt-5 grid gap-3">
-            <label className="space-y-2 text-sm font-medium text-slate-700">{t('New password')}<input required minLength={12} type="password" name="newPassword" autoFocus autoComplete="new-password" className={inputClass} value={passwordForm.newPassword} onChange={updatePasswordForm} disabled={isSaving} /></label>
-            <label className="space-y-2 text-sm font-medium text-slate-700">{t('Confirm new password')}<input required minLength={12} type="password" name="confirmPassword" autoComplete="new-password" className={inputClass} value={passwordForm.confirmPassword} onChange={updatePasswordForm} disabled={isSaving} /></label>
+            <label className="space-y-2 text-sm font-medium text-slate-700">{t('New password')}<input required type="password" name="newPassword" autoFocus autoComplete="new-password" className={inputClass} value={passwordForm.newPassword} onChange={updatePasswordForm} disabled={isSaving} /></label>
+            <label className="space-y-2 text-sm font-medium text-slate-700">{t('Confirm new password')}<input required type="password" name="confirmPassword" autoComplete="new-password" className={inputClass} value={passwordForm.confirmPassword} onChange={updatePasswordForm} disabled={isSaving} /></label>
           </div>
           <div className="mt-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={closePasswordReset} disabled={isSaving} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">{t('Cancel')}</button><button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"><KeyRound className="h-4 w-4" />{isSaving ? t('Saving…') : t('Reset password')}</button></div>
         </form>

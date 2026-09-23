@@ -24,8 +24,6 @@ const {
 const MFA_MAX_ATTEMPTS = 5;
 const MFA_ERROR_MESSAGE = 'Invalid MFA challenge or verification code';
 const RECOVERY_ERROR_MESSAGE = 'This recovery link is invalid or has expired';
-const MIN_RECOVERY_PASSWORD_LENGTH = 12;
-const MIN_PASSWORD_LENGTH = 12;
 
 const PUBLIC_USER_SELECT = {
   id: true,
@@ -64,8 +62,6 @@ async function createUser({ email, displayName, password, role = 'receptionist',
   if (!normalizedEmail || !normalizedName || !String(password || '')) {
     throw new HttpError(400, 'Email, display name, and a password are required');
   }
-  if (String(password).length < MIN_PASSWORD_LENGTH) throw new HttpError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-
   if (!allowedRoles.has(role)) {
     throw new HttpError(400, 'Invalid user role');
   }
@@ -334,9 +330,7 @@ async function requestPasswordRecovery({ email }) {
 }
 
 async function resetPassword({ token, newPassword }) {
-  if (!String(newPassword || '') || String(newPassword).length < MIN_RECOVERY_PASSWORD_LENGTH) {
-    throw new HttpError(400, `New password must be at least ${MIN_RECOVERY_PASSWORD_LENGTH} characters`);
-  }
+  if (!String(newPassword || '')) throw new HttpError(400, 'New password is required');
 
   const recovery = await prisma.passwordRecoveryToken.findUnique({
     where: { tokenHash: hashOpaqueToken(token) },
@@ -379,8 +373,6 @@ async function changePassword({ userId, currentPassword, newPassword, sessionTok
   if (!String(newPassword || '')) {
     throw new HttpError(400, 'New password is required');
   }
-  if (String(newPassword).length < MIN_PASSWORD_LENGTH) throw new HttpError(400, `New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-
   if (verifyPassword(newPassword, current.passwordHash)) {
     throw new HttpError(400, 'New password must be different from the current password');
   }
@@ -412,8 +404,6 @@ async function resetUserPassword(userId, newPassword, actor, sessionToken) {
 
   const normalizedPassword = String(newPassword || '');
   if (!normalizedPassword) throw new HttpError(400, 'New password is required');
-  if (normalizedPassword.length < MIN_PASSWORD_LENGTH) throw new HttpError(400, `New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-
   const currentUser = await prisma.user.findUnique({
     where: { id },
     select: { id: true },

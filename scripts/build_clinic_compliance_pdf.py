@@ -150,7 +150,7 @@ def build():
         "Contas individuais para administradora técnica, secretaria e médica dentista",
         "Secretaria tem acesso operacional e transcrição, sem validação clínica final",
         "MFA ativo nas contas privilegiadas e recuperação com tokens one-time",
-        "Passwords iniciais alteradas e mínimo de 12 caracteres aplicado",
+        "Passwords iniciais alteradas e recuperação de acesso testada",
         "Sessões são revogadas após alteração de password ou desativação",
     ]):
         y = checkbox(c, f"access_{idx}", label, MARGIN, y)
