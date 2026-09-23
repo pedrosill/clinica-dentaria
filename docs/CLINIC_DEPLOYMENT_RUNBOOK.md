@@ -49,13 +49,13 @@ Instalar o certificado exportado nos dois computadores clientes e associar `dent
 Para atualizações futuras, fazer primeiro um backup verificado e usar:
 
 ```bash
-DENTALPRO_COMPOSE_FILE=docker-compose.clinic.yml DENTALPRO_COMPOSE_PROJECT_NAME=dentalpro-clinic ./scripts/update-dentalpro-ubuntu.sh
+./scripts/update-dentalpro-clinic.sh
 ```
 
 Para diagnóstico sem alterações:
 
 ```bash
-DENTALPRO_COMPOSE_FILE=docker-compose.clinic.yml DENTALPRO_COMPOSE_PROJECT_NAME=dentalpro-clinic DENTALPRO_BACKUP_TIMER=dentalpro-clinic-backup.timer ./scripts/check-dentalpro-ubuntu.sh
+./scripts/check-dentalpro-clinic.sh
 ```
 
 ## Testes de aceite

@@ -25,20 +25,20 @@ Numa instalação nova, o bootstrap pergunta pela palavra-passe inicial do admin
 
 Nunca usar `docker compose down -v` numa instalação com dados.
 
-Para atualizar o perfil clínico HTTPS, usa as mesmas salvaguardas com a configuração explícita:
+Também existe um atalho específico para o perfil clínico:
 
 ```bash
-DENTALPRO_COMPOSE_FILE=docker-compose.clinic.yml DENTALPRO_COMPOSE_PROJECT_NAME=dentalpro-clinic ./scripts/update-dentalpro-ubuntu.sh
+./scripts/update-dentalpro-clinic.sh
 ```
 
 ## Diagnóstico
 
 `check-dentalpro-ubuntu.sh` é apenas de leitura. Mostra IPs, contentores, health check, timer de backups, últimas cópias e espaço em disco.
 
-Para diagnosticar o perfil clínico:
+Para diagnosticar o perfil clínico, usa o atalho correspondente:
 
 ```bash
-DENTALPRO_COMPOSE_FILE=docker-compose.clinic.yml DENTALPRO_COMPOSE_PROJECT_NAME=dentalpro-clinic DENTALPRO_BACKUP_TIMER=dentalpro-clinic-backup.timer ./scripts/check-dentalpro-ubuntu.sh
+./scripts/check-dentalpro-clinic.sh
 ```
 
 ## Perfil clínico com HTTPS interno
