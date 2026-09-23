@@ -110,12 +110,12 @@ chmod 600 "$ENV_FILE"
 cd "$PROJECT_DIR"
 compose config >/dev/null
 compose build
-compose run --rm --no-deps --no-network dentalpro npx prisma migrate deploy
+compose run --rm --no-deps dentalpro npx prisma migrate deploy
 
 read -r -p 'Criar o administrador inicial agora? [S/n]: ' CREATE_ADMIN
 case "$CREATE_ADMIN" in
   [nN]|[nN][aA][oO]) ;;
-  *) compose run --rm --no-deps --no-network dentalpro npm run admin:create ;;
+  *) compose run --rm --no-deps dentalpro npm run admin:create ;;
 esac
 
 compose up -d
@@ -126,7 +126,7 @@ $SUDO tee "$BACKUP_RUNNER" >/dev/null <<EOF
 #!/usr/bin/env bash
 set -Eeuo pipefail
 cd "$PROJECT_DIR"
-exec "$DOCKER_BIN" compose -p "$COMPOSE_PROJECT_NAME" -f "$PROJECT_DIR/$COMPOSE_FILE" run --rm --no-deps --no-network dentalpro sh -lc 'npm run db:backup && npm run db:backup:verify'
+exec "$DOCKER_BIN" compose -p "$COMPOSE_PROJECT_NAME" -f "$PROJECT_DIR/$COMPOSE_FILE" run --rm --no-deps dentalpro sh -lc 'npm run db:backup && npm run db:backup:verify'
 EOF
 $SUDO chmod 755 "$BACKUP_RUNNER"
 

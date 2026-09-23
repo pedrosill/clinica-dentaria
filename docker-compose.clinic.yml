@@ -27,8 +27,7 @@ services:
       - dentalpro-clinic-data:/app/data
       - "${DENTALPRO_SECONDARY_BACKUP_HOST_DIR:?Configure DENTALPRO_SECONDARY_BACKUP_HOST_DIR in .env}:/app/data/backups-secondary"
     networks:
-      clinic:
-        ipv4_address: 172.30.0.3
+      - clinic
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s
