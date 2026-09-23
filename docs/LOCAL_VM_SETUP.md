@@ -90,4 +90,4 @@ Confirma:
 
 ## Limites
 
-Este perfil não é o deployment final da clínica. Antes de dados reais ainda são necessários HTTPS interno, firewall, cifragem do host/VM, secrets fora do repositório, backups cifrados da base e documentos, cópia externa e teste de restauro.
+Este perfil clínico já inclui HTTPS interno e o arranque automático dos contentores. Antes de dados reais ainda são necessários firewall, cifragem do host/VM, confirmação dos secrets fora do repositório, cópia externa aprovada, teste de restauro, contas reais/MFA e aprovação da clínica.

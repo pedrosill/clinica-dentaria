@@ -8,8 +8,8 @@ Este documento e uma checklist de operacao e aprovacao. Nao e certificacao jurid
 - Para o teste com dois computadores, usar apenas dados fictícios e o perfil `docker-compose.local.yml`, com a VM em rede privada e sem port forwarding no router. Para produção, a VM deve servir a aplicação através de HTTPS atrás de um proxy controlado, com `HOST=0.0.0.0` apenas dentro da rede Docker, `CLIENT_ORIGIN` explícita, `TRUST_PROXY` limitado ao proxy e firewall a restringir a rede da clínica.
 - Ativar cifragem do volume pelo sistema operativo (por exemplo BitLocker) e restringir a conta de servico.
 - Definir `PRIVATE_DOCUMENTS_DIR` fora do web root, criar a diretoria com ACL restrita e confirmar que o servidor nao a publica como estatico.
-- Configurar `BACKUP_ENCRYPTION_KEY_FILE`, `BACKUP_SECONDARY_DIR`, `BACKUP_STATUS_FILE` e um scheduler do sistema operativo.
-- Agendar `npm run db:backup --prefix server` e `npm run db:backup:verify --prefix server`; definir alerta ao owner quando falhar.
+- Manter a `BACKUP_ENCRYPTION_KEY` fora do Git e com permissões restritas; o bootstrap clínico cria o timer `dentalpro-clinic-backup.timer` e executa a verificação depois do backup.
+- Confirmar uma segunda cópia aprovada pela clínica e definir como o owner será alertado quando o serviço falhar.
 - Aplicar migrations com o servidor parado ou em janela controlada: `npm run db:migrate --prefix server`.
 - Executar health/readiness checks e confirmar que o serviço responde apenas no endereço privado da VM; confirmar também que não existe acesso pelo router, que o proxy termina TLS e que os cookies Secure/SameSite estão ativos em produção.
 - Criar contas individuais: administradora tecnica, doutora e secretaria; ativar MFA nas contas privilegiadas.
@@ -41,10 +41,22 @@ sudo docker compose -p dentalpro-clinic -f docker-compose.clinic.yml up -d
 Depois exportar a CA interna:
 
 ```bash
-scripts/export-dentalpro-caddy-ca.sh
+./scripts/export-dentalpro-caddy-ca.sh
 ```
 
 Instalar o certificado exportado nos dois computadores clientes e associar `dentalpro.clinic` ao IP privado da VM nos respetivos ficheiros `hosts`. O acesso deve ser feito por `https://dentalpro.clinic`; não usar diretamente a porta 5000.
+
+Para atualizações futuras, fazer primeiro um backup verificado e usar:
+
+```bash
+DENTALPRO_COMPOSE_FILE=docker-compose.clinic.yml DENTALPRO_COMPOSE_PROJECT_NAME=dentalpro-clinic ./scripts/update-dentalpro-ubuntu.sh
+```
+
+Para diagnóstico sem alterações:
+
+```bash
+DENTALPRO_COMPOSE_FILE=docker-compose.clinic.yml DENTALPRO_COMPOSE_PROJECT_NAME=dentalpro-clinic DENTALPRO_BACKUP_TIMER=dentalpro-clinic-backup.timer ./scripts/check-dentalpro-ubuntu.sh
+```
 
 ## Testes de aceite
 
