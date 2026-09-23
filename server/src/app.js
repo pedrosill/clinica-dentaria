@@ -48,6 +48,19 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const PUBLIC_ROUTE_PREFIXES = [
+  '/api/public/appointment-confirmations/',
+  '/api/public/privacy-notices/',
+];
+
+function isPublicRoute(req) {
+  return PUBLIC_ROUTE_PREFIXES.some((prefix) => req.path.startsWith(prefix));
+}
+
+function requestOrigin(req) {
+  const host = req.get('host');
+  return host ? `${req.protocol}://${host}` : null;
+}
 
 function getRefererOrigin(referer) {
   if (!referer) return null;
@@ -70,12 +83,15 @@ function validateRequestOrigin(req, res, next) {
   const referer = req.get('referer');
   const refererOrigin = getRefererOrigin(referer);
   const requestOrigins = [origin, refererOrigin].filter(Boolean);
+  const sameOriginPublicRequest = isPublicRoute(req) && requestOrigin(req);
+  const isAllowedOrigin = (candidate) => CLIENT_ORIGINS.includes(candidate)
+    || (sameOriginPublicRequest && candidate === sameOriginPublicRequest);
 
-  if (origin === 'null' || (origin && !CLIENT_ORIGINS.includes(origin))) {
+  if (origin === 'null' || (origin && !isAllowedOrigin(origin))) {
     return rejectRequest(res, 'Request origin is not allowed');
   }
 
-  if (refererOrigin && !CLIENT_ORIGINS.includes(refererOrigin)) {
+  if (refererOrigin && !isAllowedOrigin(refererOrigin)) {
     return rejectRequest(res, 'Request referer is not allowed');
   }
 

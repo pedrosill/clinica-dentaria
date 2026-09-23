@@ -46,4 +46,15 @@ test('sets baseline security headers and rejects CSRF/origin failures', async ()
     body: '{}',
   });
   assert.equal(untrustedOriginResponse.status, 403);
+
+  const publicPrivacyResponse = await fetch(`${baseUrl}/api/public/privacy-notices/not-a-real-token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Origin: baseUrl,
+      Referer: `${baseUrl}/api/public/privacy-notices/not-a-real-token`,
+    },
+    body: 'choice=acknowledged',
+  });
+  assert.equal(publicPrivacyResponse.status, 404);
 });
