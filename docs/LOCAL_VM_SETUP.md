@@ -68,6 +68,8 @@ Para atualizar uma instalação existente, usa `scripts/update-dentalpro-ubuntu.
 
 O perfil clínico HTTPS está em `docker-compose.clinic.yml`. Usa o hostname `dentalpro.clinic`, publica apenas a porta 443 e requer que esse nome seja associado ao IP da VM nos ficheiros `hosts` dos computadores clientes. Depois de o Caddy arrancar, exporta a CA com `scripts/export-dentalpro-caddy-ca.sh` e instala o certificado nos dois computadores.
 
+Para automatizar a configuração de cada cliente Windows, copia o certificado para o computador e executa como administrador `scripts/setup-dentalpro-client.ps1 -VmIp IP_DA_VM -CertificatePath CAMINHO_DO_CERTIFICADO`. O script pede confirmação antes de instalar a CA, atualiza o `hosts` e verifica o endpoint HTTPS.
+
 ## 3. Testar os dois computadores
 
 Descobre o IP da VM:

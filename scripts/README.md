@@ -35,6 +35,15 @@ Nunca usar `docker compose down -v` numa instalação com dados.
 
 `docker-compose.clinic.yml` usa o Caddy como proxy HTTPS interno. O Caddy é o único serviço publicado na rede da clínica; o DentalPro fica acessível apenas dentro da rede Docker. Depois de iniciar o perfil clínico, `export-dentalpro-caddy-ca.sh` exporta o certificado raiz que deve ser instalado nos dois computadores clientes.
 
+Em cada computador Windows cliente, executar o PowerShell como administrador e usar `setup-dentalpro-client.ps1`. O script instala o certificado raiz, atualiza o `hosts`, limpa o DNS e testa o HTTPS:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\scripts\setup-dentalpro-client.ps1 -VmIp 192.168.68.61 -CertificatePath "$env:USERPROFILE\Desktop\dentalpro-caddy-root.crt" -OpenBrowser
+```
+
+O script mostra a impressão digital do certificado e exige a confirmação `CONFIRMO`; esta confirmação é intencional porque altera as autoridades de confiança do Windows.
+
 ## PDF de conformidade
 
 `build_clinic_compliance_pdf.py` gera o documento de conformidade e não faz parte do arranque ou manutenção da aplicação.
