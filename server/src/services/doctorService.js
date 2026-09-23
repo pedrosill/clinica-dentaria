@@ -5,10 +5,17 @@ const { assertPermission } = require('../utils/authorization');
 
 async function getDoctors(user) {
   assertPermission(user, 'doctor', 'read');
-  return prisma.doctor.findMany({
+  const doctors = await prisma.doctor.findMany({
     where: {},
+    include: { user: { select: { role: true } } },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
+
+  // An administrator or receptionist may have a legacy doctor profile, but
+  // only dentist accounts should be selectable as appointment providers.
+  return doctors
+    .filter((doctor) => !doctor.user || doctor.user.role === 'dentist')
+    .map(({ user: _user, ...doctor }) => doctor);
 }
 
 async function getDoctorById(doctorId, user) {

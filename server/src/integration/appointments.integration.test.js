@@ -213,13 +213,16 @@ test.beforeEach(async () => {
     )
   );
 
-  await prisma.user.create({
+  const admin = await prisma.user.create({
     data: {
       email: 'integration.admin@example.test',
       displayName: 'Integration Admin',
       passwordHash: hashPassword('integration-password-123'),
       role: 'admin',
     },
+  });
+  await prisma.doctor.create({
+    data: { name: 'Legacy Administrator Doctor Profile', userId: admin.id },
   });
 
   const csrfResponse = await fetch(`${baseUrl}/api/auth/csrf`);
@@ -948,6 +951,7 @@ test('enforces role and dentist-to-doctor clinical scope', async () => {
   const dentistDoctors = await requestWithSession(dentistCookie, '/api/doctors');
   assert.equal(dentistDoctors.response.status, 200);
   assert.equal(dentistDoctors.body.some((item) => item.id === secondDoctor.id), true);
+  assert.equal(dentistDoctors.body.some((item) => item.name === 'Legacy Administrator Doctor Profile'), false);
 
   const unrelatedAppointmentEdit = await requestWithSession(
     dentistCookie,
