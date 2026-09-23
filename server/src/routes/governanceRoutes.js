@@ -13,6 +13,7 @@ router.get('/patients/:patientId/consents', governanceRead, asyncHandler(control
 router.post('/patients/:patientId/consents', governanceWrite, asyncHandler(controller.createConsent));
 router.post('/patients/:patientId/consents/:consentId/withdraw', governanceManage, asyncHandler(controller.withdrawConsent));
 router.get('/patients/:patientId/privacy-notice', governanceRead, asyncHandler(controller.listPrivacyNotices));
+router.get('/patients/:patientId/privacy-notice/preview', governanceRead, asyncHandler(controller.previewPrivacyNotice));
 router.get('/patients/:patientId/privacy-notice.pdf', governanceRead, asyncHandler(controller.downloadPrivacyNotice));
 router.post('/patients/:patientId/privacy-notice/send', governanceWrite, asyncHandler(controller.sendPrivacyNotice));
 router.get('/patients/:patientId/documents', governanceRead, asyncHandler(controller.listDocuments));

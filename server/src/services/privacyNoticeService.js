@@ -6,7 +6,7 @@ const { parseNumericId } = require('../utils/parse');
 const { assertPermission } = require('../utils/authorization');
 const { recordAuditEvent } = require('./auditService');
 const { ensurePatientAccess } = require('./governanceService');
-const { createPrivacyNoticePdf, privacyNoticeVersion } = require('./privacyNoticePdfService');
+const { createPrivacyNoticePdf, privacyNoticeText, privacyNoticeVersion } = require('./privacyNoticePdfService');
 
 const DELIVERY_TTL_DAYS = 30;
 
@@ -90,8 +90,7 @@ async function listDeliveries(patientId, user) {
   };
 }
 
-async function buildEmail(patient, token) {
-  const noticeUrl = publicUrl(token);
+function emailContent(patient, noticeUrl) {
   const clinicName = process.env.CLINIC_NAME || 'Clínica dentária';
   const subject = `${clinicName}: aviso de privacidade`;
   const text = [
@@ -104,7 +103,29 @@ async function buildEmail(patient, token) {
     'Se tiver dúvidas ou quiser comunicar uma oposição, contacte diretamente a clínica.',
   ].join('\n');
   const html = `<!doctype html><html lang="pt-PT"><body style="font-family:Arial,sans-serif;color:#172033;line-height:1.5"><p>Olá ${escapeHtml(patient.fullName)},</p><p>A <strong>${escapeHtml(clinicName)}</strong> enviou-lhe o aviso de privacidade em anexo.</p><p>Depois de o consultar, pode confirmar que tomou conhecimento:</p><p><a href="${escapeHtml(noticeUrl)}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">Consultar e confirmar</a></p><p style="font-size:12px;color:#64748b">Se tiver dúvidas ou quiser comunicar uma oposição, contacte diretamente a clínica.</p></body></html>`;
-  return { subject, text, html, noticeUrl, attachment: await createPrivacyNoticePdf(patient) };
+  return { subject, text, html, noticeUrl };
+}
+
+async function buildEmail(patient, token) {
+  const content = emailContent(patient, publicUrl(token));
+  return { ...content, attachment: await createPrivacyNoticePdf(patient) };
+}
+
+async function previewPrivacyNotice(patientId, user) {
+  const patient = await findPatient(patientId, user);
+  if (!patient.email) throw new HttpError(409, 'The patient does not have an email address');
+  const attachment = await createPrivacyNoticePdf(patient);
+  const content = emailContent(patient, '[link individual gerado ao confirmar o envio]');
+  return {
+    to: patient.email,
+    subject: content.subject,
+    text: content.text,
+    attachment: {
+      fileName: `aviso-privacidade-${patient.id}.pdf`,
+      contentType: 'application/pdf',
+      sizeBytes: attachment.length,
+    },
+  };
 }
 
 async function sendPrivacyNotice(patientId, { req, actor } = {}) {
@@ -218,9 +239,21 @@ function renderPage({ token, delivery, result = null }) {
       ? 'A confirmação de leitura já foi registada.'
       : 'A oposição já foi registada. Contacte diretamente a clínica se precisar de esclarecimentos.');
   const actions = delivery.status === 'sent' && delivery.expiresAt > new Date()
-    ? '<form method="post"><button name="choice" value="acknowledged">Confirmo que tomei conhecimento</button><button name="choice" value="objected">Quero comunicar uma oposição</button></form>'
+    ? '<form method="post" class="actions"><button class="primary" type="submit" name="choice" value="acknowledged">Confirmo que tomei conhecimento</button><button class="secondary" type="submit" name="choice" value="objected">Quero comunicar uma oposição</button></form>'
     : '';
-  return `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><title>Aviso de privacidade</title><style>body{font-family:Arial,sans-serif;color:#172033;background:#f1f5f9;margin:0;padding:32px}main{max-width:640px;margin:auto;background:white;padding:32px;border-radius:16px}button{padding:12px 16px;margin:8px 8px 0 0;border:1px solid #0f766e;border-radius:8px;background:#0f766e;color:white;cursor:pointer}button[value=objected]{background:white;color:#334155;border-color:#cbd5e1}</style></head><body><main><h1>Aviso de privacidade</h1><p>Olá ${escapeHtml(delivery.patient.fullName)}.</p><p>${escapeHtml(statusText)}</p>${actions}<p>Versão ${escapeHtml(delivery.version)}. Em caso de dúvida, contacte diretamente a clínica.</p></main></body></html>`;
+  const clinicName = escapeHtml(process.env.CLINIC_NAME || 'Clínica dentária');
+  return `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Aviso de privacidade · ${clinicName}</title><style>
+  :root{color-scheme:light;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f1f5f9;color:#172033}
+  *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#ecfeff 0%,#f8fafc 45%,#e2e8f0 100%);padding:24px 16px}
+  .shell{max-width:720px;margin:0 auto}.brand{font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#0f766e;margin:8px 4px 16px}
+  main{background:#fff;border:1px solid #dbe4ea;border-radius:24px;box-shadow:0 20px 60px rgba(15,23,42,.12);overflow:hidden}
+  .hero{padding:32px 32px 24px;background:linear-gradient(135deg,#f0fdfa,#fff)}h1{font-size:clamp(26px,5vw,38px);line-height:1.1;margin:0;color:#0f172a}h2{font-size:15px;margin:0 0 10px;color:#0f172a}
+  .version{display:inline-flex;margin-top:14px;padding:6px 10px;border-radius:999px;background:#ccfbf1;color:#115e59;font-size:12px;font-weight:700}
+  .content{padding:28px 32px 32px}.intro{font-size:16px;line-height:1.6;margin:0 0 22px;color:#334155}.status{padding:16px;border:1px solid #bae6fd;border-radius:16px;background:#f0f9ff;color:#0c4a6e;line-height:1.55}
+  .notice{margin-top:20px;padding:18px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;color:#334155;line-height:1.65;white-space:pre-wrap}.notice p{margin:0}
+  .actions{display:grid;gap:10px;margin-top:24px}.actions button{width:100%;padding:14px 16px;border:1px solid;border-radius:12px;font:inherit;font-weight:700;cursor:pointer}.primary{border-color:#0f766e;background:#0f766e;color:#fff}.primary:hover{background:#115e59}.secondary{border-color:#cbd5e1;background:#fff;color:#334155}.secondary:hover{background:#f8fafc}
+  footer{padding:0 32px 28px;color:#64748b;font-size:13px;line-height:1.5}@media(max-width:520px){body{padding:12px 8px}.hero,.content{padding:24px 20px}.content{padding-top:20px}footer{padding:0 20px 24px}}
+  </style></head><body><div class="shell"><div class="brand">${clinicName}</div><main><header class="hero"><h1>Aviso de privacidade</h1><span class="version">Versão ${escapeHtml(delivery.version)}</span></header><div class="content"><p class="intro">Olá ${escapeHtml(delivery.patient.fullName)}. Este aviso explica como a clínica trata os seus dados pessoais e de saúde.</p><div class="status"><h2>Estado da resposta</h2>${escapeHtml(statusText)}</div><section class="notice"><h2>Informação</h2><p>${escapeHtml(privacyNoticeText())}</p></section>${actions}</div><footer>Se tiver dúvidas ou quiser comunicar uma oposição, contacte diretamente a clínica.<br>Este link é individual e válido por tempo limitado.</footer></main></div></body></html>`;
 }
 
 module.exports = {
@@ -228,6 +261,7 @@ module.exports = {
   getPublicDelivery,
   isConfigured,
   listDeliveries,
+  previewPrivacyNotice,
   privacyNoticeVersion,
   renderPage,
   respond,

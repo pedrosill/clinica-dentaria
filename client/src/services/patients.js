@@ -28,6 +28,10 @@ export function getPatientPrivacyNotices(patientId) {
   return apiRequest(`/api/patients/${patientId}/privacy-notice`);
 }
 
+export function previewPatientPrivacyNotice(patientId) {
+  return apiRequest(`/api/patients/${patientId}/privacy-notice/preview`);
+}
+
 export function sendPatientPrivacyNotice(patientId) {
   return apiRequest(`/api/patients/${patientId}/privacy-notice/send`, { method: 'POST' });
 }

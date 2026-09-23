@@ -22,6 +22,7 @@ async function downloadDocument(req, res) {
 }
 async function exportPatient(req, res) { res.json(await service.exportPatient(getPatientId(req), req.user, req)); }
 async function listPrivacyNotices(req, res) { res.json(await privacyNoticeService.listDeliveries(getPatientId(req), req.user)); }
+async function previewPrivacyNotice(req, res) { res.json(await privacyNoticeService.previewPrivacyNotice(getPatientId(req), req.user)); }
 async function downloadPrivacyNotice(req, res) {
   const document = await privacyNoticeService.downloadPdf(getPatientId(req), req.user, req);
   res.setHeader('Content-Type', 'application/pdf');
@@ -46,7 +47,7 @@ async function releaseRetentionHold(req, res) { res.json(await service.releaseRe
 
 module.exports = {
   listConsents, createConsent, withdrawConsent, listDocuments, createDocument, exportPatient,
-  listPrivacyNotices, downloadPrivacyNotice, sendPrivacyNotice,
+  listPrivacyNotices, previewPrivacyNotice, downloadPrivacyNotice, sendPrivacyNotice,
   createDataSubjectRequest, listDataSubjectRequests, updateDataSubjectRequest, uploadDocument, downloadDocument,
   listAuditEvents, getAuditEvent, listRetentionPolicies, updateRetentionPolicy, retentionPreview,
   applyRetention, listRetentionHolds, releaseRetentionHold,
