@@ -24,6 +24,20 @@ export function withdrawPatientConsent(patientId, consentId) {
   });
 }
 
+export function getPatientPrivacyNotices(patientId) {
+  return apiRequest(`/api/patients/${patientId}/privacy-notice`);
+}
+
+export function sendPatientPrivacyNotice(patientId) {
+  return apiRequest(`/api/patients/${patientId}/privacy-notice/send`, { method: 'POST' });
+}
+
+export async function downloadPatientPrivacyNotice(patientId) {
+  const response = await fetch(`${API_BASE_URL}/api/patients/${patientId}/privacy-notice.pdf`, { credentials: 'include' });
+  if (!response.ok) throw new Error('Unable to download the privacy notice.');
+  return response.blob();
+}
+
 export function exportPatientRecord(patientId) {
   return apiRequest(`/api/patients/${patientId}/export`);
 }

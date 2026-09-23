@@ -1,5 +1,6 @@
 const service = require('../services/governanceService');
 const privateDocumentService = require('../services/privateDocumentService');
+const privacyNoticeService = require('../services/privacyNoticeService');
 
 const getPatientId = (req) => req.params.patientId;
 
@@ -20,6 +21,17 @@ async function downloadDocument(req, res) {
   res.sendFile(document.target);
 }
 async function exportPatient(req, res) { res.json(await service.exportPatient(getPatientId(req), req.user, req)); }
+async function listPrivacyNotices(req, res) { res.json(await privacyNoticeService.listDeliveries(getPatientId(req), req.user)); }
+async function downloadPrivacyNotice(req, res) {
+  const document = await privacyNoticeService.downloadPdf(getPatientId(req), req.user, req);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Length', document.buffer.length);
+  res.setHeader('Content-Disposition', `attachment; filename="${document.fileName.replace(/"/g, '')}"`);
+  res.send(document.buffer);
+}
+async function sendPrivacyNotice(req, res) {
+  res.status(202).json(await privacyNoticeService.sendPrivacyNotice(getPatientId(req), { req, actor: req.user }));
+}
 async function createDataSubjectRequest(req, res) { res.status(201).json(await service.createDataSubjectRequest(req.body, req.user)); }
 async function listDataSubjectRequests(req, res) { res.json(await service.listDataSubjectRequests(req.user, req.query)); }
 async function updateDataSubjectRequest(req, res) { res.json(await service.updateDataSubjectRequest(req.params.requestId, req.body, req.user)); }
@@ -34,6 +46,7 @@ async function releaseRetentionHold(req, res) { res.json(await service.releaseRe
 
 module.exports = {
   listConsents, createConsent, withdrawConsent, listDocuments, createDocument, exportPatient,
+  listPrivacyNotices, downloadPrivacyNotice, sendPrivacyNotice,
   createDataSubjectRequest, listDataSubjectRequests, updateDataSubjectRequest, uploadDocument, downloadDocument,
   listAuditEvents, getAuditEvent, listRetentionPolicies, updateRetentionPolicy, retentionPreview,
   applyRetention, listRetentionHolds, releaseRetentionHold,

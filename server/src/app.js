@@ -96,7 +96,7 @@ function validateRequestOrigin(req, res, next) {
 
 function csrfProtection(req, res, next) {
   if (SAFE_METHODS.has(req.method)) return next();
-  if (req.path.startsWith('/api/public/appointment-confirmations/')) return next();
+  if (req.path.startsWith('/api/public/appointment-confirmations/') || req.path.startsWith('/api/public/privacy-notices/')) return next();
 
   const cookies = parseCookies(req.headers.cookie);
   const requestToken = req.get('x-csrf-token');

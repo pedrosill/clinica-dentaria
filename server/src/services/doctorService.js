@@ -6,7 +6,15 @@ const { assertPermission } = require('../utils/authorization');
 async function getDoctors(user) {
   assertPermission(user, 'doctor', 'read');
   return prisma.doctor.findMany({
-    where: {},
+    // Unlinked doctor records are available for scheduling. Linked records
+    // are only clinical providers; an administrator/receptionist must never
+    // appear as a selectable doctor.
+    where: {
+      OR: [
+        { userId: null },
+        { user: { is: { role: 'dentist' } } },
+      ],
+    },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
 }

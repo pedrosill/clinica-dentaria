@@ -7,6 +7,7 @@ import SelectDropdown from '../ui/SelectDropdown';
 
 const inputClass =
   'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100';
+const MIN_PASSWORD_LENGTH = 8;
 
 const initialForm = { email: '', displayName: '', role: 'receptionist', password: '', doctorId: '' };
 
@@ -161,7 +162,7 @@ export default function UserManagementSection({ currentUserId }) {
         <label className="space-y-2 text-sm font-medium text-slate-700">{t('Email')}<input required type="email" name="email" autoComplete="off" className={inputClass} value={form.email} onChange={updateForm} disabled={isSaving} /></label>
         <SelectDropdown label={t('Role')} value={form.role} onChange={(value) => updateFormValue('role', value)} testId="select-role" disabled={isSaving || Number(editingUserId) === Number(currentUserId)} options={Object.entries(roleLabels).map(([value, label]) => ({ value, label: t(label) }))} />
         {form.role === 'dentist' ? <div><SelectDropdown label={t('Linked doctor')} value={form.doctorId} onChange={(value) => updateFormValue('doctorId', value)} testId="select-linked-doctor" disabled={isSaving || availableDoctors.length === 0} options={[{ value: '', label: t('Select doctor') }, ...availableDoctors.map((doctor) => ({ value: String(doctor.id), label: doctor.name }))]} />{availableDoctors.length === 0 ? <span className="block text-xs font-normal text-amber-700">{t('Create a doctor profile before creating a dentist account.')}</span> : null}</div> : null}
-        {!editingUserId ? <label className="space-y-2 text-sm font-medium text-slate-700">{t('Temporary password')}<input required type="password" name="password" autoComplete="off" className={inputClass} value={form.password} onChange={updateForm} disabled={isSaving} /></label> : null}
+        {!editingUserId ? <label className="space-y-2 text-sm font-medium text-slate-700">{t('Temporary password')}<input required minLength={MIN_PASSWORD_LENGTH} type="password" name="password" autoComplete="off" className={inputClass} value={form.password} onChange={updateForm} disabled={isSaving} /></label> : null}
         <div className="flex flex-wrap items-center gap-2 md:col-span-2"><button type="submit" disabled={isSaving} className="inline-flex w-fit items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"><UserPlus className="h-4 w-4" />{isSaving ? t('Saving…') : editingUserId ? t('Save changes') : t('Create user')}</button>{editingUserId ? <button type="button" onClick={closeEditor} disabled={isSaving} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">{t('Cancel')}</button> : null}</div>
       </form> : null}
 

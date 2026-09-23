@@ -24,8 +24,8 @@ const {
 const MFA_MAX_ATTEMPTS = 5;
 const MFA_ERROR_MESSAGE = 'Invalid MFA challenge or verification code';
 const RECOVERY_ERROR_MESSAGE = 'This recovery link is invalid or has expired';
-const MIN_RECOVERY_PASSWORD_LENGTH = 12;
-const MIN_PASSWORD_LENGTH = 12;
+const MIN_RECOVERY_PASSWORD_LENGTH = 8;
+const MIN_PASSWORD_LENGTH = 8;
 
 const PUBLIC_USER_SELECT = {
   id: true,
@@ -68,6 +68,10 @@ async function createUser({ email, displayName, password, role = 'receptionist',
 
   if (!allowedRoles.has(role)) {
     throw new HttpError(400, 'Invalid user role');
+  }
+
+  if (role !== 'dentist' && doctorId !== null && doctorId !== undefined && String(doctorId).trim() !== '') {
+    throw new HttpError(400, 'Only dentist accounts can be linked to a doctor profile');
   }
 
   const normalizedDoctorId = doctorId ? parseNumericId(doctorId, 'doctor id') : null;
@@ -497,6 +501,10 @@ async function updateUser(userId, { email, displayName, role, doctorId }, actor)
   if (!allowedRoles.has(role)) throw new HttpError(400, 'Invalid user role');
   if (Number(actor?.id) === id && role !== 'admin') {
     throw new HttpError(400, 'An administrator cannot remove their own administrator role');
+  }
+
+  if (role !== 'dentist' && doctorId !== null && doctorId !== undefined && String(doctorId).trim() !== '') {
+    throw new HttpError(400, 'Only dentist accounts can be linked to a doctor profile');
   }
 
   const normalizedDoctorId = role === 'dentist' && doctorId !== null && doctorId !== '' && doctorId !== undefined

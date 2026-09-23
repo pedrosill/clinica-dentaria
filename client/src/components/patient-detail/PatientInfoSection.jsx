@@ -1,4 +1,4 @@
-import { getPatientDisplayName } from '../../utils/agendaUtils';
+import { formatDateInput, getPatientDisplayName } from '../../utils/agendaUtils';
 import useLanguage from '../../context/useLanguage';
 import DatePicker from '../ui/DatePicker';
 
@@ -98,7 +98,7 @@ export default function PatientInfoSection({
             />
           </div>
 
-          <DatePicker label={t('Date of birth')} value={form.dateOfBirth} onChange={(value) => onChange({ target: { name: 'dateOfBirth', value } })} id="patient-date-of-birth" className="md:col-span-2 xl:col-span-3" clearable />
+          <DatePicker label={t('Date of birth')} value={form.dateOfBirth} onChange={(value) => onChange({ target: { name: 'dateOfBirth', value } })} id="patient-date-of-birth" className="md:col-span-2 xl:col-span-3" max={formatDateInput(new Date())} clearable />
 
           <div className="md:col-span-2 xl:col-span-6 flex flex-wrap gap-3">
             <button

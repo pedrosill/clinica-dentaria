@@ -40,6 +40,7 @@ export default function DatePicker({
   testId,
   className = '',
   clearable = false,
+  dropUp = false,
 }) {
   const { t, locale } = useLanguage();
   const selectedDate = parseDate(value);
@@ -144,7 +145,7 @@ export default function DatePicker({
         </div>
 
         {isOpen ? (
-          <div className="absolute z-30 mt-2 w-full min-w-72 rounded-2xl border border-slate-300 bg-white p-4 shadow-lg" role="dialog" aria-label={label || placeholder}>
+          <div className={`absolute z-30 w-full min-w-72 rounded-2xl border border-slate-300 bg-white p-4 shadow-lg ${dropUp ? 'bottom-full mb-2' : 'mt-2'}`} role="dialog" aria-label={label || placeholder}>
             <div className="flex items-center justify-between gap-2">
               <button type="button" onClick={() => moveMonth(-1)} className="rounded-xl p-2 text-slate-600 hover:bg-slate-100" aria-label={t('Previous month')} data-testid={testId ? `${testId}-previous-month` : undefined}><ChevronLeft className="h-4 w-4" /></button>
               <p className="text-sm font-semibold capitalize text-slate-900">{monthLabel}</p>

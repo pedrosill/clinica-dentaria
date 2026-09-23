@@ -26,6 +26,7 @@ model User {
   treatmentPlansCreated       TreatmentPlan[]         @relation("TreatmentPlanCreator")
   auditEvents                 AuditEvent[]            @relation("AuditEventActor")
   consentsRecorded            ConsentRecord[]         @relation("ConsentRecordRecorder")
+  privacyNoticeDeliveriesSent PrivacyNoticeDelivery[] @relation("PrivacyNoticeDeliverySender")
   documentsCreated            PatientDocument[]       @relation("PatientDocumentCreator")
   dataSubjectRequestsCreated  DataSubjectRequest[]    @relation("DataSubjectRequestCreator")
   retentionPoliciesUpdated    RetentionPolicy[]       @relation("RetentionPolicyUpdater")
@@ -168,6 +169,7 @@ model Patient {
   retentionHolds      RetentionHold[]
   recalls             PatientRecall[]
   waitlistEntries     WaitlistEntry[]
+  privacyNoticeDeliveries PrivacyNoticeDelivery[]
 }
 
 model Doctor {
@@ -410,6 +412,27 @@ model ConsentRecord {
   recordedBy         User?     @relation("ConsentRecordRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
 
   @@index([patientId, status])
+}
+
+model PrivacyNoticeDelivery {
+  id             Int      @id @default(autoincrement())
+  patientId      Int
+  version        String
+  email          String
+  tokenHash      String   @unique
+  status         String   @default("sent") // sent, acknowledged, objected
+  sentAt         DateTime?
+  acknowledgedAt DateTime?
+  objectedAt     DateTime?
+  expiresAt      DateTime
+  createdById    Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy      User?    @relation("PrivacyNoticeDeliverySender", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([patientId, createdAt])
+  @@index([status, expiresAt])
 }
 
 model PatientDocument {

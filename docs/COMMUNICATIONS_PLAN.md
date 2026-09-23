@@ -2,9 +2,15 @@
 
 O sistema já guarda `phone` e `email` obrigatórios no processo do paciente. Não é necessário criar um segundo campo para o mesmo contacto. A validação do servidor aceita números com espaços, hífens ou prefixo internacional e garante um email com formato utilizável.
 
+## Aviso geral de privacidade
+
+O paciente pode receber um formulário geral de privacidade por email, em PDF pré-preenchido com os seus dados. A clínica também pode descarregar o mesmo PDF para entrega em papel. O email contém uma ligação individual, com validade limitada, onde o paciente pode confirmar que tomou conhecimento ou comunicar uma oposição; ambas as respostas ficam registadas com a versão do aviso, data/hora e email utilizado.
+
+Este fluxo regista entrega e resposta ao aviso. Não transforma automaticamente o silêncio ou a receção do email num consentimento opcional. Consentimentos que exijam manifestação explícita continuam a ser tratados separadamente. O texto do aviso e a versão devem ser aprovados pela clínica antes da utilização em produção.
+
 ## O que ainda não está ativo
 
-Não são enviados emails, WhatsApp ou SMS automaticamente. Isto é intencional: antes de contactar pacientes é necessário decidir a base legal/consentimento, o texto aprovado pela clínica, o fornecedor, o responsável pelas credenciais e a retenção dos registos de entrega.
+Não são enviados emails automáticos de confirmação ou lembrete de consultas. O envio manual do aviso de privacidade só fica disponível quando o SMTP, o endereço remetente, a URL pública e o texto aprovado estão configurados.
 
 ## Opção recomendada para a primeira integração
 
@@ -17,4 +23,4 @@ Não são enviados emails, WhatsApp ou SMS automaticamente. Isto é intencional:
 
 ## Ordem segura
 
-O próximo incremento deve ser preferências + outbox + pré-visualização. A ligação a um fornecedor real deve ficar atrás de configuração explícita de produção e só ser ativada depois de a clínica aprovar o fornecedor, custos, textos e procedimento para pedidos de oposição.
+O próximo incremento de comunicações operacionais deve ser preferências + outbox + pré-visualização. A ligação a um fornecedor real deve ficar atrás de configuração explícita de produção e só ser ativada depois de a clínica aprovar o fornecedor, custos, textos e procedimento para pedidos de oposição.

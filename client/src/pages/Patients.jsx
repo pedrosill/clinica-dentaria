@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Plus, Search, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPatient } from '../services/patients';
-import { getPatientDisplayName } from '../utils/agendaUtils';
+import { formatDateInput, getPatientDisplayName } from '../utils/agendaUtils';
 import useLanguage from '../context/useLanguage';
 import useAuth from '../context/useAuth';
 import DatePicker from '../components/ui/DatePicker';
@@ -487,7 +487,7 @@ export default function Patients() {
             onClose={handleCloseCreateModal}
             isCloseDisabled={isCreateSubmitting}
             labelledBy="create-patient-modal-title"
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
+            className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -566,7 +566,7 @@ export default function Patients() {
                   />
                 </div>
 
-                <DatePicker label={t('Date of birth')} value={createDateOfBirth} onChange={setCreateDateOfBirth} />
+                <DatePicker label={t('Date of birth')} value={createDateOfBirth} onChange={setCreateDateOfBirth} max={formatDateInput(new Date())} dropUp />
               </div>
 
               <div className="flex flex-col-reverse gap-3 border-t border-slate-300 pt-4 sm:flex-row sm:justify-end">

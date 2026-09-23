@@ -1,7 +1,7 @@
 const prisma = require('../lib/prisma');
 const HttpError = require('../utils/httpError');
 const { parseNumericId } = require('../utils/parse');
-const { normalizePatientPayload, validatePatientContacts } = require('../utils/patientUtils');
+const { normalizePatientPayload, validatePatientContacts, validatePatientDateOfBirth } = require('../utils/patientUtils');
 const { assertPermission } = require('../utils/authorization');
 
 async function ensurePatientAccess(patientId, user, { write = false } = {}) {
@@ -103,6 +103,7 @@ async function createPatient(payload, user) {
 
   try {
     validatePatientContacts(normalized);
+    validatePatientDateOfBirth(normalized);
   } catch (error) {
     throw new HttpError(400, error.message);
   }
@@ -141,6 +142,7 @@ async function updatePatient(patientId, payload, user) {
 
   try {
     validatePatientContacts(normalized);
+    validatePatientDateOfBirth(normalized);
   } catch (error) {
     throw new HttpError(400, error.message);
   }

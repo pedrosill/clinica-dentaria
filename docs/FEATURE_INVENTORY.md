@@ -2,7 +2,7 @@
 
 This is the source-of-truth checklist for feature work. Before starting a new feature, search the repository and update this file. “Partial” means the domain/API exists but an important user workflow is still missing.
 
-Last reviewed: 2026-09-12
+Last reviewed: 2026-09-23
 
 ## Implemented
 
@@ -19,7 +19,7 @@ Last reviewed: 2026-09-12
 | Doctors | Doctor CRUD and detail/contact view | `client/src/pages/Doctors.jsx`, `server/src/services/doctorService.js` |
 | Clinic settings | Clinic hours/breaks, closures, appointment types, provider schedules, clinic language | `client/src/pages/Settings.jsx`, `server/src/services/clinicSettingsService.js` |
 | Operational health | Liveness/readiness endpoints and automated unit/integration/E2E checks | `server/src/app.js`, `e2e/` |
-| Data governance | Append-only audit events, sensitive-operation fail-closed audit, consent lifecycle, reasoned patient export, rights-request workflow, private document upload/download with hash, retention preview/holds, and an operational compliance checklist with per-item procedures, evidence, and approval state | `server/src/services/governanceService.js`, `server/src/services/privateDocumentService.js`, `server/src/services/complianceService.js`, `client/src/components/patient-detail/PatientGovernanceSection.jsx`, `client/src/components/settings/ComplianceSection.jsx` |
+| Data governance | Append-only audit events, sensitive-operation fail-closed audit, general privacy-notice PDF delivery by email with versioned acknowledgement/opposition history, consent lifecycle, reasoned patient export, rights-request workflow, private document upload/download with hash, retention preview/holds, and an operational compliance checklist with per-item procedures, evidence, and approval state | `server/src/services/governanceService.js`, `server/src/services/privateDocumentService.js`, `server/src/services/privacyNoticeService.js`, `client/src/components/patient-detail/PatientGovernanceSection.jsx`, `client/src/components/settings/ComplianceSection.jsx` |
 | Help center | Interactive in-app guide for the dashboard, agenda, patients, recalls, waitlist, reports, and settings, with direct links to each area | `client/src/components/HelpCenter.jsx`, `client/src/components/help/helpTopics.js`, `client/src/components/Sidebar.jsx` |
 | Smart work queue | Role-scoped operational queue that derives prioritised next actions from arrivals, overdue appointments, recalls, urgent waitlist requests, incomplete contacts, and transcription validation; refreshes when returning to the app, supports urgency/date filters, and recommends the next action | `server/src/services/workQueueService.js`, `client/src/components/dashboard/DashboardWorkQueue.jsx`, `client/src/hooks/useWorkQueue.js`, `client/src/utils/workQueueUtils.test.js` |
 
@@ -29,7 +29,7 @@ Last reviewed: 2026-09-12
 | --- | --- | --- |
 | Localization | Global provider and persisted `en` / `pt-PT` setting | Translate remaining screens, locale-aware dates, and add locale regression coverage |
 | Clinical workflow | Patient clinical workspace, final-note locking, versioned addenda, paper transcription state, and doctor validation endpoint | Link appointment conclusion to a draft/final clinical note and expose note editing where allowed |
-| Document governance | Consent records, metadata, structured export, private binary storage/downloads, hashes and expiry/version fields | Formal signatures and retention executor remain clinic/legal decisions |
+| Document governance | General privacy-notice PDF prefilled from patient data, versioned email delivery/response history, consent records, metadata, structured export, private binary storage/downloads, hashes and expiry/version fields | Final clinic-approved notice text, formal signatures and retention executor remain clinic/legal decisions |
 | Retention governance | Disabled-by-default policies, holds, preview, and explicit admin application exist | Clinic-approved durations and any deletion/anonymization executor are still missing |
 | Appointment types | Admin settings persist active templates; create, edit, reschedule, and conclude use active configured types/durations | `client/src/utils/appointmentTypeUtils.js`, `client/src/hooks/useAppointmentForm.js`, `client/src/components/appointment-detail/`, `server/src/services/appointmentService.js`, `client/src/utils/appointmentTypeUtils.test.js` |
 | Operational reports | Read-only appointment report by inclusive date range, doctor, and status, with minimized operational rows, totals, role scope, and local CSV export of visible rows | `server/src/routes/reportRoutes.js`, `server/src/services/reportService.js`, `server/src/integration/reports.integration.test.js`, `client/src/pages/Reports.jsx`, `e2e/reports-workflow.spec.js` |
@@ -39,7 +39,7 @@ Last reviewed: 2026-09-12
 ## Missing — do not claim these are already available
 
 1. Automatic waitlist slot matching.
-2. Patient communications: confirmation/reminder templates, delivery logs, preferences, and retry handling.
+2. Patient communications: appointment confirmation/reminder templates, delivery preferences, and retry handling. The privacy-notice delivery flow is available behind explicit SMTP configuration.
 3. Billing and payments (explicitly deferred to a future version).
 
 ## Change-control rule

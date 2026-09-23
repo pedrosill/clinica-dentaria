@@ -16,14 +16,43 @@ function normalizePatientPayload(payload = {}) {
     ? 'Portuguese'
     : rawNationality;
 
+  const rawDateOfBirth = String(payload.dateOfBirth || '').trim();
+  let dateOfBirth = null;
+
+  if (rawDateOfBirth) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDateOfBirth)) {
+      dateOfBirth = new Date(NaN);
+    } else {
+      const [year, month, day] = rawDateOfBirth.split('-').map(Number);
+      dateOfBirth = new Date(year, month - 1, day);
+      if (dateOfBirth.getFullYear() !== year || dateOfBirth.getMonth() !== month - 1 || dateOfBirth.getDate() !== day) {
+        dateOfBirth = new Date(NaN);
+      }
+    }
+  }
+
   return {
     fullName: String(payload.fullName || '').trim(),
     phone: String(payload.phone || '').trim(),
     email: String(payload.email || '').trim().toLowerCase(),
     nif: String(payload.nif || '').trim(),
     nationality,
-    dateOfBirth: payload.dateOfBirth ? new Date(`${payload.dateOfBirth}T00:00:00`) : null,
+    dateOfBirth,
   };
+}
+
+function validatePatientDateOfBirth({ dateOfBirth }) {
+  if (!dateOfBirth) return;
+
+  if (Number.isNaN(dateOfBirth.getTime())) {
+    throw new Error('Patient date of birth must be a valid date');
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (dateOfBirth > today) {
+    throw new Error('Patient date of birth cannot be in the future');
+  }
 }
 
 function validatePatientContacts({ phone, email }) {
@@ -43,4 +72,5 @@ module.exports = {
   buildPlaceholderFullName,
   normalizePatientPayload,
   validatePatientContacts,
+  validatePatientDateOfBirth,
 };
