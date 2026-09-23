@@ -13,6 +13,9 @@ Este documento e uma checklist de operacao e aprovacao. Nao e certificacao jurid
 - Aplicar migrations com o servidor parado ou em janela controlada: `npm run db:migrate --prefix server`.
 - Executar health/readiness checks e confirmar que o serviço responde apenas no endereço privado da VM; confirmar também que não existe acesso pelo router, que o proxy termina TLS e que os cookies Secure/SameSite estão ativos em produção.
 - Criar contas individuais: administradora tecnica, doutora e secretaria; ativar MFA nas contas privilegiadas.
+- Reservar no router um IP estável para a VM; registar esse IP nos dois computadores clientes.
+- No host Windows, executar `configure-dentalpro-host.ps1 -VmName DentalPro-Clinic -ConfigurePower` como administrador.
+- Na VM, executar `configure-dentalpro-firewall.sh`, permitindo apenas HTTPS da subnet da clínica e SSH da subnet de administração.
 
 ## Arranque do perfil clínico HTTPS
 

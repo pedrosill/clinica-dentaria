@@ -56,6 +56,25 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 O script mostra a impressão digital do certificado e exige a confirmação `CONFIRMO`; esta confirmação é intencional porque altera as autoridades de confiança do Windows.
 
+## Host Windows e firewall
+
+No computador Windows que hospeda a VM, executar como administrador:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\scripts\configure-dentalpro-host.ps1 -VmName DentalPro-Clinic -ConfigurePower
+```
+
+Isto cria uma tarefa de arranque no início de sessão e, com confirmação, impede suspensão/hibernação enquanto ligado à corrente. A tarefa usa `headless`, por isso a VM não precisa de uma janela aberta.
+
+Na VM Ubuntu, configurar o firewall com confirmação:
+
+```bash
+sudo bash scripts/configure-dentalpro-firewall.sh
+```
+
+O script pede a subnet da clínica e a subnet autorizada para SSH. A reserva do IP deve ser feita no router; não há um script universal seguro para alterar routers de modelos diferentes.
+
 ## PDF de conformidade
 
 `build_clinic_compliance_pdf.py` gera o documento de conformidade e não faz parte do arranque ou manutenção da aplicação.

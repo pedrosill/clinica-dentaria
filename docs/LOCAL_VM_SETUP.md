@@ -91,3 +91,5 @@ Confirma:
 ## Limites
 
 Este perfil clínico já inclui HTTPS interno e o arranque automático dos contentores. Antes de dados reais ainda são necessários firewall, cifragem do host/VM, confirmação dos secrets fora do repositório, cópia externa aprovada, teste de restauro, contas reais/MFA e aprovação da clínica.
+
+O arranque automático da VM no Windows anfitrião e a configuração do firewall Ubuntu estão documentados em `scripts/README.md`; são passos de deployment da clínica, não fazem parte do teste básico da VM.
