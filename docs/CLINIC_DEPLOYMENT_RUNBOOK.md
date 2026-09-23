@@ -33,8 +33,8 @@ DENTALPRO_SECONDARY_BACKUP_HOST_DIR=/mnt/dentalpro-backups
 Aplicar migrations e criar o primeiro administrador de forma interativa:
 
 ```bash
-sudo docker compose -p dentalpro-clinic -f docker-compose.clinic.yml run --rm --no-deps dentalpro npx prisma migrate deploy
-sudo docker compose -p dentalpro-clinic -f docker-compose.clinic.yml run --rm --no-deps dentalpro npm run admin:create
+sudo docker compose -p dentalpro-clinic -f docker-compose.clinic.yml run --rm --no-deps --no-network dentalpro npx prisma migrate deploy
+sudo docker compose -p dentalpro-clinic -f docker-compose.clinic.yml run --rm --no-deps --no-network dentalpro npm run admin:create
 sudo docker compose -p dentalpro-clinic -f docker-compose.clinic.yml up -d
 ```
 
