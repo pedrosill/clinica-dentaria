@@ -20,6 +20,7 @@ TARGET_USER="${SUDO_USER:-$(id -un)}"
 TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
 TARGET_HOME="${TARGET_HOME:-$HOME}"
 PROJECT_DIR="${DENTALPRO_PROJECT_DIR:-$TARGET_HOME/dentalpro}"
+CERT_OUTPUT_FILE="${DENTALPRO_CADDY_CERT_PATH:-$TARGET_HOME/dentalpro-caddy-root.crt}"
 
 if [[ ! -f /etc/os-release ]] || ! grep -qi 'ubuntu' /etc/os-release; then
   echo 'Este script requer Ubuntu Server.' >&2
@@ -166,10 +167,11 @@ for _ in {1..30}; do
   sleep 2
 done
 
-DENTALPRO_PROJECT_DIR="$PROJECT_DIR" DENTALPRO_COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" "$PROJECT_DIR/scripts/export-dentalpro-caddy-ca.sh" "$PROJECT_DIR/dentalpro-caddy-root.crt"
+DENTALPRO_PROJECT_DIR="$PROJECT_DIR" DENTALPRO_COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" "$PROJECT_DIR/scripts/export-dentalpro-caddy-ca.sh" "$CERT_OUTPUT_FILE"
 
 if [[ "$TARGET_USER" != 'root' ]]; then
   $SUDO chown -R "$TARGET_USER:$TARGET_GROUP" "$PROJECT_DIR"
+  $SUDO chown "$TARGET_USER:$TARGET_GROUP" "$CERT_OUTPUT_FILE"
 fi
 
 compose ps
@@ -179,5 +181,5 @@ echo ''
 echo "Instalação clínica concluída."
 echo "VM: $VM_IP"
 echo "Acesso: https://$HOSTNAME_VALUE"
-echo "Certificado para os clientes: $PROJECT_DIR/dentalpro-caddy-root.crt"
+echo "Certificado para os clientes: $CERT_OUTPUT_FILE"
 echo 'Ainda falta instalar este certificado e uma entrada hosts nos dois computadores da clínica.'
