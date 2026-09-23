@@ -13,7 +13,7 @@ services:
       HOST: 0.0.0.0
       LOCAL_ONLY: "false"
       CLIENT_ORIGIN: https://dentalpro.clinic
-      TRUST_PROXY: 172.30.0.2
+      TRUST_PROXY: 172.30.0.0/24
       SEED_DEVELOPMENT_DATA: "false"
       DATABASE_URL: file:/app/data/dentalpro.db
       CLIENT_DIST_DIR: /app/client-dist
@@ -48,8 +48,7 @@ services:
       - dentalpro-caddy-data:/data
       - dentalpro-caddy-config:/config
     networks:
-      clinic:
-        ipv4_address: 172.30.0.2
+      - clinic
 
 networks:
   clinic:
