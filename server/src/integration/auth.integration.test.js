@@ -164,6 +164,48 @@ test('administrator can update user details, role, and linked doctor', async () 
   assert.equal(forbidden.response.status, 403);
 });
 
+test('administrator can reset another user password and their own password', async () => {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const admin = await prisma.user.create({
+    data: {
+      email: `auth.reset.admin.${suffix}@example.test`,
+      displayName: 'Password Reset Admin',
+      passwordHash: hashPassword('reset-admin-password-123'),
+      role: 'admin',
+    },
+  });
+  const target = await prisma.user.create({
+    data: {
+      email: `auth.reset.target.${suffix}@example.test`,
+      displayName: 'Password Reset Target',
+      passwordHash: hashPassword('reset-target-password-123'),
+      role: 'receptionist',
+    },
+  });
+  const adminSession = await login('reset-admin-password-123', admin);
+  const targetSession = await login('reset-target-password-123', target);
+
+  const resetTarget = await request(`/api/users/${target.id}/password`, {
+    method: 'PATCH',
+    body: JSON.stringify({ newPassword: 'reset-target-new-password-123' }),
+  }, adminSession);
+
+  assert.equal(resetTarget.response.status, 200);
+  assert.equal(resetTarget.body.id, target.id);
+  assert.equal(Object.prototype.hasOwnProperty.call(resetTarget.body, 'passwordHash'), false);
+  assert.equal((await request('/api/auth/me', {}, targetSession)).response.status, 401);
+  assert.equal((await login('reset-target-new-password-123', target)).length > 0, true);
+
+  const resetAdmin = await request(`/api/users/${admin.id}/password`, {
+    method: 'PATCH',
+    body: JSON.stringify({ newPassword: 'reset-admin-new-password-123' }),
+  }, adminSession);
+
+  assert.equal(resetAdmin.response.status, 200);
+  assert.equal((await request('/api/auth/me', {}, adminSession)).response.status, 200);
+  assert.equal((await login('reset-admin-new-password-123', admin)).length > 0, true);
+});
+
 test('password change enforces a strong password and revokes other sessions', async () => {
   const firstSession = await login('current-password-123');
   const secondSession = await login('current-password-123');

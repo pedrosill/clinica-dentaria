@@ -8,7 +8,7 @@ import { createPatient } from '../services/patients';
 import { getPatientDisplayName } from '../utils/agendaUtils';
 import useLanguage from '../context/useLanguage';
 import useAuth from '../context/useAuth';
-import DatePicker from '../components/ui/DatePicker';
+import DateOfBirthPicker from '../components/ui/DateOfBirthPicker';
 import Dialog from '../components/ui/Dialog';
 import { API_BASE_URL } from '../constants/apiBaseUrl';
 
@@ -482,13 +482,13 @@ export default function Patients() {
          Render: create patient modal
       ================================ */}
       {isCreateModalOpen ? (
-        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/40 p-4">
           <Dialog
             isOpen={isCreateModalOpen}
             onClose={handleCloseCreateModal}
             isCloseDisabled={isCreateSubmitting}
             labelledBy="create-patient-modal-title"
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
+            className="max-h-[96vh] w-full max-w-xl overflow-visible rounded-3xl border border-slate-300 bg-white p-6 shadow-xl md:p-8"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -567,7 +567,7 @@ export default function Patients() {
                   />
                 </div>
 
-                <DatePicker label={t('Date of birth')} value={createDateOfBirth} onChange={setCreateDateOfBirth} />
+                <DateOfBirthPicker label={t('Date of birth')} value={createDateOfBirth} onChange={setCreateDateOfBirth} />
               </div>
 
               <div className="flex flex-col-reverse gap-3 border-t border-slate-300 pt-4 sm:flex-row sm:justify-end">

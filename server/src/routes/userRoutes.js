@@ -3,6 +3,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { requireRole } = require('../middleware/auth');
 const authService = require('../services/authService');
 const HttpError = require('../utils/httpError');
+const { parseCookies, SESSION_COOKIE_NAME } = require('../utils/auth');
 
 const router = express.Router();
 router.use(requireRole('admin'));
@@ -19,6 +20,15 @@ router.patch('/:id/active', asyncHandler(async (req, res) => {
   const active = req.body?.isActive;
   if (typeof active !== 'boolean') throw new HttpError(400, 'isActive must be a boolean');
   return res.json(await authService.setUserActive(req.params.id, active, req.user));
+}));
+router.patch('/:id/password', asyncHandler(async (req, res) => {
+  const cookies = parseCookies(req.headers.cookie);
+  return res.json(await authService.resetUserPassword(
+    req.params.id,
+    req.body?.newPassword,
+    req.user,
+    cookies[SESSION_COOKIE_NAME],
+  ));
 }));
 
 module.exports = router;

@@ -59,8 +59,8 @@ const patientsSeed = [
 
 const doctorsSeed = [
   {
-    name: 'Dr. DentalPro',
-    email: 'doctor@dentalpro.local',
+    name: 'Teresa Bastos',
+    email: 'teresabastos@gmail.com',
     phone: '917000000',
   },
 ];

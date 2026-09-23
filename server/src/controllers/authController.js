@@ -1,15 +1,18 @@
 const authService = require('../services/authService');
 const { parseCookies, SESSION_COOKIE_NAME } = require('../utils/auth');
-const { LOCAL_ONLY, NODE_ENV } = require('../config/env');
+const { CLIENT_ORIGIN, LOCAL_ONLY, NODE_ENV } = require('../config/env');
 const {
   createCsrfToken,
   serializeCsrfCookie,
   serializeSessionCookie,
 } = require('../utils/auth');
 
-const loginAttempts = new Map();
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const MAX_LOGIN_ATTEMPTS = 5;
+function buildDevelopmentRecoveryUrl(token) {
+  const configuredBaseUrl = String(process.env.PASSWORD_RECOVERY_BASE_URL || '').trim();
+  const baseUrl = configuredBaseUrl || `${CLIENT_ORIGIN}/login`;
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}token=${encodeURIComponent(token)}`;
+}
 
 function isSecureRequest(req) {
   return req.secure || (NODE_ENV === 'production' && !LOCAL_ONLY);
@@ -24,14 +27,6 @@ function csrf(req, res) {
 
 async function login(req, res, next) {
   try {
-    const key = req.ip || 'unknown';
-    const now = Date.now();
-    const attempt = loginAttempts.get(key);
-
-    if (attempt && now - attempt.startedAt < LOGIN_WINDOW_MS && attempt.count >= MAX_LOGIN_ATTEMPTS) {
-      return res.status(429).json({ message: 'Too many login attempts. Please try again later.' });
-    }
-
     const result = await authService.login({
       userId: req.body?.userId,
       email: req.body?.email,
@@ -47,19 +42,8 @@ async function login(req, res, next) {
 
     req.auditActor = result.user;
     res.setHeader('Set-Cookie', serializeSessionCookie(result.token, { secure: isSecureRequest(req) }));
-    loginAttempts.delete(key);
     return res.json({ user: result.user });
   } catch (error) {
-    if (error.statusCode === 401) {
-      const key = req.ip || 'unknown';
-      const now = Date.now();
-      const attempt = loginAttempts.get(key);
-      const nextAttempt =
-        !attempt || now - attempt.startedAt >= LOGIN_WINDOW_MS
-          ? { startedAt: now, count: 1 }
-          : { ...attempt, count: attempt.count + 1 };
-      loginAttempts.set(key, nextAttempt);
-    }
     return next(error);
   }
 }
@@ -105,11 +89,19 @@ async function disableMfa(req, res) {
 }
 
 async function requestPasswordRecovery(req, res) {
-  await authService.requestPasswordRecovery({ email: req.body?.email });
+  const result = await authService.requestPasswordRecovery({ email: req.body?.email });
   res.setHeader('Cache-Control', 'no-store');
-  return res.status(202).json({
+  const response = {
     message: 'If an active account matches that email, recovery instructions will be sent shortly.',
-  });
+  };
+
+  // Email delivery is not configured for the local development profile. Keep the
+  // production response generic, but give local operators a usable recovery link.
+  if (NODE_ENV !== 'production' && result?.token) {
+    response.recoveryUrl = buildDevelopmentRecoveryUrl(result.token);
+  }
+
+  return res.status(202).json(response);
 }
 
 async function resetPassword(req, res) {

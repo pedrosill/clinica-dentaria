@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Edit3, UserPlus, Users } from 'lucide-react';
-import { createUser, getUsers, setUserActive, updateUser } from '../../services/users';
+import { Edit3, KeyRound, UserPlus, Users } from 'lucide-react';
+import { createUser, getUsers, resetUserPassword, setUserActive, updateUser } from '../../services/users';
 import { getDoctors } from '../../services/doctors';
 import useLanguage from '../../context/useLanguage';
 import SelectDropdown from '../ui/SelectDropdown';
@@ -9,6 +9,7 @@ const inputClass =
   'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100';
 
 const initialForm = { email: '', displayName: '', role: 'receptionist', password: '', doctorId: '' };
+const initialPasswordForm = { newPassword: '', confirmPassword: '' };
 
 const roleLabels = {
   admin: 'Administrator',
@@ -31,6 +32,9 @@ export default function UserManagementSection({ currentUserId }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [passwordResetUser, setPasswordResetUser] = useState(null);
+  const [passwordForm, setPasswordForm] = useState(initialPasswordForm);
+  const [passwordResetError, setPasswordResetError] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -90,6 +94,51 @@ export default function UserManagementSection({ currentUserId }) {
     setIsEditorOpen(true);
     setError('');
     setSuccess('');
+  }
+
+  function openPasswordReset(user) {
+    setPasswordResetUser(user);
+    setPasswordForm(initialPasswordForm);
+    setPasswordResetError('');
+    setError('');
+    setSuccess('');
+  }
+
+  function closePasswordReset() {
+    setPasswordResetUser(null);
+    setPasswordForm(initialPasswordForm);
+    setPasswordResetError('');
+  }
+
+  function updatePasswordForm(event) {
+    setPasswordForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  async function handlePasswordReset(event) {
+    event.preventDefault();
+    if (passwordForm.newPassword.length < 12) {
+      setPasswordResetError(t('New password must be at least 12 characters'));
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordResetError(t('New password and confirmation do not match.'));
+      return;
+    }
+
+    setIsSaving(true);
+    setPasswordResetError('');
+    setError('');
+    setSuccess('');
+    try {
+      await resetUserPassword(passwordResetUser.id, passwordForm.newPassword);
+      const resetName = passwordResetUser.displayName;
+      closePasswordReset();
+      setSuccess(`${resetName}: ${t('User password updated successfully.')}`);
+    } catch (requestError) {
+      setPasswordResetError(t(requestError.message || 'Failed to reset user password'));
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function handleSubmit(event) {
@@ -155,6 +204,22 @@ export default function UserManagementSection({ currentUserId }) {
       {error ? <div role="alert" className="mt-5 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div> : null}
       {success ? <div role="status" className="mt-5 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{success}</div> : null}
 
+      {passwordResetUser ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4" role="presentation">
+        <form onSubmit={handlePasswordReset} autoComplete="off" role="dialog" aria-modal="true" aria-labelledby="reset-user-password-title" className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl md:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div><h3 id="reset-user-password-title" className="text-lg font-semibold text-slate-900">{t('Reset user password')}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{passwordResetUser.displayName} · {passwordResetUser.email}</p></div>
+            <button type="button" onClick={closePasswordReset} disabled={isSaving} className="rounded-lg px-2 py-1 text-xl leading-none text-slate-500 hover:bg-slate-100 disabled:opacity-50" aria-label={t('Close')}>×</button>
+          </div>
+          {passwordResetError ? <div role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-800">{passwordResetError}</div> : null}
+          <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-600">{t('The current password cannot be viewed. Set a new password instead.')}</p>
+          <div className="mt-5 grid gap-3">
+            <label className="space-y-2 text-sm font-medium text-slate-700">{t('New password')}<input required minLength={12} type="password" name="newPassword" autoFocus autoComplete="new-password" className={inputClass} value={passwordForm.newPassword} onChange={updatePasswordForm} disabled={isSaving} /></label>
+            <label className="space-y-2 text-sm font-medium text-slate-700">{t('Confirm new password')}<input required minLength={12} type="password" name="confirmPassword" autoComplete="new-password" className={inputClass} value={passwordForm.confirmPassword} onChange={updatePasswordForm} disabled={isSaving} /></label>
+          </div>
+          <div className="mt-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={closePasswordReset} disabled={isSaving} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">{t('Cancel')}</button><button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"><KeyRound className="h-4 w-4" />{isSaving ? t('Saving…') : t('Reset password')}</button></div>
+        </form>
+      </div> : null}
+
       {isEditorOpen ? <form onSubmit={handleSubmit} autoComplete="off" className="mt-6 grid gap-3 rounded-2xl border border-teal-100 bg-teal-50/40 p-4 md:grid-cols-2">
         <div className="md:col-span-2"><h3 className="text-base font-semibold text-slate-900">{editingUserId ? t('Edit user') : t('Create user')}</h3><p className="mt-1 text-xs text-slate-600">{editingUserId ? t('Update the account details and access role.') : t('Create a staff account with a temporary password.')}</p></div>
         <label className="space-y-2 text-sm font-medium text-slate-700">{t('Display name')}<input required name="displayName" autoComplete="off" className={inputClass} value={form.displayName} onChange={updateForm} disabled={isSaving} /></label>
@@ -166,9 +231,9 @@ export default function UserManagementSection({ currentUserId }) {
       </form> : null}
 
       <div className="mt-7 overflow-x-auto rounded-2xl border border-slate-300">
-        {isLoading ? <p className="px-4 py-5 text-sm text-slate-600">{t('Loading users…')}</p> : users.length ? <table className="min-w-full divide-y divide-slate-200 text-sm"><thead className="bg-slate-50"><tr><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Name')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Email')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Role')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Linked doctor')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Status')}</th><th className="px-4 py-3 text-right font-semibold text-slate-700">{t('Action')}</th></tr></thead><tbody className="divide-y divide-slate-200">{users.map((listedUser) => { const isSelf = Number(listedUser.id) === Number(currentUserId); return <tr key={listedUser.id}><td className="px-4 py-3 font-medium text-slate-900">{listedUser.displayName}{isSelf ? <span className="ml-2 text-xs font-normal text-slate-500">{t('(you)')}</span> : null}</td><td className="px-4 py-3 text-slate-600">{listedUser.email}</td><td className="px-4 py-3 capitalize text-slate-600">{roleLabels[listedUser.role] ? t(roleLabels[listedUser.role]) : listedUser.role}</td><td className="px-4 py-3 text-slate-600">{listedUser.doctorProfile?.name || t('Not linked')}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${listedUser.isActive ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>{listedUser.isActive ? t('Active') : t('Inactive')}</span></td><td className="px-4 py-3 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => openEditEditor(listedUser)} disabled={isSaving} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{t('Edit')}</button><button type="button" onClick={() => handleToggleUser(listedUser)} disabled={isSaving || isSelf} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" title={isSelf ? t('You cannot deactivate your own account') : undefined}>{listedUser.isActive ? (isSelf ? t('Cannot deactivate') : t('Deactivate')) : t('Activate')}</button></div></td></tr>; })}</tbody></table> : <p className="px-4 py-5 text-sm text-slate-500">{t('No users found.')}</p>}
+        {isLoading ? <p className="px-4 py-5 text-sm text-slate-600">{t('Loading users…')}</p> : users.length ? <table className="min-w-full divide-y divide-slate-200 text-sm"><thead className="bg-slate-50"><tr><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Name')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Email')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Role')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Linked doctor')}</th><th className="px-4 py-3 text-left font-semibold text-slate-700">{t('Status')}</th><th className="px-4 py-3 text-right font-semibold text-slate-700">{t('Action')}</th></tr></thead><tbody className="divide-y divide-slate-200">{users.map((listedUser) => { const isSelf = Number(listedUser.id) === Number(currentUserId); return <tr key={listedUser.id}><td className="px-4 py-3 font-medium text-slate-900">{listedUser.displayName}{isSelf ? <span className="ml-2 text-xs font-normal text-slate-500">{t('(you)')}</span> : null}</td><td className="px-4 py-3 text-slate-600">{listedUser.email}</td><td className="px-4 py-3 capitalize text-slate-600">{roleLabels[listedUser.role] ? t(roleLabels[listedUser.role]) : listedUser.role}</td><td className="px-4 py-3 text-slate-600">{listedUser.doctorProfile?.name || t('Not linked')}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${listedUser.isActive ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>{listedUser.isActive ? t('Active') : t('Inactive')}</span></td><td className="px-4 py-3 text-right"><div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={() => openPasswordReset(listedUser)} disabled={isSaving} className="inline-flex items-center gap-1 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800 hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"><KeyRound className="h-3.5 w-3.5" />{t('Reset password')}</button><button type="button" onClick={() => openEditEditor(listedUser)} disabled={isSaving} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{t('Edit')}</button><button type="button" onClick={() => handleToggleUser(listedUser)} disabled={isSaving || isSelf} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" title={isSelf ? t('You cannot deactivate your own account') : undefined}>{listedUser.isActive ? (isSelf ? t('Cannot deactivate') : t('Deactivate')) : t('Activate')}</button></div></td></tr>; })}</tbody></table> : <p className="px-4 py-5 text-sm text-slate-500">{t('No users found.')}</p>}
       </div>
-      <p className="mt-3 text-xs text-slate-500">{t('Your own active account cannot be deactivated here.')}</p>
+      <p className="mt-3 text-xs text-slate-500">{t('Your own active account cannot be deactivated here.')} {t('Passwords are never shown; use Reset password to set a new one.')}</p>
     </section>
   );
 }

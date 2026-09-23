@@ -24,3 +24,10 @@ export function updateUser(userId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function resetUserPassword(userId, newPassword) {
+  return apiRequest(`/api/users/${userId}/password`, {
+    method: 'PATCH',
+    body: JSON.stringify({ newPassword }),
+  });
+}

@@ -406,6 +406,45 @@ async function changePassword({ userId, currentPassword, newPassword, sessionTok
   ]);
 }
 
+async function resetUserPassword(userId, newPassword, actor, sessionToken) {
+  const id = parseNumericId(userId, 'user id');
+  if (actor?.role !== 'admin') throw new HttpError(403, 'Administrator access required');
+
+  const normalizedPassword = String(newPassword || '');
+  if (!normalizedPassword) throw new HttpError(400, 'New password is required');
+  if (normalizedPassword.length < MIN_PASSWORD_LENGTH) throw new HttpError(400, `New password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!currentUser) throw new HttpError(404, 'User not found');
+
+  const now = new Date();
+  const currentTokenHash = id === Number(actor.id) && sessionToken ? hashSessionToken(sessionToken) : null;
+  const [updated] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: { passwordHash: hashPassword(normalizedPassword) },
+      select: PUBLIC_USER_SELECT,
+    }),
+    prisma.userSession.updateMany({
+      where: {
+        userId: id,
+        revokedAt: null,
+        ...(currentTokenHash ? { tokenHash: { not: currentTokenHash } } : {}),
+      },
+      data: { revokedAt: now },
+    }),
+    prisma.passwordRecoveryToken.updateMany({
+      where: { userId: id, usedAt: null, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+  ]);
+
+  return toPublicUser(updated);
+}
+
 async function getUserForSessionToken(token) {
   if (!token) return null;
 
@@ -569,6 +608,7 @@ module.exports = {
   listUsers,
   login,
   requestPasswordRecovery,
+  resetUserPassword,
   resetPassword,
   revokeSessionFromRequest,
   setupMfa,

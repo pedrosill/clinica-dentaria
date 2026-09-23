@@ -31,6 +31,7 @@ export default function Login() {
   const [recoveryToken, setRecoveryToken] = useState(initialToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [recoveryUrl, setRecoveryUrl] = useState('');
   const [mode, setMode] = useState(initialToken ? 'recovery-reset' : 'credentials');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -76,6 +77,7 @@ export default function Login() {
 
   function showCredentials() {
     clearFeedback();
+    setRecoveryUrl('');
     setMode('credentials');
     setMfaCode('');
     setChallengeToken('');
@@ -90,7 +92,8 @@ export default function Login() {
         await verifyMfa({ challengeToken, code: mfaCode });
       } else if (mode === 'recovery-request') {
         const data = await requestPasswordRecovery(recoveryEmail);
-        setNotice(data.message || t('If an account matches that email, recovery instructions will be sent shortly.'));
+        setNotice(t(data.message || 'If an account matches that email, recovery instructions will be sent shortly.'));
+        setRecoveryUrl(data.recoveryUrl || '');
       } else if (mode === 'recovery-reset') {
         if (newPassword.length < 12) throw new Error(t('Use at least 12 characters for the new password.'));
         if (newPassword !== confirmPassword) throw new Error(t('New password and confirmation do not match.'));
@@ -99,6 +102,7 @@ export default function Login() {
         setNewPassword('');
         setConfirmPassword('');
         setRecoveryToken('');
+        setRecoveryUrl('');
         navigate('/login', { replace: true });
         setMode('credentials');
       } else {
@@ -111,7 +115,7 @@ export default function Login() {
         }
       }
     } catch (submitError) {
-      setError(submitError.message || t('Unable to complete the request'));
+      setError(t(submitError.message || 'Unable to complete the request'));
     } finally {
       setIsSubmitting(false);
     }
@@ -130,6 +134,7 @@ export default function Login() {
         <p className="mt-2 text-sm leading-6 text-slate-600">{isMfaMode ? t('Enter the six-digit code from your authenticator app.') : t('Sign in to manage the clinic safely.')}</p>
         {error ? <div className="mt-6 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</div> : null}
         {notice ? <div className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{notice}</div> : null}
+        {recoveryUrl ? <div className="mt-4 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-900"><p className="font-semibold">{t('Development recovery link')}</p><a href={recoveryUrl} className="mt-2 block break-all font-medium underline decoration-sky-400 underline-offset-2 hover:text-sky-950">{t('Open recovery link')}</a></div> : null}
 
         <form onSubmit={handleSubmit} autoComplete="on" className="mt-6 space-y-5">
           {isCredentialsMode ? (
