@@ -148,8 +148,20 @@ if (-not $portCheck.TcpTestSucceeded) {
 }
 
 try {
-    $response = Invoke-WebRequest -Uri "https://$HostName/health" -UseBasicParsing -TimeoutSec 15
-    Write-Host "HTTPS funcional: HTTP $($response.StatusCode) em https://$HostName/health" -ForegroundColor Green
+    # A CA interna do Caddy não publica CRL/OCSP. O curl continua a validar
+    # cadeia, validade e hostname, mas não pode exigir uma verificação de
+    # revogação que não existe neste ambiente fechado.
+    $curlCommand = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if (-not $curlCommand) {
+        throw 'Não encontrei curl.exe para validar o HTTPS.'
+    }
+
+    $statusCode = & $curlCommand.Source '--noproxy' '*' '--ssl-no-revoke' '--fail' '--silent' '--show-error' '--output' 'NUL' '--write-out' '%{http_code}' "https://$HostName/health"
+    if ($LASTEXITCODE -ne 0 -or $statusCode -ne '200') {
+        throw "curl terminou com código $LASTEXITCODE e HTTP $statusCode."
+    }
+
+    Write-Host "HTTPS funcional: HTTP $statusCode em https://$HostName/health" -ForegroundColor Green
 } catch {
     throw "O nome e a porta respondem, mas o pedido HTTPS falhou: $($_.Exception.Message)"
 }
