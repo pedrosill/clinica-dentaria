@@ -4,7 +4,10 @@
 param(
     [string]$VmIp,
     [string]$CertificatePath,
+    [string]$SshUser = 'dentalclinic',
+    [string]$RemoteCertificatePath,
     [string]$HostName = 'dentalpro.clinic',
+    [switch]$RefreshCertificateFromVm,
     [switch]$OpenBrowser
 )
 
@@ -44,10 +47,42 @@ if (-not (Test-IPv4Address -Address $VmIp)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($CertificatePath)) {
-    $CertificatePath = Read-Host 'Caminho do certificado dentalpro-caddy-root.crt'
+    if ($RefreshCertificateFromVm) {
+        $CertificatePath = Join-Path $env:USERPROFILE 'Desktop\dentalpro-caddy-root.crt'
+    } else {
+        $CertificatePath = Read-Host 'Caminho do certificado dentalpro-caddy-root.crt'
+    }
 }
 
 $CertificatePath = [System.IO.Path]::GetFullPath($CertificatePath)
+
+if ($RefreshCertificateFromVm) {
+    $sshCommand = Get-Command ssh.exe -ErrorAction SilentlyContinue
+    $scpCommand = Get-Command scp.exe -ErrorAction SilentlyContinue
+    if (-not $sshCommand -or -not $scpCommand) {
+        throw 'Para atualizar o certificado automaticamente são necessários ssh.exe e scp.exe (OpenSSH Client do Windows).'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($RemoteCertificatePath)) {
+        $RemoteCertificatePath = "/home/$SshUser/dentalpro-caddy-root.crt"
+    }
+
+    $remoteProjectDir = "/home/$SshUser/dentalpro"
+    $remoteExportCommand = "cd '$remoteProjectDir' && DENTALPRO_PROJECT_DIR='$remoteProjectDir' DENTALPRO_COMPOSE_PROJECT_NAME='dentalpro-clinic' ./scripts/export-dentalpro-caddy-ca.sh '$RemoteCertificatePath'"
+    Write-Host "A exportar o certificado atual da VM $VmIp..." -ForegroundColor Cyan
+    & $sshCommand.Source "$SshUser@$VmIp" $remoteExportCommand
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Não foi possível exportar o certificado atual na VM.'
+    }
+
+    $remoteCertificate = "${SshUser}@${VmIp}:$RemoteCertificatePath"
+    & $scpCommand.Source $remoteCertificate $CertificatePath
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Não foi possível copiar o certificado atualizado da VM.'
+    }
+    Write-Host "Certificado atualizado copiado para: $CertificatePath" -ForegroundColor Green
+}
+
 if (-not (Test-Path -LiteralPath $CertificatePath -PathType Leaf)) {
     throw "Não encontrei o certificado em '$CertificatePath'."
 }

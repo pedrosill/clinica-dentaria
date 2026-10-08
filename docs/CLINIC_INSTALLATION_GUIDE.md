@@ -152,7 +152,13 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 O script instala o certificado raiz, atualiza o ficheiro `hosts`, limpa o DNS e testa o endpoint HTTPS. A confirmação `CONFIRMO` é obrigatória porque instala uma nova autoridade de confiança no Windows.
 
-Executar este processo no computador da receção e no computador do consultório, se ambos forem usados para aceder à aplicação.
+Se o certificado local estiver desatualizado, pode ser obtido diretamente da VM:
+
+```powershell
+.\setup-dentalpro-client.ps1 -VmIp IP_DA_VM -RefreshCertificateFromVm -OpenBrowser
+```
+
+Neste modo, o Windows usa SSH/SCP para pedir à VM o certificado atual antes de o instalar. Executar este processo no computador da receção e no computador do consultório, se ambos forem usados para aceder à aplicação.
 
 ## 8. Testes de aceitação do piloto
 

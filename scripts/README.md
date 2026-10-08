@@ -56,6 +56,14 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 O script mostra a impressão digital do certificado e exige a confirmação `CONFIRMO`; esta confirmação é intencional porque altera as autoridades de confiança do Windows.
 
+Se o certificado local estiver desatualizado, o script pode exportar o certificado atual da VM e copiá-lo por SSH. Nesse caso, o OpenSSH Client deve estar instalado no Windows:
+
+```powershell
+.\scripts\setup-dentalpro-client.ps1 -VmIp 192.168.68.64 -RefreshCertificateFromVm -OpenBrowser
+```
+
+Será pedida a palavra-passe do utilizador Ubuntu `dentalclinic` e, quando necessário, a confirmação `CONFIRMO` para instalar a nova CA.
+
 ## Host Windows e firewall
 
 No computador Windows que hospeda a VM, executar como administrador:
