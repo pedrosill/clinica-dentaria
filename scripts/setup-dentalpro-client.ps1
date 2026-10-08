@@ -70,7 +70,9 @@ if ($RefreshCertificateFromVm) {
     $remoteProjectDir = "/home/$SshUser/dentalpro"
     $remoteExportCommand = "cd '$remoteProjectDir' && DENTALPRO_PROJECT_DIR='$remoteProjectDir' DENTALPRO_COMPOSE_PROJECT_NAME='dentalpro-clinic' ./scripts/export-dentalpro-caddy-ca.sh '$RemoteCertificatePath'"
     Write-Host "A exportar o certificado atual da VM $VmIp..." -ForegroundColor Cyan
-    & $sshCommand.Source "$SshUser@$VmIp" $remoteExportCommand
+    # A exportação usa sudo dentro da VM; -tt garante um terminal interativo
+    # para que o utilizador possa introduzir a palavra-passe do Ubuntu.
+    & $sshCommand.Source '-tt' "$SshUser@$VmIp" $remoteExportCommand
     if ($LASTEXITCODE -ne 0) {
         throw 'Não foi possível exportar o certificado atual na VM.'
     }
